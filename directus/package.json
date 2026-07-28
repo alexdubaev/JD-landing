@@ -1,0 +1,16 @@
+{
+  "name": "jd-landing-directus-tooling",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "schema:check": "node --test schema/blueprint.test.mjs schema/platform-compatibility.test.mjs",
+    "schema:apply": "node schema/apply-schema.mjs",
+    "schema:snapshot": "node schema/snapshot-schema.mjs",
+    "access:apply": "node access/apply-access.mjs",
+    "products:import": "node import/products.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
