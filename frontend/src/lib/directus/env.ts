@@ -5,6 +5,7 @@ import { z } from "zod";
 const serverEnvSchema = z.object({
   DIRECTUS_URL: z.url(),
   DIRECTUS_TOKEN: z.string().min(20),
+  DIRECTUS_PUBLIC_FOLDER_ID: z.uuid(),
   NEXT_PUBLIC_SITE_URL: z.url(),
 });
 

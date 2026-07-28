@@ -37,11 +37,16 @@ export function parseCatalogSearchParams(
     | undefined;
   const rawPriceStatus = first(input.price) as PriceStatus | undefined;
   const rawSort = first(input.sort) as CatalogSort | undefined;
+  const rawCategory = (first(input.category) ?? "").trim();
+  const categorySlug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(rawCategory)
+    ? rawCategory
+    : undefined;
 
   return {
     search: (first(input.q) ?? "").trim().slice(0, 120),
     page: Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1,
     pageSize: 24,
+    ...(categorySlug ? { categorySlug } : {}),
     ...(rawAvailability && availabilityValues.has(rawAvailability)
       ? { availability: rawAvailability }
       : {}),

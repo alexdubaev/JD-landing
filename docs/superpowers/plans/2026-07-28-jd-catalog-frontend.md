@@ -205,17 +205,17 @@ Commit: `feat(frontend): add typed catalog queries`
 - Consumes: site settings and navigation view types.
 - Produces: accessible site chrome used by every route.
 
-- [ ] **Step 1: Write failing accessibility tests**
+- [x] **Step 1: Write failing accessibility tests**
 
 Assert the header has a named navigation landmark, a catalog link, a phone link
 when configured, and a keyboard-operable mobile menu button with
 `aria-expanded`.
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 Run: `npm test -- src/components/layout`
 
-- [ ] **Step 3: Implement Vibe-derived tokens and layout**
+- [x] **Step 3: Implement Vibe-derived tokens and layout**
 
 Use semantic tokens for off-white background, charcoal text, deep green
 primary, yellow accent, border, muted text, and focus ring. Keep radii between
@@ -223,7 +223,7 @@ primary, yellow accent, border, muted text, and focus ring. Keep radii between
 provided “СМ ТЕХНО” logo without recoloring or cropping on a dark header/footer
 surface where both its white and yellow lettering remain legible.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run: `npm test -- src/components/layout && npm run typecheck`
 
@@ -241,32 +241,34 @@ Commit: `feat(frontend): add industrial site layout`
 - Create: `frontend/src/app/catalog/page.tsx`
 - Create: `frontend/src/app/catalog/loading.tsx`
 - Create: `frontend/src/app/catalog/[categorySlug]/page.tsx`
+- Create: `frontend/src/app/media/[fileId]/route.ts`
+- Create: `frontend/src/app/media/[fileId]/route.test.ts`
 
 **Interfaces:**
 - Consumes: Task 3 catalog queries.
 - Produces: searchable, filterable, paginated catalog pages.
 
-- [ ] **Step 1: Write failing product-card edge tests**
+- [x] **Step 1: Write failing product-card edge tests**
 
 Test fixed price, “Цена по запросу”, missing image placeholder, SKU visibility,
 and category/product link construction.
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 Run: `npm test -- src/components/catalog/ProductCard.test.tsx`
 
-- [ ] **Step 3: Implement catalog UI**
+- [x] **Step 3: Implement catalog UI**
 
 Make controls a Client Component that updates URL parameters through
 `router.replace`. Product grids, cards, pagination, and empty states remain
 server-rendered. Use `next/image` for Directus assets.
 
-- [ ] **Step 4: Implement route metadata and not-found behavior**
+- [x] **Step 4: Implement route metadata and not-found behavior**
 
 Catalog metadata comes from `pages`; category metadata comes from the category
 record. Call `notFound()` for an unknown category.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run: `npm test && npm run typecheck && npm run build`
 

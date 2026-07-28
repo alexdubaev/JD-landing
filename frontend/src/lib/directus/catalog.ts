@@ -4,6 +4,7 @@ import type {
   CatalogPage,
   CatalogQuery,
   Category,
+  PageSeo,
   Product,
   ProductCardData,
 } from "@/types/catalog";
@@ -29,6 +30,7 @@ type RawCategory = {
   seo_title: string | null;
   seo_description: string | null;
   seo_text: string | null;
+  og_image: FileRelation;
 };
 
 type RawProduct = {
@@ -56,6 +58,16 @@ type RawProduct = {
   cta_text?: string | null;
 };
 
+type RawPageSeo = {
+  title: string;
+  h1: string;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_image: FileRelation;
+  canonical_url: string | null;
+  is_indexable: boolean;
+};
+
 const fileId = (relation: FileRelation | undefined) =>
   typeof relation === "string" ? relation : (relation?.id ?? null);
 
@@ -81,6 +93,7 @@ const mapCategory = (raw: RawCategory): Category => ({
   seoTitle: raw.seo_title,
   seoDescription: raw.seo_description,
   seoText: raw.seo_text,
+  ogImageId: fileId(raw.og_image),
 });
 
 const mapProductCard = (raw: RawProduct): ProductCardData => ({
@@ -124,6 +137,7 @@ const categoryFields = [
   "seo_title",
   "seo_description",
   "seo_text",
+  "og_image",
 ].join(",");
 
 const cardFields = [
@@ -215,6 +229,32 @@ export async function getCategoryBySlug(
     { next: { revalidate: 300, tags: ["categories", `category:${slug}`] } },
   );
   return items[0] ? mapCategory(items[0]) : null;
+}
+
+export async function getPageSeoBySlug(slug: string): Promise<PageSeo | null> {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[slug][_eq]": slug,
+    fields:
+      "title,h1,seo_title,seo_description,og_image,canonical_url,is_indexable",
+    limit: "1",
+  });
+  const items = await directusRequest<RawPageSeo[]>(
+    `/items/pages?${query}`,
+    { next: { revalidate: 300, tags: ["pages", `page:${slug}`] } },
+  );
+  const page = items[0];
+  return page
+    ? {
+        title: page.title,
+        h1: page.h1,
+        seoTitle: page.seo_title,
+        seoDescription: page.seo_description,
+        ogImageId: fileId(page.og_image),
+        canonicalUrl: page.canonical_url,
+        isIndexable: page.is_indexable,
+      }
+    : null;
 }
 
 export async function getProductBySlugs(

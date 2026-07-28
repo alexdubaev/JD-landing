@@ -11,6 +11,7 @@ describe("parseCatalogSearchParams", () => {
         availability: "in_stock",
         price: "on_request",
         sort: "price_desc",
+        category: "transmissiya-i-mosty",
       }),
     ).toEqual({
       search: "карданный вал",
@@ -18,6 +19,7 @@ describe("parseCatalogSearchParams", () => {
       pageSize: 24,
       availability: "in_stock",
       priceStatus: "on_request",
+      categorySlug: "transmissiya-i-mosty",
       sort: "price_desc",
     });
   });
@@ -29,6 +31,7 @@ describe("parseCatalogSearchParams", () => {
         availability: "warehouse",
         price: "free",
         sort: "random",
+        category: "../../private",
       }),
     ).toEqual({
       search: "",

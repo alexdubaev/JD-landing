@@ -28,6 +28,7 @@ export type Category = {
   seoTitle: string | null;
   seoDescription: string | null;
   seoText: string | null;
+  ogImageId: string | null;
 };
 
 export type ProductCardData = {
@@ -63,4 +64,14 @@ export type CatalogPage = {
   total: number;
   page: number;
   pageSize: number;
+};
+
+export type PageSeo = {
+  title: string;
+  h1: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  ogImageId: string | null;
+  canonicalUrl: string | null;
+  isIndexable: boolean;
 };

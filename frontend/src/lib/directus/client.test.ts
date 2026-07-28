@@ -6,6 +6,10 @@ describe("directusRequest", () => {
   beforeEach(() => {
     vi.stubEnv("DIRECTUS_URL", "https://cms.example.test");
     vi.stubEnv("DIRECTUS_TOKEN", "server-token-for-tests-only");
+    vi.stubEnv(
+      "DIRECTUS_PUBLIC_FOLDER_ID",
+      "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a",
+    );
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.test");
   });
 

@@ -23,6 +23,7 @@ export function Footer({
               alt="СМ ТЕХНО — запчасти для спецтехники"
               className="site-footer__logo"
               height={346}
+              loading="eager"
               src="/brand/sm-techno-logo.png"
               width={939}
             />
