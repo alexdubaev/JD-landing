@@ -13,6 +13,13 @@
 	}
 }
 
+http://91.227.68.176 {
+	import security_headers
+	encode zstd gzip
+
+	respond "Сайт ООО «СМ ТЕХНО» готовится к запуску." 200
+}
+
 deere-shop.ru, www.deere-shop.ru {
 	import security_headers
 	encode zstd gzip
