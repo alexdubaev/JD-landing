@@ -1,0 +1,32 @@
+{
+	email {$ACME_EMAIL}
+	admin off
+}
+
+(security_headers) {
+	header {
+		-Server
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+}
+
+deere-shop.ru, www.deere-shop.ru {
+	import security_headers
+	encode zstd gzip
+
+	respond "Сайт ООО «СМ ТЕХНО» готовится к запуску." 200
+}
+
+cms.deere-shop.ru {
+	import security_headers
+	encode zstd gzip
+
+	request_body {
+		max_size 50MB
+	}
+
+	reverse_proxy directus:8055
+}
