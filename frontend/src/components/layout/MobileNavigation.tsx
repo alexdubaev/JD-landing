@@ -41,6 +41,9 @@ export function MobileNavigation({
               {item.label}
             </Link>
           ))}
+          <Link href="/contacts#consultation" onClick={() => setIsOpen(false)}>
+            Оставить заявку
+          </Link>
         </nav>
       ) : null}
     </div>

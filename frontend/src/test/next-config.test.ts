@@ -12,6 +12,9 @@ describe("Next image configuration", () => {
         expect.objectContaining({
           pathname: "/brand/**",
         }),
+        expect.objectContaining({
+          pathname: "/images/**",
+        }),
       ]),
     );
   });
