@@ -115,7 +115,8 @@ expect(fetch).toHaveBeenCalledWith(
 
 Also assert that a non-2xx response throws `DirectusRequestError` without
 including the token and that `directusAssetUrl("file-id", { width: 800 })`
-returns an encoded `/assets/file-id` URL.
+returns an encoded local `/media/file-id` URL. The media route added with the
+catalog UI verifies the file's public folder before proxying it.
 
 - [ ] **Step 2: Run the tests and verify they fail**
 

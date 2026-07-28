@@ -80,7 +80,9 @@ server.
 2. The query uses the server token, adds `status=published`, limits selected
    fields, and expands only required relations.
 3. The route maps the API record into view props and renders server-side.
-4. Directus file IDs are converted to `/assets/{id}` URLs through one helper.
+4. Directus file IDs are converted to local `/media/{id}` URLs. A Next.js
+   server route verifies that the file belongs to the designated public folder
+   before proxying it with the server-only token.
 5. A lead form posts to a Server Action or route handler. The server
    allowlists fields, validates contact data, checks the anti-spam control,
    normalizes UTM/page context, and writes through the `Frontend API` role.
