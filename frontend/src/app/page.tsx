@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <main className="home-shell">
+    <main className="home-shell" id="main-content">
       <section className="home-hero" aria-labelledby="home-title">
         <p className="home-eyebrow">Техника и комплектующие</p>
         <h1 id="home-title">Каталог продукции John Deere</h1>

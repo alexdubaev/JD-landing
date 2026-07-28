@@ -44,6 +44,11 @@ small yellow safety accent used only for emphasis. It avoids trademark-like
 logo reconstruction, excessive green/yellow striping, gradients, rounded
 cards everywhere, and heavy shadows.
 
+The supplied transparent `logo_new.png` is the primary brand mark for
+“СМ ТЕХНО”. It is rendered on a dark charcoal surface so its white and yellow
+lettering keeps the intended contrast. The file is preserved without
+redrawing, recoloring, cropping, or presenting it as a John Deere logo.
+
 Typography is compact and readable. Product names and SKU are prioritized over
 marketing claims. Cards expose image, category, title, SKU, price state, and
 availability state with a single clear consultation action. Missing images

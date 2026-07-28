@@ -197,6 +197,7 @@ Commit: `feat(frontend): add typed catalog queries`
 - Create: `frontend/src/components/layout/Footer.tsx`
 - Create: `frontend/src/components/layout/Breadcrumbs.tsx`
 - Create: `frontend/src/components/layout/Header.test.tsx`
+- Create: `frontend/public/brand/sm-techno-logo.png`
 - Modify: `frontend/src/app/layout.tsx`
 - Modify: `frontend/src/app/globals.css`
 
@@ -218,7 +219,9 @@ Run: `npm test -- src/components/layout`
 
 Use semantic tokens for off-white background, charcoal text, deep green
 primary, yellow accent, border, muted text, and focus ring. Keep radii between
-6–12px, avoid heavy shadows, and include `prefers-reduced-motion`.
+6–12px, avoid heavy shadows, and include `prefers-reduced-motion`. Render the
+provided “СМ ТЕХНО” logo without recoloring or cropping on a dark header/footer
+surface where both its white and yellow lettering remain legible.
 
 - [ ] **Step 4: Verify and commit**
 
