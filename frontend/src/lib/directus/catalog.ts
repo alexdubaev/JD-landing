@@ -7,9 +7,11 @@ import type {
   PageSeo,
   Product,
   ProductCardData,
+  PublicFile,
 } from "@/types/catalog";
 
 import { directusEnvelopeRequest, directusRequest } from "./client";
+import { getServerEnv } from "./env";
 
 type FileRelation = string | { id: string } | null;
 type CategoryRelation = {
@@ -68,6 +70,13 @@ type RawPageSeo = {
   is_indexable: boolean;
 };
 
+type RawPublicFile = {
+  id: string;
+  filename_download: string;
+  title: string | null;
+  type: string | null;
+};
+
 const fileId = (relation: FileRelation | undefined) =>
   typeof relation === "string" ? relation : (relation?.id ?? null);
 
@@ -117,7 +126,7 @@ const mapProduct = (raw: RawProduct): Product => ({
   seoText: raw.seo_text ?? null,
   galleryIds: asStringArray(raw.gallery),
   specifications: asUnknownArray(raw.specifications),
-  documents: asUnknownArray(raw.documents),
+  documentIds: asStringArray(raw.documents),
   seoTitle: raw.seo_title ?? null,
   seoDescription: raw.seo_description ?? null,
   ogImageId: fileId(raw.og_image),
@@ -278,4 +287,43 @@ export async function getProductBySlugs(
     },
   );
   return items[0] ? mapProduct(items[0]) : null;
+}
+
+export async function getProductsByIds(
+  ids: string[],
+): Promise<ProductCardData[]> {
+  const uniqueIds = [...new Set(ids)].filter(Boolean);
+  if (!uniqueIds.length) return [];
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[id][_in]": uniqueIds.join(","),
+    fields: cardFields,
+    limit: String(uniqueIds.length),
+  });
+  const items = await directusRequest<RawProduct[]>(
+    `/items/products?${query}`,
+    { next: { revalidate: 300, tags: ["products"] } },
+  );
+  return items.map(mapProductCard);
+}
+
+export async function getFilesByIds(ids: string[]): Promise<PublicFile[]> {
+  const uniqueIds = [...new Set(ids)].filter(Boolean);
+  if (!uniqueIds.length) return [];
+  const environment = getServerEnv();
+  const query = queryString({
+    "filter[id][_in]": uniqueIds.join(","),
+    "filter[folder][_eq]": environment.DIRECTUS_PUBLIC_FOLDER_ID,
+    fields: "id,filename_download,title,type",
+    limit: String(uniqueIds.length),
+  });
+  const items = await directusRequest<RawPublicFile[]>(`/files?${query}`, {
+    next: { revalidate: 300, tags: ["files"] },
+  });
+  return items.map((file) => ({
+    id: file.id,
+    filename: file.filename_download,
+    title: file.title,
+    type: file.type,
+  }));
 }

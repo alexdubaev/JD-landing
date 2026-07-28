@@ -27,7 +27,14 @@ const formatPrice = (product: ProductCardData) => {
   }).format(product.price);
 };
 
-export function ProductCard({ product }: { product: ProductCardData }) {
+export function ProductCard({
+  headingLevel = 2,
+  product,
+}: {
+  headingLevel?: 2 | 3;
+  product: ProductCardData;
+}) {
+  const Heading = headingLevel === 3 ? "h3" : "h2";
   const imageUrl = directusAssetUrl(product.mainImageId, {
     width: 720,
     height: 540,
@@ -71,9 +78,9 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         ) : (
           <span className="product-card__category">Без категории</span>
         )}
-        <h2 className="product-card__title">
+        <Heading className="product-card__title">
           <Link href={productUrl}>{product.title}</Link>
-        </h2>
+        </Heading>
         <p className="product-card__sku">Артикул: {product.sku}</p>
         {product.shortDescription ? (
           <p className="product-card__description">

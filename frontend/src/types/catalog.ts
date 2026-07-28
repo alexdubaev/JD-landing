@@ -51,12 +51,19 @@ export type Product = ProductCardData & {
   seoText: string | null;
   galleryIds: string[];
   specifications: unknown[];
-  documents: unknown[];
+  documentIds: string[];
   seoTitle: string | null;
   seoDescription: string | null;
   ogImageId: string | null;
   relatedProductIds: string[];
   ctaText: string | null;
+};
+
+export type PublicFile = {
+  id: string;
+  filename: string;
+  title: string | null;
+  type: string | null;
 };
 
 export type CatalogPage = {

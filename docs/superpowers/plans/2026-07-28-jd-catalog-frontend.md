@@ -288,22 +288,22 @@ Commit: `feat(frontend): build catalog and category pages`
 - Consumes: `getProductBySlugs`.
 - Produces: complete product detail and Product JSON-LD input.
 
-- [ ] **Step 1: Write failing route tests**
+- [x] **Step 1: Write failing route tests**
 
 Assert one H1, visible SKU, safe missing-gallery fallback, fixed/on-request
 price rendering, specification table only when data exists, and no invented
 availability copy.
 
-- [ ] **Step 2: Run and verify failure**
+- [x] **Step 2: Run and verify failure**
 
 Run: `npm test -- src/app/catalog/[categorySlug]/[productSlug]/page.test.tsx`
 
-- [ ] **Step 3: Implement product composition**
+- [x] **Step 3: Implement product composition**
 
 Render documents only when file records exist, related products only when
 resolved, and a consultation CTA that carries product/category identifiers.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run: `npm test && npm run typecheck && npm run build`
 
