@@ -1,0 +1,53 @@
+import type {
+  AvailabilityStatus,
+  CatalogQuery,
+  CatalogSort,
+  PriceStatus,
+} from "@/types/catalog";
+
+type SearchParamValue = string | string[] | undefined;
+export type CatalogSearchParams = Record<string, SearchParamValue>;
+
+const availabilityValues = new Set<AvailabilityStatus>([
+  "in_stock",
+  "on_request",
+  "out_of_stock",
+]);
+const priceStatusValues = new Set<PriceStatus>([
+  "fixed",
+  "on_request",
+  "hidden",
+]);
+const sortValues = new Set<CatalogSort>([
+  "relevance",
+  "price_asc",
+  "price_desc",
+  "title_asc",
+]);
+
+const first = (value: SearchParamValue) =>
+  Array.isArray(value) ? value[0] : value;
+
+export function parseCatalogSearchParams(
+  input: CatalogSearchParams,
+): CatalogQuery {
+  const rawPage = Number.parseInt(first(input.page) ?? "1", 10);
+  const rawAvailability = first(input.availability) as
+    | AvailabilityStatus
+    | undefined;
+  const rawPriceStatus = first(input.price) as PriceStatus | undefined;
+  const rawSort = first(input.sort) as CatalogSort | undefined;
+
+  return {
+    search: (first(input.q) ?? "").trim().slice(0, 120),
+    page: Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1,
+    pageSize: 24,
+    ...(rawAvailability && availabilityValues.has(rawAvailability)
+      ? { availability: rawAvailability }
+      : {}),
+    ...(rawPriceStatus && priceStatusValues.has(rawPriceStatus)
+      ? { priceStatus: rawPriceStatus }
+      : {}),
+    sort: rawSort && sortValues.has(rawSort) ? rawSort : "relevance",
+  };
+}

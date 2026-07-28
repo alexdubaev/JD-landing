@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { DirectusEnvelope } from "@/types/directus";
+import type { DirectusResponse } from "@/types/directus";
 
 import { getServerEnv } from "./env";
 
@@ -33,6 +33,14 @@ export async function directusRequest<T>(
   path: string,
   init: DirectusRequestInit = {},
 ): Promise<T> {
+  const response = await directusEnvelopeRequest<T>(path, init);
+  return response.data;
+}
+
+export async function directusEnvelopeRequest<T>(
+  path: string,
+  init: DirectusRequestInit = {},
+): Promise<DirectusResponse<T>> {
   assertRelativeApiPath(path);
   const environment = getServerEnv();
   const headers = new Headers(init.headers);
@@ -49,8 +57,9 @@ export async function directusRequest<T>(
   if (!response.ok) {
     throw new DirectusRequestError(response.status, path.split("?").at(0)!);
   }
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) {
+    return { data: undefined as T };
+  }
 
-  const envelope = (await response.json()) as DirectusEnvelope<T>;
-  return envelope.data;
+  return (await response.json()) as DirectusResponse<T>;
 }
