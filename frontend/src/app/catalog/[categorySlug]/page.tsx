@@ -7,6 +7,7 @@ import { EmptyCatalog } from "@/components/catalog/EmptyCatalog";
 import { Pagination } from "@/components/catalog/Pagination";
 import { ProductGrid } from "@/components/catalog/ProductGrid";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { JsonLdSchema } from "@/components/seo/JsonLdSchema";
 import { Container } from "@/components/ui/Container";
 import {
   type CatalogSearchParams,
@@ -40,6 +41,7 @@ export async function generateMetadata({
   return {
     title: category.seoTitle || category.title,
     description: category.seoDescription || category.description,
+    alternates: { canonical: `/catalog/${category.slug}` },
     openGraph: image ? { images: [image] } : undefined,
   };
 }
@@ -63,6 +65,15 @@ export default async function CategoryPage({
   return (
     <main className="catalog-page" id="main-content">
       <Container>
+        <JsonLdSchema
+          data={{
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: category.title,
+            description: category.description,
+            url: `/catalog/${category.slug}`,
+          }}
+        />
         <Breadcrumbs
           items={[
             { href: "/", label: "Главная" },

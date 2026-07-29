@@ -1,11 +1,143 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import HomePage from "./page";
+import type { Category, ProductCardData } from "@/types/catalog";
+import type { ContentPage, FaqItem, SiteSettings } from "@/types/content";
 
-describe("HomePage", () => {
-  it("renders the commercial hero, search, and catalog entry points", () => {
-    render(<HomePage />);
+import { HomePageView } from "./HomePageView";
+
+const page: ContentPage = {
+  id: "home",
+  title: "Главная",
+  slug: "home",
+  h1: "Запчасти и комплектующие для техники John Deere",
+  seoTitle: "Каталог",
+  seoDescription: "Описание",
+  seoText: "Помогаем подобрать комплектующие под задачи клиента.",
+  sections: [
+    {
+      id: "hero",
+      type: "hero",
+      title: "Запчасти и комплектующие для техники John Deere",
+      subtitle: "Подбор по артикулу и модели техники",
+      text: "Проверим запрос и уточним условия поставки.",
+      imageId: null,
+      buttonText: "Перейти в каталог",
+      buttonUrl: "/catalog",
+      items: [],
+      settings: { secondary_cta_text: "Получить консультацию" },
+      sortOrder: 1,
+    },
+    {
+      id: "categories",
+      type: "categories",
+      title: "Категории запчастей",
+      subtitle: "Основные направления",
+      text: null,
+      imageId: null,
+      buttonText: "Смотреть весь каталог",
+      buttonUrl: "/catalog",
+      items: [],
+      settings: {},
+      sortOrder: 2,
+    },
+    {
+      id: "featured",
+      type: "featured_products",
+      title: "Популярные товары",
+      subtitle: "Каталог",
+      text: null,
+      imageId: null,
+      buttonText: null,
+      buttonUrl: null,
+      items: [],
+      settings: {},
+      sortOrder: 3,
+    },
+    {
+      id: "faq",
+      type: "faq",
+      title: "Вопросы и ответы",
+      subtitle: null,
+      text: null,
+      imageId: null,
+      buttonText: null,
+      buttonUrl: null,
+      items: [],
+      settings: {},
+      sortOrder: 4,
+    },
+  ],
+};
+
+const settings: SiteSettings = {
+  companyName: "DEERE-SHOP",
+  phone: "+7 900 000-00-00",
+  email: "info@example.test",
+  address: "Санкт-Петербург",
+  workingHours: "Пн–Пт 09:00–18:00",
+  logoId: null,
+  primaryColor: null,
+  accentColor: null,
+  primaryCtaText: "Получить консультацию",
+  primaryCtaUrl: "/contacts",
+  footerText: null,
+  messengers: [],
+};
+
+const categories: Category[] = [
+  {
+    id: "engine",
+    title: "Двигатель",
+    slug: "engine",
+    parentId: null,
+    description: "Компоненты двигателя",
+    imageId: null,
+    imageAlt: null,
+    h1: null,
+    seoTitle: null,
+    seoDescription: null,
+    seoText: null,
+    ogImageId: null,
+  },
+];
+
+const products: ProductCardData[] = [
+  {
+    id: "product",
+    title: "Фильтр",
+    slug: "filter",
+    sku: "TEST-1",
+    category: { id: "engine", title: "Двигатель", slug: "engine" },
+    shortDescription: "Тестовый товар",
+    mainImageId: null,
+    imageAlt: null,
+    price: null,
+    currency: "RUB",
+    priceStatus: "on_request",
+    availabilityStatus: "on_request",
+  },
+];
+
+const faq: FaqItem[] = [
+  {
+    id: "request",
+    question: "Как отправить запрос?",
+    answer: "Через форму на сайте.",
+  },
+];
+
+describe("HomePageView", () => {
+  it("renders CMS sections with catalog data and accessible entry points", () => {
+    render(
+      <HomePageView
+        categories={categories}
+        faq={faq}
+        page={page}
+        products={products}
+        settings={settings}
+      />,
+    );
 
     expect(
       screen.getByRole("heading", {
@@ -14,18 +146,17 @@ describe("HomePage", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("img", { name: /сельскохозяйственная техника в поле/i }),
-    ).toHaveAttribute("src", expect.stringContaining("hero-machinery-v1.webp"));
-    expect(
       screen.getByRole("search", { name: /поиск по каталогу/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getAllByRole("link", { name: /перейти в каталог/i })[0],
-    ).toHaveAttribute("href", "/catalog");
+      screen.getByRole("combobox", { name: "Артикул детали" }),
+    ).toHaveAttribute("name", "q");
     expect(
-      screen.getByRole("heading", { level: 2, name: /категории запчастей/i }),
+      screen.getByRole("heading", { name: "Категории запчастей" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("article")).toHaveLength(6);
-    expect(screen.getByText(/не заявляет статус официального/i)).toBeInTheDocument();
+    expect(screen.getByText("Фильтр")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Как отправить запрос?" }),
+    ).toBeInTheDocument();
   });
 });

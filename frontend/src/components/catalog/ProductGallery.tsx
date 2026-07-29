@@ -1,6 +1,7 @@
 "use client";
 
 import { ImageOff } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -15,6 +16,7 @@ export function ProductGallery({
 }) {
   const uniqueIds = [...new Set(imageIds.filter(Boolean))];
   const [activeId, setActiveId] = useState(uniqueIds[0] ?? null);
+  const reduceMotion = useReducedMotion();
 
   if (!activeId) {
     return (
@@ -40,15 +42,26 @@ export function ProductGallery({
   return (
     <div className="product-gallery">
       <div className="product-gallery__main">
-        {activeUrl ? (
-          <Image
-            alt={imageAlt}
-            fill
-            priority
-            sizes="(max-width: 52rem) 100vw, 50vw"
-            src={activeUrl}
-          />
-        ) : null}
+        <AnimatePresence mode="wait">
+          {activeUrl ? (
+            <motion.div
+              animate={{ opacity: 1 }}
+              className="product-gallery__frame"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              key={activeId}
+              transition={{ duration: reduceMotion ? 0 : 0.2 }}
+            >
+              <Image
+                alt={imageAlt}
+                fill
+                priority
+                sizes="(max-width: 52rem) 100vw, 50vw"
+                src={activeUrl}
+              />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
       {uniqueIds.length > 1 ? (
         <div aria-label="Галерея товара" className="product-gallery__thumbs">

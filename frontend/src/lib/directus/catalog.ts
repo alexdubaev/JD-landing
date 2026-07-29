@@ -77,6 +77,12 @@ type RawPublicFile = {
   type: string | null;
 };
 
+type RawSitemapProduct = {
+  slug: string;
+  updated_at: string | null;
+  category: { slug: string } | null;
+};
+
 const fileId = (relation: FileRelation | undefined) =>
   typeof relation === "string" ? relation : (relation?.id ?? null);
 
@@ -188,6 +194,39 @@ export async function getCategories(): Promise<Category[]> {
     { next: { revalidate: 300, tags: ["categories"] } },
   );
   return items.map(mapCategory);
+}
+
+export async function getHomepageCategories(): Promise<Category[]> {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[show_on_homepage][_eq]": "true",
+    fields: categoryFields,
+    sort: "sort_order,title",
+    limit: "12",
+  });
+  const items = await directusRequest<RawCategory[]>(
+    `/items/categories?${query}`,
+    { next: { revalidate: 300, tags: ["categories", "homepage"] } },
+  );
+  return items.map(mapCategory);
+}
+
+export async function getFeaturedProducts(
+  limit = 8,
+): Promise<ProductCardData[]> {
+  const safeLimit = Math.min(12, Math.max(1, Math.floor(limit)));
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[is_featured][_eq]": "true",
+    fields: cardFields,
+    sort: "sort_order,-popularity_score,title",
+    limit: String(safeLimit),
+  });
+  const items = await directusRequest<RawProduct[]>(
+    `/items/products?${query}`,
+    { next: { revalidate: 300, tags: ["products", "homepage"] } },
+  );
+  return items.map(mapProductCard);
 }
 
 const sortByQuery: Record<CatalogQuery["sort"], string> = {
@@ -326,4 +365,27 @@ export async function getFilesByIds(ids: string[]): Promise<PublicFile[]> {
     title: file.title,
     type: file.type,
   }));
+}
+
+export async function getProductSitemapEntries() {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    fields: "slug,updated_at,category.slug",
+    sort: "category.slug,slug",
+    limit: "-1",
+  });
+  const items = await directusRequest<RawSitemapProduct[]>(
+    `/items/products?${query}`,
+    { next: { revalidate: 3600, tags: ["products", "sitemap"] } },
+  );
+  return items
+    .filter(
+      (item): item is RawSitemapProduct & { category: { slug: string } } =>
+        Boolean(item.category?.slug),
+    )
+    .map((item) => ({
+      categorySlug: item.category.slug,
+      productSlug: item.slug,
+      updatedAt: item.updated_at,
+    }));
 }

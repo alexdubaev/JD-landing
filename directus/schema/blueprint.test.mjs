@@ -15,6 +15,14 @@ const requiredCollections = [
   "leads",
   "testimonials",
   "banners",
+  "hero_blocks",
+  "advantages",
+  "cta_blocks",
+  "contact_channels",
+  "seo_text_blocks",
+  "product_images",
+  "product_specifications",
+  "product_documents",
   "seo_redirects",
 ];
 
@@ -49,11 +57,21 @@ const requiredProductFields = [
   "updated_at",
 ];
 
-test("uses the approved 12-collection Directus model", () => {
+test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 12);
+  assert.equal(names.length, 20);
   assert.ok(names.length <= 25);
+});
+
+test("seeds the DEERE-SHOP singleton brand settings", () => {
+  const settings = schemaBlueprint.seed.site_settings;
+
+  assert.equal(settings.length, 1);
+  assert.equal(settings[0].id, "5a4216d9-6fb1-4a1a-93fd-62b5ec90fa30");
+  assert.equal(settings[0].company_name, "DEERE-SHOP");
+  assert.equal(settings[0].primary_color, "#4C8F2B");
+  assert.equal(settings[0].accent_color, "#FFC107");
 });
 
 test("keeps editorial collections translation-ready without junction tables", () => {
@@ -68,6 +86,14 @@ test("keeps editorial collections translation-ready without junction tables", ()
     "lead_forms",
     "testimonials",
     "banners",
+    "hero_blocks",
+    "advantages",
+    "cta_blocks",
+    "contact_channels",
+    "seo_text_blocks",
+    "product_images",
+    "product_specifications",
+    "product_documents",
   ];
 
   for (const name of translatable) {

@@ -2,41 +2,67 @@ import type { Metadata } from "next";
 
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { RouteTransition } from "@/components/motion/RouteTransition";
+import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/brand";
+import { getNavigation, getSiteSettings } from "@/lib/directus/content";
+import type { NavigationItem, SiteSettings } from "@/types/content";
 
 import "./globals.css";
-
-const primaryNavigation = [
-  { label: "Каталог", url: "/catalog" },
-  { label: "О компании", url: "/about" },
-  { label: "Доставка", url: "/delivery" },
-  { label: "Контакты", url: "/contacts" },
-];
 
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://deere-shop.ru",
   ),
   title: {
-    default: "Каталог продукции John Deere",
-    template: "%s — каталог John Deere",
+    default: `${BRAND_NAME} — каталог комплектующих John Deere`,
+    template: `%s — ${BRAND_NAME}`,
   },
-  description:
-    "Каталог техники и комплектующих John Deere с подбором решений под задачи клиента.",
+  description: BRAND_DESCRIPTION,
 };
 
-export default function RootLayout({
+async function getLayoutContent(): Promise<{
+  navigation: NavigationItem[];
+  settings: SiteSettings | null;
+}> {
+  try {
+    const [navigation, settings] = await Promise.all([
+      getNavigation(),
+      getSiteSettings(),
+    ]);
+    return { navigation, settings };
+  } catch {
+    return { navigation: [], settings: null };
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const { navigation, settings } = await getLayoutContent();
+
   return (
-    <html lang="ru">
+    <html data-scroll-behavior="smooth" lang="ru">
       <body>
         <a className="skip-link" href="#main-content">
           Перейти к содержанию
         </a>
         <div className="site-page">
-          <Header navigation={primaryNavigation} />
-          {children}
-          <Footer navigation={primaryNavigation} />
+          <Header
+            companyName={settings?.companyName}
+            email={settings?.email}
+            logoId={settings?.logoId}
+            navigation={navigation}
+            phone={settings?.phone}
+          />
+          <RouteTransition>{children}</RouteTransition>
+          <Footer
+            companyName={settings?.companyName}
+            email={settings?.email}
+            footerText={settings?.footerText}
+            logoId={settings?.logoId}
+            navigation={navigation}
+            phone={settings?.phone}
+          />
         </div>
       </body>
     </html>

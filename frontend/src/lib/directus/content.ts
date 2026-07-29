@@ -1,0 +1,340 @@
+import "server-only";
+
+import type {
+  ContentPage,
+  ContactChannel,
+  FaqItem,
+  HeroBlock,
+  NavigationItem,
+  PageSection,
+  SectionType,
+  SiteSettings,
+  SeoTextBlock,
+} from "@/types/content";
+import { BRAND_NAME } from "@/lib/brand";
+
+import { directusRequest } from "./client";
+
+type FileRelation = string | { id: string } | null;
+
+type RawSiteSettings = {
+  company_name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  working_hours: string | null;
+  logo: FileRelation;
+  primary_color: string | null;
+  accent_color: string | null;
+  primary_cta_text: string | null;
+  primary_cta_url: string | null;
+  footer_text: string | null;
+  messengers: unknown;
+};
+
+type RawPage = {
+  id: string;
+  title: string;
+  slug: string;
+  h1: string;
+  seo_title: string | null;
+  seo_description: string | null;
+  seo_text: string | null;
+};
+
+type RawSection = {
+  id: string;
+  section_type: string;
+  title: string | null;
+  subtitle: string | null;
+  text: string | null;
+  image: FileRelation;
+  button_text: string | null;
+  button_url: string | null;
+  items: unknown;
+  settings: unknown;
+  sort_order: number | null;
+  is_visible: boolean;
+};
+
+const sectionTypes = new Set<SectionType>([
+  "advantages",
+  "categories",
+  "contacts",
+  "cta",
+  "faq",
+  "featured_products",
+  "hero",
+  "lead_form",
+  "process",
+  "seo_text",
+]);
+
+const fileId = (relation: FileRelation) =>
+  typeof relation === "string" ? relation : (relation?.id ?? null);
+
+const toItems = (value: unknown) => (Array.isArray(value) ? value : []);
+
+const toSettings = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const queryString = (parameters: Record<string, string | undefined>) => {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(parameters)) {
+    if (value) search.set(key, value);
+  }
+  return search.toString();
+};
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+  const raw = await directusRequest<RawSiteSettings>(
+    "/items/site_settings?fields=company_name,phone,email,address,working_hours,logo,primary_color,accent_color,primary_cta_text,primary_cta_url,footer_text,messengers",
+    { next: { revalidate: 300, tags: ["site-settings"] } },
+  );
+
+  return {
+    companyName: raw.company_name?.trim() || BRAND_NAME,
+    phone: raw.phone,
+    email: raw.email,
+    address: raw.address,
+    workingHours: raw.working_hours,
+    logoId: fileId(raw.logo),
+    primaryColor: raw.primary_color,
+    accentColor: raw.accent_color,
+    primaryCtaText: raw.primary_cta_text,
+    primaryCtaUrl: raw.primary_cta_url,
+    footerText: raw.footer_text,
+    messengers: toItems(raw.messengers),
+  };
+}
+
+export async function getNavigation(): Promise<NavigationItem[]> {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[parent][_null]": "true",
+    fields: "id,label,url",
+    sort: "sort_order",
+    limit: "-1",
+  });
+  return directusRequest<NavigationItem[]>(`/items/navigation_items?${query}`, {
+    next: { revalidate: 300, tags: ["navigation"] },
+  });
+}
+
+const mapSection = (raw: RawSection): PageSection | null => {
+  const normalizedType = raw.section_type === "steps" ? "process" : raw.section_type;
+  if (!raw.is_visible || !sectionTypes.has(normalizedType as SectionType)) {
+    return null;
+  }
+
+  return {
+    id: raw.id,
+    type: normalizedType as SectionType,
+    title: raw.title,
+    subtitle: raw.subtitle,
+    text: raw.text,
+    imageId: fileId(raw.image),
+    buttonText: raw.button_text,
+    buttonUrl: raw.button_url,
+    items: toItems(raw.items),
+    settings: toSettings(raw.settings),
+    sortOrder: raw.sort_order ?? 0,
+  };
+};
+
+export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
+  const pageQuery = queryString({
+    "filter[status][_eq]": "published",
+    "filter[slug][_eq]": slug,
+    fields: "id,title,slug,h1,seo_title,seo_description,seo_text",
+    limit: "1",
+  });
+  const pages = await directusRequest<RawPage[]>(
+    `/items/pages?${pageQuery}`,
+    { next: { revalidate: 300, tags: ["pages", `page:${slug}`] } },
+  );
+  const page = pages[0];
+  if (!page) return null;
+
+  const sectionQuery = queryString({
+    "filter[status][_eq]": "published",
+    "filter[page][_eq]": page.id,
+    "filter[is_visible][_eq]": "true",
+    fields:
+      "id,section_type,title,subtitle,text,image,button_text,button_url,items,settings,sort_order,is_visible",
+    sort: "sort_order",
+    limit: "-1",
+  });
+  const rawSections = await directusRequest<RawSection[]>(
+    `/items/page_sections?${sectionQuery}`,
+    { next: { revalidate: 300, tags: ["page-sections", `page:${slug}`] } },
+  );
+
+  return {
+    id: page.id,
+    title: page.title,
+    slug: page.slug,
+    h1: page.h1,
+    seoTitle: page.seo_title,
+    seoDescription: page.seo_description,
+    seoText: page.seo_text,
+    sections: rawSections
+      .map(mapSection)
+      .filter((section): section is PageSection => section !== null),
+  };
+}
+
+export function getHomePage(): Promise<ContentPage | null> {
+  return getPageBySlug("home");
+}
+
+export async function getFaqItems({
+  categoryId,
+  pageId,
+  productId,
+}: {
+  categoryId?: string;
+  pageId?: string;
+  productId?: string;
+}): Promise<FaqItem[]> {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[is_visible][_eq]": "true",
+    "filter[page][_eq]": pageId,
+    "filter[category][_eq]": categoryId,
+    "filter[product][_eq]": productId,
+    fields: "id,question,answer",
+    sort: "sort_order",
+    limit: "-1",
+  });
+  return directusRequest<FaqItem[]>(`/items/faq_items?${query}`, {
+    next: { revalidate: 300, tags: ["faq"] },
+  });
+}
+
+export async function getHeroBlock(
+  pageSectionId: string,
+): Promise<HeroBlock | null> {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[page_section][_eq]": pageSectionId,
+    fields:
+      "id,eyebrow,title,text,image,image_alt,primary_cta_text,primary_cta_url,secondary_cta_text,secondary_cta_url,disclaimer",
+    limit: "1",
+  });
+  const items = await directusRequest<
+    Array<{
+      id: string;
+      eyebrow: string | null;
+      title: string;
+      text: string | null;
+      image: FileRelation;
+      image_alt: string | null;
+      primary_cta_text: string | null;
+      primary_cta_url: string | null;
+      secondary_cta_text: string | null;
+      secondary_cta_url: string | null;
+      disclaimer: string | null;
+    }>
+  >(`/items/hero_blocks?${query}`, {
+    next: { revalidate: 300, tags: ["hero-blocks"] },
+  });
+  const item = items?.[0];
+  return item
+    ? {
+        id: item.id,
+        eyebrow: item.eyebrow,
+        title: item.title,
+        text: item.text,
+        imageId: fileId(item.image),
+        imageAlt: item.image_alt,
+        primaryCtaText: item.primary_cta_text,
+        primaryCtaUrl: item.primary_cta_url,
+        secondaryCtaText: item.secondary_cta_text,
+        secondaryCtaUrl: item.secondary_cta_url,
+        disclaimer: item.disclaimer,
+      }
+    : null;
+}
+
+export async function getContacts(): Promise<ContactChannel[]> {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[is_visible][_eq]": "true",
+    fields: "id,channel_type,label,value,url,icon",
+    sort: "sort_order",
+    limit: "-1",
+  });
+  const items = await directusRequest<
+    Array<{
+      id: string;
+      channel_type: string;
+      label: string;
+      value: string;
+      url: string | null;
+      icon: string | null;
+    }>
+  >(`/items/contact_channels?${query}`, {
+    next: { revalidate: 300, tags: ["contact-channels"] },
+  });
+  return items.map((item) => ({
+    id: item.id,
+    type: item.channel_type,
+    label: item.label,
+    value: item.value,
+    url: item.url,
+    icon: item.icon,
+  }));
+}
+
+export async function getSeoTextBlock({
+  categoryId,
+  pageId,
+  productId,
+}: {
+  categoryId?: string;
+  pageId?: string;
+  productId?: string;
+}): Promise<SeoTextBlock | null> {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[related_page][_eq]": pageId,
+    "filter[related_category][_eq]": categoryId,
+    "filter[related_product][_eq]": productId,
+    fields:
+      "id,h1,intro_text,content_blocks,conclusion_text,cta_text,seo_title,seo_description,canonical_url",
+    sort: "sort_order",
+    limit: "1",
+  });
+  const items = await directusRequest<
+    Array<{
+      id: string;
+      h1: string | null;
+      intro_text: string | null;
+      content_blocks: unknown;
+      conclusion_text: string | null;
+      cta_text: string | null;
+      seo_title: string | null;
+      seo_description: string | null;
+      canonical_url: string | null;
+    }>
+  >(`/items/seo_text_blocks?${query}`, {
+    next: { revalidate: 300, tags: ["seo-text-blocks"] },
+  });
+  const item = items[0];
+  return item
+    ? {
+        id: item.id,
+        h1: item.h1,
+        introText: item.intro_text,
+        contentBlocks: toItems(item.content_blocks),
+        conclusionText: item.conclusion_text,
+        ctaText: item.cta_text,
+        seoTitle: item.seo_title,
+        seoDescription: item.seo_description,
+        canonicalUrl: item.canonical_url,
+      }
+    : null;
+}

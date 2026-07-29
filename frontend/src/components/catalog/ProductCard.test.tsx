@@ -41,6 +41,9 @@ describe("ProductCard", () => {
     expect(
       screen.getByRole("link", { name: "Фильтр гидравлический" }),
     ).toHaveAttribute("href", "/catalog/filters/hydraulic-filter");
+    expect(
+      screen.getByTestId("product-card-action-arrow"),
+    ).toHaveAttribute("aria-hidden", "true");
   });
 
   it("renders request pricing and a safe missing-image fallback", () => {

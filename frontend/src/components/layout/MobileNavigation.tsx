@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -12,6 +13,7 @@ export function MobileNavigation({
   navigation: NavigationItem[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
   const label = isOpen ? "Закрыть меню" : "Открыть меню";
 
   return (
@@ -26,26 +28,32 @@ export function MobileNavigation({
       >
         {isOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
       </button>
-      {isOpen ? (
-        <nav
-          aria-label="Мобильная навигация"
-          className="mobile-navigation__panel"
-          id="mobile-menu"
-        >
-          {navigation.map((item) => (
-            <Link
-              href={item.url}
-              key={`${item.url}:${item.label}`}
-              onClick={() => setIsOpen(false)}
-            >
-              {item.label}
+      <AnimatePresence initial={false}>
+        {isOpen ? (
+          <motion.nav
+            animate={{ height: "auto", opacity: 1 }}
+            aria-label="Мобильная навигация"
+            className="mobile-navigation__panel"
+            exit={{ height: 0, opacity: 0 }}
+            id="mobile-menu"
+            initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.24 }}
+          >
+            {navigation.map((item) => (
+              <Link
+                href={item.url}
+                key={`${item.url}:${item.label}`}
+                onClick={() => setIsOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <Link href="/contacts#consultation" onClick={() => setIsOpen(false)}>
+              Оставить заявку
             </Link>
-          ))}
-          <Link href="/contacts#consultation" onClick={() => setIsOpen(false)}>
-            Оставить заявку
-          </Link>
-        </nav>
-      ) : null}
+          </motion.nav>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

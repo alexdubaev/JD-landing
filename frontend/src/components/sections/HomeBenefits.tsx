@@ -7,48 +7,58 @@ import {
 } from "lucide-react";
 
 import { Container } from "@/components/ui/Container";
+import type { PageSection } from "@/types/content";
 
-const benefits = [
-  {
-    icon: PackageCheck,
-    title: "Каталог комплектующих",
-    text: "Поиск по артикулам и категориям",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Проверка запроса",
-    text: "Сверим данные перед предложением",
-  },
-  {
-    icon: Truck,
-    title: "Доставка по России",
-    text: "Согласуем удобный способ отправки",
-  },
-  {
-    icon: Headset,
-    title: "Помощь менеджера",
-    text: "Разберём заявку и уточним детали",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Работа с бизнесом",
-    text: "Подготовим предложение под задачу",
-  },
-];
+const iconByName = {
+  clipboard: ClipboardCheck,
+  headset: Headset,
+  package: PackageCheck,
+  shield: ShieldCheck,
+  truck: Truck,
+} as const;
 
-export function HomeBenefits() {
+type BenefitItem = {
+  icon?: keyof typeof iconByName;
+  text: string;
+  title: string;
+};
+
+const isBenefit = (value: unknown): value is BenefitItem => {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<BenefitItem>;
+  return typeof item.title === "string" && typeof item.text === "string";
+};
+
+export function HomeBenefits({ section }: { section: PageSection }) {
+  const benefits = section.items.filter(isBenefit);
+  if (!benefits.length) return null;
+
   return (
-    <section className="home-benefits" aria-label="Преимущества сервиса">
-      <Container className="home-benefits__grid">
-        {benefits.map(({ icon: Icon, text, title }) => (
-          <div className="home-benefit" key={title}>
-            <Icon aria-hidden="true" />
-            <div>
-              <strong>{title}</strong>
-              <span>{text}</span>
-            </div>
+    <section
+      aria-label={section.title ?? "Преимущества сервиса"}
+      className="home-benefits"
+    >
+      <Container>
+        {section.title ? (
+          <div className="home-benefits__heading">
+            {section.subtitle ? <p>{section.subtitle}</p> : null}
+            <h2>{section.title}</h2>
           </div>
-        ))}
+        ) : null}
+        <div className="home-benefits__grid">
+          {benefits.map(({ icon = "package", text, title }) => {
+            const Icon = iconByName[icon] ?? PackageCheck;
+            return (
+              <div className="home-benefit" key={title}>
+                <Icon aria-hidden="true" />
+                <div>
+                  <strong>{title}</strong>
+                  <span>{text}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </Container>
     </section>
   );

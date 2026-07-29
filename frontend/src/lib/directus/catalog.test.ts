@@ -4,7 +4,12 @@ import {
   directusEnvelopeRequest,
   directusRequest,
 } from "./client";
-import { getCatalogPage, getCategories } from "./catalog";
+import {
+  getCatalogPage,
+  getCategories,
+  getFeaturedProducts,
+  getHomepageCategories,
+} from "./catalog";
 
 vi.mock("./client", () => ({
   directusRequest: vi.fn(),
@@ -61,5 +66,24 @@ describe("catalog queries", () => {
     expect(url.searchParams.get("page")).toBe("2");
     expect(url.searchParams.get("limit")).toBe("24");
     expect(result.total).toBe(49);
+  });
+
+  it("loads only categories selected for the homepage", async () => {
+    requestMock.mockResolvedValue([]);
+
+    await getHomepageCategories();
+
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("filter[show_on_homepage][_eq]")).toBe("true");
+  });
+
+  it("loads featured homepage products with a bounded result size", async () => {
+    requestMock.mockResolvedValue([]);
+
+    await getFeaturedProducts(8);
+
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("filter[is_featured][_eq]")).toBe("true");
+    expect(url.searchParams.get("limit")).toBe("8");
   });
 });

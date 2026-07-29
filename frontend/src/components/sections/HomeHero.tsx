@@ -1,104 +1,146 @@
-import { CheckCircle2, FileText, Search, Send } from "lucide-react";
+import {
+  ClipboardCheck,
+  FileText,
+  Headset,
+  PackageCheck,
+  Search,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 
+import { HeroMotion } from "@/components/motion/HeroMotion";
+import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
+import { BRAND_DISCLAIMER } from "@/lib/brand";
+import { directusAssetUrl } from "@/lib/directus/assets";
+import type { ProductCardData } from "@/types/catalog";
+import type { PageSection } from "@/types/content";
 
-export function HomeHero() {
+import { HeroPartSearch } from "./HeroPartSearch";
+
+const iconByName = {
+  clipboard: ClipboardCheck,
+  file: FileText,
+  headset: Headset,
+  headphones: Headset,
+  package: PackageCheck,
+  search: Search,
+  shield: ShieldCheck,
+  truck: Truck,
+} as const;
+
+type BenefitItem = {
+  icon?: keyof typeof iconByName;
+  text: string;
+  title: string;
+};
+
+const settingString = (
+  settings: Record<string, unknown>,
+  key: string,
+): string | null => {
+  const value = settings[key];
+  return typeof value === "string" && value.trim() ? value : null;
+};
+
+const isBenefit = (value: unknown): value is BenefitItem => {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<BenefitItem>;
+  return typeof item.title === "string" && typeof item.text === "string";
+};
+
+function HeroTitle({ title }: { title: string }) {
+  const match = title.match(/john deere/iu);
+  if (!match || match.index === undefined) return <>{title}</>;
+
+  const before = title.slice(0, match.index);
+  const after = title.slice(match.index + match[0].length);
   return (
-    <section className="commerce-hero" aria-labelledby="home-title">
-      <Image
-        alt="Сельскохозяйственная техника в поле"
-        className="commerce-hero__image"
-        fill
-        priority
-        sizes="100vw"
-        src="/images/home/hero-machinery-v1.webp"
-      />
+    <>
+      {before}
+      <span>John Deere</span>
+      {after}
+    </>
+  );
+}
+
+export function HomeHero({
+  benefitsSection,
+  h1,
+  products,
+  section,
+}: {
+  benefitsSection?: PageSection | null;
+  h1: string;
+  products: ProductCardData[];
+  section: PageSection;
+}) {
+  const imageUrl = section.imageId
+    ? (directusAssetUrl(section.imageId, {
+        width: 1920,
+        height: 1280,
+        fit: "cover",
+        quality: 88,
+        format: "webp",
+      }) ?? "/images/home/deere-shop-hero.png")
+    : "/images/home/deere-shop-hero.png";
+  const benefits = (benefitsSection?.items ?? []).filter(isBenefit).slice(0, 4);
+
+  return (
+    <HeroMotion
+      labelledBy="home-title"
+      media={
+        <Image
+          alt={
+            settingString(section.settings, "image_alt") ??
+            "Трактор John Deere в поле"
+          }
+          className="commerce-hero__image"
+          fill
+          priority
+          sizes="100vw"
+          src={imageUrl}
+        />
+      }
+    >
       <div className="commerce-hero__veil" />
       <Container className="commerce-hero__content">
-        <p className="commerce-hero__eyebrow">СМ ТЕХНО · каталог комплектующих</p>
-        <h1 id="home-title">
-          Запчасти и комплектующие для техники <span>John Deere</span>
-        </h1>
-        <p>
-          Подберём позицию по артикулу, модели техники или описанию узла.
-          Проверим совместимость и уточним условия поставки.
-        </p>
-        <div className="commerce-hero__actions">
-          <Link className="button button--primary" href="/catalog">
-            Перейти в каталог
-          </Link>
-          <Link className="button button--light" href="/contacts#consultation">
-            Нужна помощь с подбором
-          </Link>
-        </div>
-        <small>
-          СМ ТЕХНО не заявляет статус официального представителя John Deere.
-        </small>
+        <Reveal className="commerce-hero__copy">
+          {section.subtitle ? (
+            <p className="commerce-hero__eyebrow">{section.subtitle}</p>
+          ) : null}
+          <h1 id="home-title">
+            <HeroTitle title={section.title ?? h1} />
+          </h1>
+          {section.text ? (
+            <p className="commerce-hero__description">{section.text}</p>
+          ) : null}
+          <HeroPartSearch products={products} />
+          <small>
+            {settingString(section.settings, "disclaimer") ?? BRAND_DISCLAIMER}
+          </small>
+        </Reveal>
       </Container>
-      <Container className="hero-tools">
-        <form
-          action="/catalog"
-          aria-label="Поиск по каталогу"
-          className="hero-tool hero-tool--search"
-          role="search"
-        >
-          <div className="hero-tool__title">
-            <Search aria-hidden="true" />
-            <div>
-              <h2>Поиск по артикулу</h2>
-              <p>Введите номер детали или название</p>
-            </div>
+
+      {benefits.length ? (
+        <Container className="commerce-hero__benefits">
+          <div className="commerce-hero__benefits-grid">
+            {benefits.map(({ icon = "package", text, title }) => {
+              const Icon = iconByName[icon] ?? PackageCheck;
+              return (
+                <div className="commerce-hero__benefit" key={title}>
+                  <Icon aria-hidden="true" />
+                  <div>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="hero-tool__field">
-            <label className="visually-hidden" htmlFor="hero-search">
-              Артикул или название товара
-            </label>
-            <input
-              id="hero-search"
-              name="q"
-              placeholder="Например: RE57934"
-              type="search"
-            />
-            <button type="submit">Найти</button>
-          </div>
-          <span className="hero-tool__hint">
-            <CheckCircle2 aria-hidden="true" />
-            Сверим запрос с каталогом перед предложением
-          </span>
-        </form>
-        <form
-          action="/contacts"
-          className="hero-tool hero-tool--request"
-          id="consultation"
-        >
-          <div className="hero-tool__title">
-            <FileText aria-hidden="true" />
-            <div>
-              <h2>Есть список позиций?</h2>
-              <p>Отправьте артикулы одним запросом</p>
-            </div>
-          </div>
-          <div className="hero-tool__field">
-            <label className="visually-hidden" htmlFor="parts-request">
-              Список артикулов
-            </label>
-            <input
-              id="parts-request"
-              name="parts"
-              placeholder="RE57934, AL150675…"
-            />
-            <button className="hero-tool__send" type="submit">
-              <Send aria-hidden="true" />
-              Отправить
-            </button>
-          </div>
-          <span className="hero-tool__hint">
-            Можно указать несколько артикулов через запятую
-          </span>
-        </form>
-      </Container>
-    </section>
+        </Container>
+      ) : null}
+    </HeroMotion>
   );
 }

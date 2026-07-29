@@ -21,6 +21,14 @@ const websiteCollections = [
   "lead_forms",
   "testimonials",
   "banners",
+  "hero_blocks",
+  "advantages",
+  "cta_blocks",
+  "contact_channels",
+  "seo_text_blocks",
+  "product_images",
+  "product_specifications",
+  "product_documents",
   "seo_redirects",
 ];
 
@@ -55,6 +63,8 @@ const seoCollections = [
   "categories",
   "products",
   "faq_items",
+  "seo_text_blocks",
+  "product_images",
   "seo_redirects",
 ];
 

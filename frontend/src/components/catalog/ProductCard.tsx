@@ -1,7 +1,8 @@
-import { ImageOff } from "lucide-react";
+import { ArrowRight, ImageOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { InteractiveCard } from "@/components/motion/InteractiveCard";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import type { ProductCardData } from "@/types/catalog";
 
@@ -47,7 +48,8 @@ export function ProductCard({
     : "/contacts#consultation";
 
   return (
-    <article className="product-card">
+    <InteractiveCard className="product-card-motion">
+      <article className="product-card">
       <div className="product-card__media">
         {imageUrl ? (
           <Image
@@ -97,8 +99,13 @@ export function ProductCard({
         </div>
         <Link className="product-card__action" href={productUrl}>
           {product.category ? "Подробнее" : "Запросить консультацию"}
+          <ArrowRight
+            aria-hidden="true"
+            data-testid="product-card-action-arrow"
+          />
         </Link>
       </div>
-    </article>
+      </article>
+    </InteractiveCard>
   );
 }
