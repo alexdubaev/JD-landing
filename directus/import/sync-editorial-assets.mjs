@@ -75,6 +75,89 @@ const processItems = [
   },
 ];
 
+const homeSections = [
+  {
+    section_type: "hero",
+    title: "Запчасти и комплектующие John Deere",
+    subtitle: "Каталог и подбор решений",
+    text: "Найдём нужную деталь по артикулу, модели техники или фотографии маркировки.",
+    button_text: "Открыть каталог",
+    button_url: "/catalog",
+    settings: { image_alt: "Техника John Deere в поле" },
+    sort_order: 0,
+  },
+  {
+    section_type: "categories",
+    title: "Категории продукции",
+    subtitle: "Выберите направление",
+    button_text: "Весь каталог",
+    button_url: "/catalog",
+    sort_order: 10,
+  },
+  {
+    section_type: "featured_products",
+    title: "Избранные товары",
+    subtitle: "Популярные позиции каталога",
+    button_text: "Смотреть каталог",
+    button_url: "/catalog",
+    sort_order: 20,
+  },
+  {
+    section_type: "advantages",
+    title: "Что важно при подборе",
+    items: [
+      { icon: "search", title: "Проверяем данные", text: "Сверяем артикул, модель и маркировку." },
+      { icon: "shield", title: "Не делаем догадок", text: "Уточняем совместимость и состав комплекта." },
+      { icon: "package", title: "Согласуем поставку", text: "Обсуждаем наличие и условия до заказа." },
+    ],
+    sort_order: 25,
+  },
+  {
+    section_type: "steps",
+    title: "Как происходит подбор",
+    subtitle: "Четыре понятных шага",
+    text: "Передайте исходные данные — мы проверим запрос и вернёмся с предложением.",
+    items: processItems,
+    sort_order: 40,
+  },
+  {
+    section_type: "articles",
+    title: "Практические статьи",
+    subtitle: "База знаний",
+    button_text: "Все статьи",
+    button_url: "/articles",
+    sort_order: 50,
+  },
+  {
+    section_type: "faq",
+    title: "Вопросы и ответы",
+    subtitle: "Полезная информация",
+    sort_order: 60,
+  },
+  {
+    section_type: "contacts",
+    title: "Свяжитесь с нами",
+    text: "Используйте доступный канал связи или оставьте заявку на подбор.",
+    sort_order: 70,
+  },
+  {
+    section_type: "lead_form",
+    title: "Оставьте заявку на подбор",
+    text: "Укажите контакты и нужные позиции — мы уточним детали запроса.",
+    button_text: "Отправить заявку",
+    button_url: "/contacts#consultation",
+    sort_order: 71,
+  },
+  {
+    section_type: "cta",
+    title: "Нужна помощь с подбором?",
+    text: "Передайте артикул, модель техники или фотографию маркировки.",
+    button_text: "Отправить запрос",
+    button_url: "#consultation",
+    sort_order: 72,
+  },
+];
+
 const encode = (value) => encodeURIComponent(String(value));
 
 async function findOne(client, collection, field, value, fields = "id") {
@@ -126,7 +209,76 @@ async function upsertItem(client, collection, field, value, data) {
   });
 }
 
+async function ensureHomePage(client) {
+  const existing = await findOne(client, "pages", "slug", "home");
+  if (existing) {
+    return existing;
+  }
+  return client.request("/items/pages", {
+    method: "POST",
+    body: JSON.stringify({
+      status: "published",
+      title: "Каталог комплектующих John Deere",
+      slug: "home",
+      h1: "Запчасти и комплектующие John Deere",
+      seo_title: "Каталог комплектующих John Deere — DEERE-SHOP",
+      seo_description: "Каталог деталей и подбор комплектующих John Deere по артикулу, модели техники и фотографии маркировки.",
+      seo_text: null,
+      translations: {},
+    }),
+  });
+}
+
+async function upsertPageSection(client, pageId, definition) {
+  const query = `/items/page_sections?filter[page][_eq]=${encode(pageId)}&filter[section_type][_eq]=${encode(definition.section_type)}&fields=id&limit=1`;
+  const existing = (await client.request(query))[0];
+  const data = {
+    page: pageId,
+    status: "published",
+    title: null,
+    subtitle: null,
+    text: null,
+    image: null,
+    button_text: null,
+    button_url: null,
+    items: [],
+    settings: {},
+    is_visible: true,
+    translations: {},
+    ...definition,
+  };
+  if (existing) return patchItem(client, "page_sections", existing.id, data);
+  return client.request("/items/page_sections", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+async function publishCatalog(client) {
+  const categories = await client.request(
+    "/items/categories?fields=id,slug,parent&limit=-1",
+  );
+  const homepageSlugs = new Set(manifest.categoryIcons.slice(0, 12).map((item) => item.slug));
+  for (const category of categories) {
+    await patchItem(client, "categories", category.id, {
+      status: "published",
+      show_on_homepage: Boolean(category.parent && homepageSlugs.has(category.slug)),
+    });
+  }
+
+  const products = await client.request("/items/products?fields=id&limit=-1");
+  for (const [index, product] of products.entries()) {
+    await patchItem(client, "products", product.id, {
+      status: "published",
+      is_featured: index < 5,
+      show_on_homepage: index < 5,
+    });
+  }
+}
+
 export async function syncEditorialAssets(client) {
+  await publishCatalog(client);
+
   for (const icon of manifest.categoryIcons) {
     const category = await findOne(client, "categories", "slug", icon.slug);
     if (!category) throw new Error(`Unknown category slug: ${icon.slug}`);
@@ -157,8 +309,28 @@ export async function syncEditorialAssets(client) {
     });
   }
 
-  const home = await findOne(client, "pages", "slug", "home");
-  if (!home) throw new Error("Published home page is required.");
+  const home = await ensureHomePage(client);
+
+  for (const section of homeSections) {
+    await upsertPageSection(client, home.id, section);
+  }
+
+  const faqItems = [
+    ["Как отправить список артикулов?", "Укажите артикулы в форме заявки и добавьте модель техники или фото маркировки."],
+    ["Можно ли уточнить совместимость?", "Да. Для проверки нужны модель техники, артикул и доступные фотографии детали."],
+    ["Что делать, если цена не указана?", "Отправьте запрос через форму — стоимость и условия поставки уточняются отдельно."],
+  ];
+  for (const [index, [question, answer]] of faqItems.entries()) {
+    await upsertItem(client, "faq_items", "question", question, {
+      status: "published",
+      page: home.id,
+      question,
+      answer,
+      sort_order: index,
+      is_visible: true,
+      translations: {},
+    });
+  }
 
   const sections = await client.request(
     `/items/page_sections?filter[page][_eq]=${home.id}&fields=id,section_type&limit=-1`,
