@@ -7,6 +7,8 @@ const collectionTags = {
   pages: ["pages", "homepage", "sitemap"],
   "contact-channels": ["contact-channels", "homepage"],
   contact_channels: ["contact-channels", "homepage"],
+  homepage: ["homepage"],
+  sitemap: ["sitemap"],
 } as const;
 
 type Collection = keyof typeof collectionTags;

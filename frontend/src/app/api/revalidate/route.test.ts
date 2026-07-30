@@ -49,4 +49,20 @@ describe("POST /api/revalidate", () => {
     expect(revalidateTag).toHaveBeenCalledWith("homepage", "max");
     expect(revalidateTag).toHaveBeenCalledWith("sitemap", "max");
   });
+
+  it("accepts direct homepage and sitemap invalidation tags", async () => {
+    const { POST } = await import("./route");
+    for (const collection of ["homepage", "sitemap"]) {
+      const response = await POST(
+        new Request("https://site.test/api/revalidate", {
+          method: "POST",
+          headers: { "x-revalidate-secret": "test-secret" },
+          body: JSON.stringify({ collection }),
+        }),
+      );
+      expect(response.status).toBe(200);
+    }
+    expect(revalidateTag).toHaveBeenCalledWith("homepage", "max");
+    expect(revalidateTag).toHaveBeenCalledWith("sitemap", "max");
+  });
 });
