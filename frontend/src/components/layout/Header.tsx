@@ -75,7 +75,7 @@ export function Header({
               </Link>
             )}
           </div>
-          <MobileNavigation navigation={navigation} />
+          <MobileNavigation navigation={navigation} phone={phone} />
         </Container>
       </div>
     </HeaderChrome>

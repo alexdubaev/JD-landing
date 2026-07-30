@@ -18,9 +18,18 @@ through `NEXT_PUBLIC_*` variables.
 The real `.env` file must exist only at `/opt/jd-landing/.env` on the VPS.
 Never commit it.
 
-The root domain currently serves a temporary launch notice. Replace that Caddy
-route with `reverse_proxy frontend:3000` when the Next.js frontend service is
-added.
+The root domain and the server IP are reverse-proxied to the standalone
+Next.js frontend. The frontend reaches Directus only through the private
+Docker network and receives its API token as a server-only environment
+variable.
+
+Required frontend variables in `/opt/jd-landing/.env`:
+
+```text
+DIRECTUS_TOKEN=<Frontend API static token>
+DIRECTUS_PUBLIC_FOLDER_ID=1ecf70c5-0ad4-4e5e-8d73-78ee549f064a
+REVALIDATE_SECRET=<long random secret>
+```
 
 Local backups are written to `/opt/jd-landing/backups` and retained for 14 days.
 An off-server backup target is still required before launch.

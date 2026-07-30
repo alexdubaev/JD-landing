@@ -21,6 +21,7 @@ export type SiteSettings = {
 
 export type SectionType =
   | "advantages"
+  | "articles"
   | "categories"
   | "contacts"
   | "cta"

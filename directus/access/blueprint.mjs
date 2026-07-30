@@ -16,6 +16,7 @@ const websiteCollections = [
   "page_sections",
   "navigation_items",
   "categories",
+  "articles",
   "products",
   "faq_items",
   "lead_forms",
@@ -61,6 +62,7 @@ const contentPermissions = [
 const seoCollections = [
   "pages",
   "categories",
+  "articles",
   "products",
   "faq_items",
   "seo_text_blocks",

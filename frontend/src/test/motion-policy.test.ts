@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const projectRoot = process.cwd();
 
 describe("motion policy", () => {
-  it("keeps section reveals short and disables their duration for reduced motion", () => {
+  it("keeps general section reveals static and reserves motion for interactive UI", () => {
     const source = readFileSync(
       path.join(
         projectRoot,
@@ -18,7 +18,8 @@ describe("motion policy", () => {
       "utf8",
     );
 
-    expect(source).toContain("duration: reduceMotion ? 0 : 0.4");
+    expect(source).not.toContain("useReducedMotion");
+    expect(source).toContain('data-motion="reveal-static"');
     expect(source).not.toMatch(/blur|scale/iu);
   });
 

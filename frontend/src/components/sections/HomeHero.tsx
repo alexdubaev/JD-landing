@@ -6,8 +6,11 @@ import {
   Search,
   ShieldCheck,
   Truck,
+  MessageCircle,
+  Phone,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 import { HeroMotion } from "@/components/motion/HeroMotion";
 import { Reveal } from "@/components/motion/Reveal";
@@ -15,7 +18,7 @@ import { Container } from "@/components/ui/Container";
 import { BRAND_DISCLAIMER } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import type { ProductCardData } from "@/types/catalog";
-import type { PageSection } from "@/types/content";
+import type { ContactChannel, PageSection, SiteSettings } from "@/types/content";
 
 import { HeroPartSearch } from "./HeroPartSearch";
 
@@ -67,14 +70,18 @@ function HeroTitle({ title }: { title: string }) {
 
 export function HomeHero({
   benefitsSection,
+  contacts,
   h1,
   products,
   section,
+  settings,
 }: {
   benefitsSection?: PageSection | null;
+  contacts: ContactChannel[];
   h1: string;
   products: ProductCardData[];
   section: PageSection;
+  settings: SiteSettings;
 }) {
   const imageUrl = section.imageId
     ? (directusAssetUrl(section.imageId, {
@@ -86,6 +93,12 @@ export function HomeHero({
       }) ?? "/images/home/deere-shop-hero.png")
     : "/images/home/deere-shop-hero.png";
   const benefits = (benefitsSection?.items ?? []).filter(isBenefit).slice(0, 4);
+  const phone =
+    contacts.find((channel) => channel.type === "phone")?.value ?? settings.phone;
+  const messengers = contacts
+    .filter((channel) => ["telegram", "whatsapp", "messenger"].includes(channel.type))
+    .filter((channel) => channel.url)
+    .slice(0, 2);
 
   return (
     <HeroMotion
@@ -104,7 +117,6 @@ export function HomeHero({
         />
       }
     >
-      <div className="commerce-hero__veil" />
       <Container className="commerce-hero__content">
         <Reveal className="commerce-hero__copy">
           {section.subtitle ? (
@@ -117,6 +129,21 @@ export function HomeHero({
             <p className="commerce-hero__description">{section.text}</p>
           ) : null}
           <HeroPartSearch products={products} />
+          <div className="commerce-hero__contacts">
+            {phone ? (
+              <a href={`tel:${phone.replace(/[^\d+]/gu, "")}`}>
+                <Phone aria-hidden="true" />
+                {phone}
+              </a>
+            ) : null}
+            {messengers.map((channel) => (
+              <a href={channel.url!} key={channel.id}>
+                <MessageCircle aria-hidden="true" />
+                {channel.label}
+              </a>
+            ))}
+            <Link href="#consultation">Отправить запрос</Link>
+          </div>
           <small>
             {settingString(section.settings, "disclaimer") ?? BRAND_DISCLAIMER}
           </small>

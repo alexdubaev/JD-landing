@@ -131,7 +131,9 @@ describe("HomePageView", () => {
   it("renders CMS sections with catalog data and accessible entry points", () => {
     render(
       <HomePageView
+        articles={[]}
         categories={categories}
+        contacts={[]}
         faq={faq}
         page={page}
         products={products}
@@ -158,5 +160,65 @@ describe("HomePageView", () => {
     expect(
       screen.getByRole("button", { name: "Как отправить запрос?" }),
     ).toBeInTheDocument();
+  });
+
+  it("omits homepage SEO copy and renders one combined contact form hub", () => {
+    const extraSections: ContentPage["sections"] = [
+      {
+        id: "seo",
+        type: "seo_text",
+        title: "Не показывать",
+        subtitle: null,
+        text: "Скрытый SEO-текст главной",
+        imageId: null,
+        buttonText: null,
+        buttonUrl: null,
+        items: [],
+        settings: {},
+        sortOrder: 8,
+      },
+      {
+        id: "contacts",
+        type: "contacts",
+        title: "Свяжитесь с нами",
+        subtitle: null,
+        text: "Контактные данные",
+        imageId: null,
+        buttonText: null,
+        buttonUrl: null,
+        items: [],
+        settings: {},
+        sortOrder: 9,
+      },
+      {
+        id: "lead",
+        type: "lead_form",
+        title: "Оставьте заявку",
+        subtitle: null,
+        text: "Форма",
+        imageId: null,
+        buttonText: null,
+        buttonUrl: null,
+        items: [],
+        settings: {},
+        sortOrder: 10,
+      },
+    ];
+    const { container } = render(
+      <HomePageView
+        articles={[]}
+        categories={categories}
+        contacts={[]}
+        faq={faq}
+        page={{ ...page, sections: [...page.sections, ...extraSections] }}
+        products={products}
+        settings={settings}
+      />,
+    );
+
+    expect(screen.queryByText("Скрытый SEO-текст главной")).not.toBeInTheDocument();
+    expect(container.querySelectorAll("#consultation")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Свяжитесь с нами" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Оставьте заявку" })).toBeInTheDocument();
   });
 });

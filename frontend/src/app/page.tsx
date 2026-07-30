@@ -6,7 +6,9 @@ import {
   getFeaturedProducts,
   getHomepageCategories,
 } from "@/lib/directus/catalog";
+import { getFeaturedArticles } from "@/lib/directus/articles";
 import {
+  getContacts,
   getFaqItems,
   getHomePage,
   getSiteSettings,
@@ -39,6 +41,8 @@ export default async function HomePage() {
   return (
     <HomePageView
       categories={data.categories}
+      articles={data.articles}
+      contacts={data.contacts}
       faq={faq}
       page={data.page}
       products={data.products}
@@ -49,13 +53,15 @@ export default async function HomePage() {
 
 async function loadHomePageData() {
   try {
-    const [page, settings, categories, products] = await Promise.all([
+    const [page, settings, categories, products, articles, contacts] = await Promise.all([
       getHomePage(),
       getSiteSettings(),
       getHomepageCategories(),
-      getFeaturedProducts(8),
+      getFeaturedProducts(5),
+      getFeaturedArticles(3),
+      getContacts(),
     ]);
-    return { page, settings, categories, products };
+    return { page, settings, categories, products, articles, contacts };
   } catch (error) {
     console.error("Failed to load homepage CMS data", error);
     return null;

@@ -9,6 +9,7 @@ const requiredCollections = [
   "page_sections",
   "navigation_items",
   "categories",
+  "articles",
   "products",
   "faq_items",
   "lead_forms",
@@ -60,7 +61,7 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 20);
+  assert.equal(names.length, 21);
   assert.ok(names.length <= 25);
 });
 
@@ -81,6 +82,7 @@ test("keeps editorial collections translation-ready without junction tables", ()
     "page_sections",
     "navigation_items",
     "categories",
+    "articles",
     "products",
     "faq_items",
     "lead_forms",
@@ -104,6 +106,42 @@ test("keeps editorial collections translation-ready without junction tables", ()
       (field) => field.name === "translations",
     );
     assert.equal(translations?.type, "json", `${name}.translations`);
+  }
+});
+
+test("categories expose dedicated compact icon fields", () => {
+  const categories = schemaBlueprint.collections.find(
+    ({ name }) => name === "categories",
+  );
+  const fields = new Set(categories.fields.map(({ name }) => name));
+  assert.ok(fields.has("icon"));
+  assert.ok(fields.has("icon_alt"));
+});
+
+test("articles contain publishing, cover, content and SEO fields", () => {
+  const articles = schemaBlueprint.collections.find(
+    ({ name }) => name === "articles",
+  );
+  const fields = new Set(articles.fields.map(({ name }) => name));
+  for (const field of [
+    "status",
+    "title",
+    "slug",
+    "excerpt",
+    "content",
+    "cover_image",
+    "image_alt",
+    "published_at",
+    "is_featured",
+    "sort_order",
+    "seo_title",
+    "seo_description",
+    "og_image",
+    "translations",
+    "created_at",
+    "updated_at",
+  ]) {
+    assert.ok(fields.has(field), `missing articles.${field}`);
   }
 });
 

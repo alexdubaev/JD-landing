@@ -59,6 +59,7 @@ type RawSection = {
 
 const sectionTypes = new Set<SectionType>([
   "advantages",
+  "articles",
   "categories",
   "contacts",
   "cta",

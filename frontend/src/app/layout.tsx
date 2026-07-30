@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { RouteTransition } from "@/components/motion/RouteTransition";
 import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/brand";
-import { getNavigation, getSiteSettings } from "@/lib/directus/content";
+import { getContacts, getNavigation, getSiteSettings } from "@/lib/directus/content";
 import type { NavigationItem, SiteSettings } from "@/types/content";
 
 import "./globals.css";
@@ -23,22 +23,27 @@ export const metadata: Metadata = {
 async function getLayoutContent(): Promise<{
   navigation: NavigationItem[];
   settings: SiteSettings | null;
+  phone: string | null;
 }> {
   try {
-    const [navigation, settings] = await Promise.all([
+    const [navigation, settings, contacts] = await Promise.all([
       getNavigation(),
       getSiteSettings(),
+      getContacts(),
     ]);
-    return { navigation, settings };
+    const phone =
+      contacts.find((channel) => channel.type === "phone")?.value ??
+      settings.phone;
+    return { navigation, settings, phone };
   } catch {
-    return { navigation: [], settings: null };
+    return { navigation: [], settings: null, phone: null };
   }
 }
 
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { navigation, settings } = await getLayoutContent();
+  const { navigation, phone, settings } = await getLayoutContent();
 
   return (
     <html data-scroll-behavior="smooth" lang="ru">
@@ -52,7 +57,7 @@ export default async function RootLayout({
             email={settings?.email}
             logoId={settings?.logoId}
             navigation={navigation}
-            phone={settings?.phone}
+            phone={phone}
           />
           <RouteTransition>{children}</RouteTransition>
           <Footer

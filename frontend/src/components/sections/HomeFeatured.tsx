@@ -29,7 +29,7 @@ export function HomeFeatured({
             <ArrowRight aria-hidden="true" />
           </Link>
         </Reveal>
-        <ProductGrid headingLevel={3} products={products} />
+        <ProductGrid headingLevel={3} products={products.slice(0, 5)} variant="homepage" />
       </Container>
     </section>
   );

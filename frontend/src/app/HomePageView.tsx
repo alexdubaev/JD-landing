@@ -1,104 +1,95 @@
-import { HomeBenefits } from "@/components/sections/HomeBenefits";
+import { HomeArticles } from "@/components/sections/HomeArticles";
 import { HomeCategories } from "@/components/sections/HomeCategories";
-import {
-  HomeContacts,
-  HomeCta,
-  HomeFaq,
-  HomeLeadForm,
-  HomeSeoText,
-} from "@/components/sections/HomeContentSections";
+import { HomeContactHub } from "@/components/sections/HomeContactHub";
+import { HomeFaq } from "@/components/sections/HomeContentSections";
 import { HomeFeatured } from "@/components/sections/HomeFeatured";
 import { HomeHero } from "@/components/sections/HomeHero";
 import { HomeSelection } from "@/components/sections/HomeSelection";
-import type { Category, ProductCardData } from "@/types/catalog";
 import type {
+  ArticleCardData,
+  Category,
+  ProductCardData,
+} from "@/types/catalog";
+import type {
+  ContactChannel,
   ContentPage,
   FaqItem,
   PageSection,
+  SectionType,
   SiteSettings,
 } from "@/types/content";
 
-function SectionRenderer({
-  categories,
-  faq,
-  page,
-  products,
-  section,
-  settings,
-  benefitsSection,
-}: {
-  categories: Category[];
-  faq: FaqItem[];
-  page: ContentPage;
-  products: ProductCardData[];
-  section: PageSection;
-  settings: SiteSettings;
-  benefitsSection: PageSection | null;
-}) {
-  switch (section.type) {
-    case "hero":
-      return (
-        <HomeHero
-          benefitsSection={benefitsSection}
-          h1={page.h1}
-          products={products}
-          section={section}
-        />
-      );
-    case "advantages":
-      return <HomeBenefits section={section} />;
-    case "categories":
-      return <HomeCategories categories={categories} section={section} />;
-    case "featured_products":
-      return <HomeFeatured products={products} section={section} />;
-    case "process":
-      return <HomeSelection section={section} />;
-    case "cta":
-      return <HomeCta section={section} />;
-    case "seo_text":
-      return <HomeSeoText pageText={page.seoText} section={section} />;
-    case "faq":
-      return <HomeFaq faq={faq} section={section} />;
-    case "contacts":
-      return <HomeContacts section={section} settings={settings} />;
-    case "lead_form":
-      return <HomeLeadForm section={section} />;
-  }
-}
+const fallbackSection = (
+  type: SectionType,
+  title: string,
+  sortOrder: number,
+): PageSection => ({
+  id: `fallback-${type}`,
+  type,
+  title,
+  subtitle: null,
+  text: null,
+  imageId: null,
+  buttonText: null,
+  buttonUrl: null,
+  items: [],
+  settings: {},
+  sortOrder,
+});
 
 export function HomePageView({
+  articles,
   categories,
+  contacts,
   faq,
   page,
   products,
   settings,
 }: {
+  articles: ArticleCardData[];
   categories: Category[];
+  contacts: ContactChannel[];
   faq: FaqItem[];
   page: ContentPage;
   products: ProductCardData[];
   settings: SiteSettings;
 }) {
-  const heroSection = page.sections.find((section) => section.type === "hero");
-  const benefitsSection =
-    page.sections.find((section) => section.type === "advantages") ?? null;
+  const find = (type: SectionType) =>
+    page.sections.find((section) => section.type === type);
+  const hero = find("hero") ?? fallbackSection("hero", page.h1, 0);
+  const categoriesSection =
+    find("categories") ?? fallbackSection("categories", "Категории продукции", 1);
+  const featured =
+    find("featured_products") ??
+    fallbackSection("featured_products", "Избранные товары", 2);
+  const process =
+    find("process") ?? fallbackSection("process", "Как происходит подбор", 3);
+  const articleSection =
+    find("articles") ?? fallbackSection("articles", "Практические статьи", 4);
+  const faqSection =
+    find("faq") ?? fallbackSection("faq", "Вопросы и ответы", 5);
 
   return (
     <main className="home-page" id="main-content">
-      {page.sections.map((section) =>
-        heroSection && section.type === "advantages" ? null : (
-          <SectionRenderer
-            benefitsSection={benefitsSection}
-            categories={categories}
-            faq={faq}
-            key={section.id}
-            page={page}
-            products={products}
-            section={section}
-            settings={settings}
-          />
-        ),
-      )}
+      <HomeHero
+        benefitsSection={find("advantages") ?? null}
+        contacts={contacts}
+        h1={page.h1}
+        products={products}
+        section={hero}
+        settings={settings}
+      />
+      <HomeCategories categories={categories.slice(0, 12)} section={categoriesSection} />
+      <HomeFeatured products={products.slice(0, 5)} section={featured} />
+      <HomeSelection ctaSection={find("cta")} section={process} />
+      <HomeArticles articles={articles.slice(0, 3)} section={articleSection} />
+      <HomeFaq faq={faq} section={faqSection} />
+      <HomeContactHub
+        contactSection={find("contacts")}
+        contacts={contacts}
+        formSection={find("lead_form")}
+        settings={settings}
+      />
     </main>
   );
 }

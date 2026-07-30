@@ -9,8 +9,10 @@ import type { NavigationItem } from "./types";
 
 export function MobileNavigation({
   navigation,
+  phone,
 }: {
   navigation: NavigationItem[];
+  phone?: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -48,6 +50,11 @@ export function MobileNavigation({
                 {item.label}
               </Link>
             ))}
+            {phone ? (
+              <a href={`tel:${phone.replace(/[^\d+]/gu, "")}`} onClick={() => setIsOpen(false)}>
+                {phone}
+              </a>
+            ) : null}
             <Link href="/contacts#consultation" onClick={() => setIsOpen(false)}>
               Оставить заявку
             </Link>

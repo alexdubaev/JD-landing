@@ -16,7 +16,7 @@ describe("motion primitives", () => {
     );
 
     const reveal = screen.getByText("Важный контент").parentElement;
-    expect(reveal).toHaveAttribute("data-motion", "reveal");
+    expect(reveal).toHaveAttribute("data-motion", "reveal-static");
     expect(reveal).toHaveAttribute("data-motion-direction", "up");
     expect(reveal).not.toHaveStyle({ filter: "blur(6px)" });
     expect(reveal?.getAttribute("style") ?? "").not.toContain("scale");

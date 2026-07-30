@@ -24,6 +24,8 @@ export type Category = {
   description: string | null;
   imageId: string | null;
   imageAlt: string | null;
+  iconId?: string | null;
+  iconAlt?: string | null;
   h1: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -81,4 +83,30 @@ export type PageSeo = {
   ogImageId: string | null;
   canonicalUrl: string | null;
   isIndexable: boolean;
+};
+
+export type ArticleCardData = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  coverImageId: string | null;
+  imageAlt: string | null;
+  publishedAt: string;
+};
+
+export type Article = ArticleCardData & {
+  content: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  ogImageId: string | null;
+  updatedAt: string | null;
+};
+
+export type ArticlePage = {
+  items: ArticleCardData[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };

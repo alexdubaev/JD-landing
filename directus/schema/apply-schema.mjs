@@ -262,7 +262,22 @@ export async function applyBlueprint(client, blueprint, { dryRun = false } = {})
   }
 
   for (const [collection, items] of Object.entries(blueprint.seed)) {
+    const isSingleton = blueprint.collections.some(
+      (item) => item.name === collection && item.singleton,
+    );
     for (const item of items) {
+      if (isSingleton) {
+        const existingSingleton = await client.request(`/items/${collection}`);
+        if (existingSingleton?.id) continue;
+        actions.push(`seed ${collection}.singleton`);
+        if (!dryRun) {
+          await client.request(`/items/${collection}`, {
+            method: "PATCH",
+            body: JSON.stringify(item),
+          });
+        }
+        continue;
+      }
       const primary = item.code ?? item.id;
       const primaryField = item.code !== undefined ? "code" : "id";
       const query = new URLSearchParams({

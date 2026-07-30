@@ -28,6 +28,8 @@ type RawCategory = {
   description: string | null;
   image: FileRelation;
   image_alt: string | null;
+  icon: FileRelation;
+  icon_alt: string | null;
   h1: string | null;
   seo_title: string | null;
   seo_description: string | null;
@@ -104,6 +106,8 @@ const mapCategory = (raw: RawCategory): Category => ({
   description: raw.description,
   imageId: fileId(raw.image),
   imageAlt: raw.image_alt,
+  iconId: fileId(raw.icon),
+  iconAlt: raw.icon_alt,
   h1: raw.h1,
   seoTitle: raw.seo_title,
   seoDescription: raw.seo_description,
@@ -148,6 +152,8 @@ const categoryFields = [
   "description",
   "image",
   "image_alt",
+  "icon",
+  "icon_alt",
   "h1",
   "seo_title",
   "seo_description",
@@ -212,7 +218,7 @@ export async function getHomepageCategories(): Promise<Category[]> {
 }
 
 export async function getFeaturedProducts(
-  limit = 8,
+  limit = 5,
 ): Promise<ProductCardData[]> {
   const safeLimit = Math.min(12, Math.max(1, Math.floor(limit)));
   const query = queryString({

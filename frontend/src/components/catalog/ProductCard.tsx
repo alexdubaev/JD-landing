@@ -31,15 +31,17 @@ const formatPrice = (product: ProductCardData) => {
 export function ProductCard({
   headingLevel = 2,
   product,
+  variant = "catalog",
 }: {
   headingLevel?: 2 | 3;
   product: ProductCardData;
+  variant?: "homepage" | "catalog";
 }) {
   const Heading = headingLevel === 3 ? "h3" : "h2";
   const imageUrl = directusAssetUrl(product.mainImageId, {
     width: 720,
-    height: 540,
-    fit: "contain",
+    height: 450,
+    fit: "cover",
     quality: 82,
     format: "webp",
   });
@@ -49,7 +51,7 @@ export function ProductCard({
 
   return (
     <InteractiveCard className="product-card-motion">
-      <article className="product-card">
+      <article className={`product-card product-card--${variant}`}>
       <div className="product-card__media">
         {imageUrl ? (
           <Image
@@ -84,7 +86,7 @@ export function ProductCard({
           <Link href={productUrl}>{product.title}</Link>
         </Heading>
         <p className="product-card__sku">Артикул: {product.sku}</p>
-        {product.shortDescription ? (
+        {variant === "catalog" && product.shortDescription ? (
           <p className="product-card__description">
             {product.shortDescription}
           </p>

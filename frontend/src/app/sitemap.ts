@@ -4,6 +4,7 @@ import {
   getCategories,
   getProductSitemapEntries,
 } from "@/lib/directus/catalog";
+import { getArticleSitemapEntries } from "@/lib/directus/articles";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = (
@@ -12,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPaths = [
     "",
     "/catalog",
+    "/articles",
     "/about",
     "/delivery",
     "/contacts",
@@ -24,9 +26,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const [categories, products] = await Promise.all([
+    const [categories, products, articles] = await Promise.all([
       getCategories(),
       getProductSitemapEntries(),
+      getArticleSitemapEntries(),
     ]);
     result.push(
       ...categories.map((category) => ({
@@ -41,6 +44,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           : undefined,
         changeFrequency: "weekly" as const,
         priority: 0.7,
+      })),
+      ...articles.map((article) => ({
+        url: `${origin}/articles/${article.slug}`,
+        lastModified: article.updated_at
+          ? new Date(article.updated_at)
+          : undefined,
+        changeFrequency: "monthly" as const,
+        priority: 0.6,
       })),
     );
   } catch {

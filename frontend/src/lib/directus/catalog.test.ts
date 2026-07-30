@@ -24,15 +24,37 @@ describe("catalog queries", () => {
     vi.clearAllMocks();
   });
 
-  it("loads only published categories", async () => {
-    requestMock.mockResolvedValue([]);
+  it("loads only published categories and maps their icon", async () => {
+    requestMock.mockResolvedValue([
+      {
+        id: "engine",
+        title: "Двигатель",
+        slug: "engine",
+        parent: null,
+        description: null,
+        image: null,
+        image_alt: null,
+        icon: "icon-file",
+        icon_alt: "Поршень и коленвал",
+        h1: null,
+        seo_title: null,
+        seo_description: null,
+        seo_text: null,
+        og_image: null,
+      },
+    ]);
 
-    await getCategories();
+    const categories = await getCategories();
 
     const [path] = requestMock.mock.calls[0];
     const url = new URL(path, "https://cms.example.test");
     expect(url.searchParams.get("filter[status][_eq]")).toBe("published");
     expect(url.searchParams.get("sort")).toBe("sort_order,title");
+    expect(url.searchParams.get("fields")).toContain("icon_alt");
+    expect(categories[0]).toMatchObject({
+      iconId: "icon-file",
+      iconAlt: "Поршень и коленвал",
+    });
   });
 
   it("encodes catalog search, filters, sorting, and pagination", async () => {
@@ -80,10 +102,10 @@ describe("catalog queries", () => {
   it("loads featured homepage products with a bounded result size", async () => {
     requestMock.mockResolvedValue([]);
 
-    await getFeaturedProducts(8);
+    await getFeaturedProducts();
 
     const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
     expect(url.searchParams.get("filter[is_featured][_eq]")).toBe("true");
-    expect(url.searchParams.get("limit")).toBe("8");
+    expect(url.searchParams.get("limit")).toBe("5");
   });
 });
