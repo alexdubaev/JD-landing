@@ -220,6 +220,7 @@ async function ensureHomePage(client) {
       status: "published",
       title: "Каталог комплектующих John Deere",
       slug: "home",
+      page_type: "home",
       h1: "Запчасти и комплектующие John Deere",
       seo_title: "Каталог комплектующих John Deere — DEERE-SHOP",
       seo_description: "Каталог деталей и подбор комплектующих John Deere по артикулу, модели техники и фотографии маркировки.",
