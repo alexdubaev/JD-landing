@@ -5,6 +5,13 @@ import type { Category, ProductCardData } from "@/types/catalog";
 import type { ContentPage, FaqItem, SiteSettings } from "@/types/content";
 
 import { HomePageView } from "./HomePageView";
+import { dynamic as homePageDynamic } from "./page";
+
+describe("HomePage runtime rendering", () => {
+  it("reads CMS content at request time in production containers", () => {
+    expect(homePageDynamic).toBe("force-dynamic");
+  });
+});
 
 const page: ContentPage = {
   id: "home",
