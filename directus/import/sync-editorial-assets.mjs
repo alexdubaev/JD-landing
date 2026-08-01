@@ -311,9 +311,18 @@ export async function syncEditorialAssets(client) {
   }
 
   const home = await ensureHomePage(client);
+  const heroAssetId = await uploadAsset(
+    client,
+    manifest.homeHero.file,
+    "home-hero:deere-shop-v2",
+  );
 
   for (const section of homeSections) {
-    await upsertPageSection(client, home.id, section);
+    await upsertPageSection(
+      client,
+      home.id,
+      section.section_type === "hero" ? { ...section, image: heroAssetId } : section,
+    );
   }
 
   const faqItems = [

@@ -9,6 +9,12 @@ const manifest = JSON.parse(
   await readFile(resolve(root, "manifest.json"), "utf8"),
 );
 
+test("home hero manifest points to a local WebP asset", async () => {
+  assert.equal(manifest.homeHero.file, "home-hero.webp");
+  assert.ok(manifest.homeHero.alt.length > 10);
+  await access(resolve(root, manifest.homeHero.file));
+});
+
 test("category icon manifest contains one unique asset per category", async () => {
   assert.equal(manifest.categoryIcons.length, 19);
   assert.equal(

@@ -20,6 +20,10 @@
     { "slug": "uplotneniya-i-prokladki", "file": "category-icons/uplotneniya-i-prokladki.webp", "alt": "Техническая иллюстрация уплотнения и прокладки" },
     { "slug": "elektrika", "file": "category-icons/elektrika.webp", "alt": "Техническая иллюстрация генератора и электрического разъёма" }
   ],
+  "homeHero": {
+    "file": "home-hero.webp",
+    "alt": "Техника John Deere в поле"
+  },
   "articleCovers": [
     { "slug": "kak-podgotovit-dannye-dlya-podbora-zapchasti-john-deere", "file": "article-covers/prepare-data.webp", "alt": "Подготовка данных и фото маркировки для подбора запчасти" },
     { "slug": "gde-iskat-artikul-i-markirovku-na-detali", "file": "article-covers/find-part-number.webp", "alt": "Поиск маркировочной таблички на корпусе детали" },

@@ -90,8 +90,8 @@ export function HomeHero({
         fit: "cover",
         quality: 88,
         format: "webp",
-      }) ?? "/images/home/deere-shop-hero.png")
-    : "/images/home/deere-shop-hero.png";
+      }) ?? "/images/home/deere-shop-hero.webp")
+    : "/images/home/deere-shop-hero.webp";
   const benefits = (benefitsSection?.items ?? []).filter(isBenefit).slice(0, 4);
   const phone =
     contacts.find((channel) => channel.type === "phone")?.value ?? settings.phone;
