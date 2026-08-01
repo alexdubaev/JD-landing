@@ -7,6 +7,7 @@ import type {
   HeroBlock,
   NavigationItem,
   PageSection,
+  RecentSupply,
   SectionType,
   SiteSettings,
   SeoTextBlock,
@@ -18,7 +19,10 @@ import { directusRequest } from "./client";
 type FileRelation = string | { id: string } | null;
 
 type RawSiteSettings = {
+  city: string | null;
+  company_image: FileRelation;
   company_name: string | null;
+  documents_url: string | null;
   phone: string | null;
   email: string | null;
   address: string | null;
@@ -29,7 +33,14 @@ type RawSiteSettings = {
   primary_cta_text: string | null;
   primary_cta_url: string | null;
   footer_text: string | null;
+  inn: string | null;
+  kpp: string | null;
+  legal_address: string | null;
+  legal_name: string | null;
   messengers: unknown;
+  ogrn: string | null;
+  requisites_url: string | null;
+  vat_info: string | null;
 };
 
 type RawPage = {
@@ -91,12 +102,15 @@ const queryString = (parameters: Record<string, string | undefined>) => {
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   const raw = await directusRequest<RawSiteSettings>(
-    "/items/site_settings?fields=company_name,phone,email,address,working_hours,logo,primary_color,accent_color,primary_cta_text,primary_cta_url,footer_text,messengers",
+    "/items/site_settings?fields=company_name,phone,email,address,working_hours,logo,primary_color,accent_color,primary_cta_text,primary_cta_url,footer_text,messengers,legal_name,vat_info,requisites_url,documents_url,company_image,city,inn,kpp,ogrn,legal_address",
     { next: { revalidate: 300, tags: ["site-settings"] } },
   );
 
   return {
+    city: raw.city,
+    companyImageId: fileId(raw.company_image),
     companyName: raw.company_name?.trim() || BRAND_NAME,
+    documentsUrl: raw.documents_url,
     phone: raw.phone,
     email: raw.email,
     address: raw.address,
@@ -107,7 +121,14 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     primaryCtaText: raw.primary_cta_text,
     primaryCtaUrl: raw.primary_cta_url,
     footerText: raw.footer_text,
+    inn: raw.inn,
+    kpp: raw.kpp,
+    legalAddress: raw.legal_address,
+    legalName: raw.legal_name,
     messengers: toItems(raw.messengers),
+    ogrn: raw.ogrn,
+    requisitesUrl: raw.requisites_url,
+    vatInfo: raw.vat_info,
   };
 }
 
@@ -234,7 +255,9 @@ export async function getHeroBlock(
       image: FileRelation;
       image_alt: string | null;
       primary_cta_text: string | null;
-      primary_cta_url: string | null;
+  primary_cta_url: string | null;
+  requisites_url: string | null;
+  vat_info: string | null;
       secondary_cta_text: string | null;
       secondary_cta_url: string | null;
       disclaimer: string | null;
@@ -288,6 +311,48 @@ export async function getContacts(): Promise<ContactChannel[]> {
     url: item.url,
     icon: item.icon,
   }));
+}
+
+export async function getRecentSupplies(): Promise<RecentSupply[]> {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    fields: "id,image,image_alt,equipment_type,positions,region,delivery_term,supply_format,supplied_at",
+    sort: "-supplied_at,sort_order",
+    limit: "12",
+  });
+  const items = await directusRequest<Array<{
+    id: string;
+    image: FileRelation;
+    image_alt: string | null;
+    equipment_type: string | null;
+    positions: unknown;
+    region: string | null;
+    delivery_term: string | null;
+    supply_format: string | null;
+    supplied_at: string | null;
+  }>>(`/items/recent_supplies?${query}`, {
+    next: { revalidate: 300, tags: ["recent-supplies"] },
+  });
+  return items.map((item) => ({
+    alt: item.image_alt,
+    deliveryTerm: item.delivery_term,
+    equipmentType: item.equipment_type,
+    id: item.id,
+    imageId: fileId(item.image),
+    positions: toItems(item.positions).filter(
+      (position): position is string => typeof position === "string",
+    ),
+    region: item.region,
+    suppliedAt: item.supplied_at,
+    supplyFormat: item.supply_format,
+  })).filter((supply) => Boolean(
+    supply.imageId ||
+      supply.equipmentType ||
+      supply.positions.length ||
+      supply.region ||
+      supply.deliveryTerm ||
+      supply.supplyFormat,
+  ));
 }
 
 export async function getSeoTextBlock({

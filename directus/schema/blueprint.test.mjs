@@ -20,6 +20,7 @@ const requiredCollections = [
   "advantages",
   "cta_blocks",
   "contact_channels",
+  "recent_supplies",
   "seo_text_blocks",
   "product_images",
   "product_specifications",
@@ -64,8 +65,21 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 21);
+  assert.equal(names.length, 22);
   assert.ok(names.length <= 25);
+});
+
+test("stores factual company fields and translation-ready recent supplies", () => {
+  const settings = schemaBlueprint.collections.find(({ name }) => name === "site_settings");
+  const settingFields = new Set(settings.fields.map(({ name }) => name));
+  for (const field of ["legal_name", "vat_info", "requisites_url", "documents_url", "company_image", "city", "inn", "kpp", "ogrn", "legal_address"]) {
+    assert.ok(settingFields.has(field), `missing site_settings.${field}`);
+  }
+  const supplies = schemaBlueprint.collections.find(({ name }) => name === "recent_supplies");
+  const supplyFields = new Set(supplies.fields.map(({ name }) => name));
+  for (const field of ["status", "image", "image_alt", "equipment_type", "positions", "region", "delivery_term", "supply_format", "supplied_at", "sort_order", "translations"]) {
+    assert.ok(supplyFields.has(field), `missing recent_supplies.${field}`);
+  }
 });
 
 test("seeds the DEERE-SHOP singleton brand settings", () => {
@@ -95,6 +109,7 @@ test("keeps editorial collections translation-ready without junction tables", ()
     "advantages",
     "cta_blocks",
     "contact_channels",
+    "recent_supplies",
     "seo_text_blocks",
     "product_images",
     "product_specifications",

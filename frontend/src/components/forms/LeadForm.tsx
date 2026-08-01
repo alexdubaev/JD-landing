@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
+import { trackEvent } from "@/lib/analytics";
+
 export function LeadForm({
   categoryId,
   productId,
@@ -36,7 +38,12 @@ export function LeadForm({
         utm_term: attribution.get("utm_term") ?? undefined,
       }),
     }).catch(() => null);
-    setState(response?.ok ? "success" : "error");
+    if (response?.ok) {
+      trackEvent("lead_submit", { source: "lead_form" });
+      setState("success");
+      return;
+    }
+    setState("error");
   }
 
   if (state === "success") {

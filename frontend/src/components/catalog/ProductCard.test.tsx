@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import type { ProductCardData } from "@/types/catalog";
 
@@ -28,6 +28,7 @@ const product = {
 } as ProductCardData;
 
 describe("ProductCard", () => {
+  afterEach(() => delete window.dataLayer);
   it("renders a fixed price, SKU, image, and catalog links", () => {
     render(<ProductCard product={product} />);
 
@@ -68,6 +69,15 @@ describe("ProductCard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Убрать из запроса" }));
     expect(localStorage.getItem("deere-shop:product-request-list")).toBe("[]");
+  });
+
+  it("tracks opening a product card", () => {
+    window.dataLayer = [];
+    render(<ProductCard product={product} />);
+    const details = screen.getByRole("link", { name: "Подробнее" });
+    details.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(details);
+    expect(window.dataLayer).toContainEqual({ event: "product_open", product_id: "product-1" });
   });
 
   it("renders request pricing and a safe missing-image fallback", () => {

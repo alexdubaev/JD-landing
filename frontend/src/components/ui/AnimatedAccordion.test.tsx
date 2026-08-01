@@ -1,35 +1,31 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { AnimatedAccordion } from "./AnimatedAccordion";
 
-const items = [
-  {
-    id: "delivery",
-    question: "Как выполняется доставка?",
-    answer: "Способ и срок согласовываются с менеджером.",
-  },
-];
-
 describe("AnimatedAccordion", () => {
-  it("announces and reveals an answer from an accessible button", async () => {
-    render(<AnimatedAccordion items={items} />);
+  it("keeps every FAQ answer in the initial HTML and opens only one panel", () => {
+    render(
+      <AnimatedAccordion
+        items={[
+          { id: "vat", question: "Работаете ли вы с НДС?", answer: "Условия уточняются в запросе." },
+          { id: "delivery", question: "Доставляете ли вы по России?", answer: "Способ отправки согласуется отдельно." },
+        ]}
+      />,
+    );
 
-    const trigger = screen.getByRole("button", {
-      name: "Как выполняется доставка?",
-    });
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(
-      screen.queryByText("Способ и срок согласовываются с менеджером."),
-    ).not.toBeInTheDocument();
+    const vat = screen.getByRole("button", { name: "Работаете ли вы с НДС?" });
+    const delivery = screen.getByRole("button", { name: "Доставляете ли вы по России?" });
 
-    fireEvent.click(trigger);
+    expect(screen.getByText("Условия уточняются в запросе.")).toBeInTheDocument();
+    expect(screen.getByText("Способ отправки согласуется отдельно.")).toBeInTheDocument();
+    expect(vat).toHaveAttribute("aria-expanded", "false");
 
-    expect(trigger).toHaveAttribute("aria-expanded", "true");
-    await waitFor(() => {
-      expect(
-        screen.getByText("Способ и срок согласовываются с менеджером."),
-      ).toBeVisible();
-    });
+    fireEvent.click(vat);
+    expect(vat).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(delivery);
+    expect(vat).toHaveAttribute("aria-expanded", "false");
+    expect(delivery).toHaveAttribute("aria-expanded", "true");
   });
 });

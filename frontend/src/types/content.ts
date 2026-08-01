@@ -5,7 +5,10 @@ export type NavigationItem = {
 };
 
 export type SiteSettings = {
+  city: string | null;
+  companyImageId: string | null;
   companyName: string;
+  documentsUrl: string | null;
   phone: string | null;
   email: string | null;
   address: string | null;
@@ -16,7 +19,14 @@ export type SiteSettings = {
   primaryCtaText: string | null;
   primaryCtaUrl: string | null;
   footerText: string | null;
+  inn: string | null;
+  kpp: string | null;
+  legalAddress: string | null;
+  legalName: string | null;
   messengers: unknown[];
+  ogrn: string | null;
+  requisitesUrl: string | null;
+  vatInfo: string | null;
 };
 
 export type SectionType =
@@ -89,6 +99,18 @@ export type ContactChannel = {
   value: string;
   url: string | null;
   icon: string | null;
+};
+
+export type RecentSupply = {
+  alt: string | null;
+  deliveryTerm: string | null;
+  equipmentType: string | null;
+  id: string;
+  imageId: string | null;
+  positions: string[];
+  region: string | null;
+  suppliedAt: string | null;
+  supplyFormat: string | null;
 };
 
 export type SeoTextBlock = {

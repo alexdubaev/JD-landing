@@ -1,9 +1,12 @@
+"use client";
+
 import { ArrowRight, PackageSearch } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 import { Container } from "@/components/ui/Container";
 import { directusAssetUrl } from "@/lib/directus/assets";
+import { trackEvent } from "@/lib/analytics";
 import type { Category } from "@/types/catalog";
 import type { PageSection } from "@/types/content";
 
@@ -62,6 +65,7 @@ export function HomeCategories({
                 <Link
                   aria-label={`${category.title} — перейти в каталог`}
                   href={`/catalog/${category.slug}`}
+                  onClick={() => trackEvent("category_view", { category_id: category.id })}
                 >
                   <span className="home-category__media">
                     {image ? (

@@ -9,6 +9,10 @@ const collectionTags = {
   navigation_items: ["navigation", "homepage"],
   "contact-channels": ["contact-channels", "homepage"],
   contact_channels: ["contact-channels", "homepage"],
+  "site-settings": ["site-settings", "homepage"],
+  site_settings: ["site-settings", "homepage"],
+  "recent-supplies": ["recent-supplies", "homepage"],
+  recent_supplies: ["recent-supplies", "homepage"],
   homepage: ["homepage"],
   sitemap: ["sitemap"],
 } as const;

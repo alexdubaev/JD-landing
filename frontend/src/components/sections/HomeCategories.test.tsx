@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { Category } from "@/types/catalog";
@@ -44,6 +44,15 @@ describe("HomeCategories", () => {
         .getByRole("link", { name: "Двигатель — перейти в каталог" })
         .closest("article"),
     ).toHaveClass("home-category--text-only");
+  });
+
+  it("tracks a homepage category selection", () => {
+    window.dataLayer = [];
+    render(<HomeCategories categories={[category]} section={section} />);
+    const link = screen.getByRole("link", { name: "Двигатель — перейти в каталог" });
+    link.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(link);
+    expect(window.dataLayer).toContainEqual({ event: "category_view", category_id: "engine" });
   });
 
   it("keeps the CMS homepage order, excludes obvious misc categories and caps output", () => {

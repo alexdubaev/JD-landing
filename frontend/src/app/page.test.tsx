@@ -71,7 +71,10 @@ const page: ContentPage = {
 };
 
 const settings: SiteSettings = {
+  city: null,
+  companyImageId: null,
   companyName: "DEERE-SHOP",
+  documentsUrl: null,
   phone: "+7 900 000-00-00",
   email: "info@example.test",
   address: "Санкт-Петербург",
@@ -82,7 +85,14 @@ const settings: SiteSettings = {
   primaryCtaText: "Получить консультацию",
   primaryCtaUrl: "/contacts",
   footerText: null,
+  inn: null,
+  kpp: null,
+  legalAddress: null,
+  legalName: null,
   messengers: [],
+  ogrn: null,
+  requisitesUrl: null,
+  vatInfo: null,
 };
 
 const categories: Category[] = [
@@ -138,6 +148,7 @@ describe("HomePageView", () => {
         faq={faq}
         page={page}
         products={products}
+        supplies={[]}
         settings={settings}
       />,
     );
@@ -216,6 +227,7 @@ describe("HomePageView", () => {
         faq={faq}
         page={{ ...page, sections: [...page.sections, ...extraSections] }}
         products={products}
+        supplies={[]}
         settings={settings}
       />,
     );

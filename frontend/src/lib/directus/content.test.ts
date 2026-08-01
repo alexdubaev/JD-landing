@@ -8,6 +8,7 @@ import {
   getHomePage,
   getNavigation,
   getPageBySlug,
+  getRecentSupplies,
   getSeoTextBlock,
   getSiteSettings,
 } from "./content";
@@ -37,6 +38,16 @@ describe("content queries", () => {
       primary_cta_url: "/contacts",
       footer_text: "Поставка комплектующих",
       messengers: [],
+      legal_name: "ООО «СМ ТЕХНО»",
+      vat_info: "Работаем с НДС",
+      requisites_url: "/documents/requisites.pdf",
+      documents_url: "/documents",
+      company_image: { id: "company-image" },
+      city: "Санкт-Петербург",
+      inn: "7812345678",
+      kpp: "781201001",
+      ogrn: "1027800000000",
+      legal_address: "Санкт-Петербург, пример",
     });
 
     await expect(getSiteSettings()).resolves.toEqual(
@@ -44,6 +55,16 @@ describe("content queries", () => {
         companyName: "DEERE-SHOP",
         logoId: "logo-id",
         primaryCtaText: "Получить консультацию",
+        legalName: "ООО «СМ ТЕХНО»",
+        vatInfo: "Работаем с НДС",
+        requisitesUrl: "/documents/requisites.pdf",
+        documentsUrl: "/documents",
+        companyImageId: "company-image",
+        city: "Санкт-Петербург",
+        inn: "7812345678",
+        kpp: "781201001",
+        ogrn: "1027800000000",
+        legalAddress: "Санкт-Петербург, пример",
       }),
     );
   });
@@ -143,6 +164,26 @@ describe("content queries", () => {
     });
     const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
     expect(url.searchParams.get("filter[page][_eq]")).toBe("home");
+  });
+
+  it("loads only published recent supplies in editorial order", async () => {
+    requestMock.mockResolvedValue([{
+      id: "empty",
+      image: null,
+      image_alt: null,
+      equipment_type: null,
+      positions: [],
+      region: null,
+      delivery_term: null,
+      supply_format: null,
+      supplied_at: null,
+    }]);
+
+    await expect(getRecentSupplies()).resolves.toEqual([]);
+
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("filter[status][_eq]")).toBe("published");
+    expect(url.searchParams.get("sort")).toBe("-supplied_at,sort_order");
   });
 
   it("loads an informational page and safely skips unknown section types", async () => {

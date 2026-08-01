@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   isCompleteHomepageProduct,
+  homepageFaqItems,
   processItems,
 } from "./sync-editorial-assets.mjs";
 
@@ -47,4 +48,22 @@ test("only features products that have factual commercial fields", () => {
   assert.equal(isCompleteHomepageProduct(complete), true);
   assert.equal(isCompleteHomepageProduct({ ...complete, delivery_status: "" }), false);
   assert.equal(isCompleteHomepageProduct({ ...complete, price: null }), false);
+});
+
+test("syncs the twelve cautious homepage FAQ questions", () => {
+  assert.equal(homepageFaqItems.length, 12);
+  assert.deepEqual(homepageFaqItems.map(([question]) => question), [
+    "Работаете ли вы с НДС?",
+    "Можно ли заказать как юридическое лицо?",
+    "Какой минимальный заказ?",
+    "Доставляете ли вы по России?",
+    "Можно ли получить договор до оплаты?",
+    "Есть ли оригинальные детали и аналоги?",
+    "Как узнать срок поставки?",
+    "Можно ли заказать отсутствующую позицию?",
+    "Какие транспортные компании доступны?",
+    "Как отправить список артикулов?",
+    "Можно ли уточнить совместимость?",
+    "Что делать, если цена не указана?",
+  ]);
 });

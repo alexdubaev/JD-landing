@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Container } from "@/components/ui/Container";
+import { JsonLdSchema } from "@/components/seo/JsonLdSchema";
+import { buildHomepageStructuredData } from "@/lib/seo/home";
 import {
   getFeaturedProducts,
   getHomepageCategories,
@@ -11,6 +13,7 @@ import {
   getContacts,
   getFaqItems,
   getHomePage,
+  getRecentSupplies,
   getSiteSettings,
 } from "@/lib/directus/content";
 
@@ -38,30 +41,36 @@ export default async function HomePage() {
   }
 
   const faq = await getFaqItems({ pageId: data.page.id }).catch(() => []);
+  const schemas = buildHomepageStructuredData({ faq, settings: data.settings });
   return (
-    <HomePageView
+    <>
+      {schemas.map((schema, index) => <JsonLdSchema data={schema} key={index} />)}
+      <HomePageView
       categories={data.categories}
       articles={data.articles}
       contacts={data.contacts}
       faq={faq}
       page={data.page}
       products={data.products}
+      supplies={data.supplies}
       settings={data.settings}
-    />
+      />
+    </>
   );
 }
 
 async function loadHomePageData() {
   try {
-    const [page, settings, categories, products, articles, contacts] = await Promise.all([
+    const [page, settings, categories, products, articles, contacts, supplies] = await Promise.all([
       getHomePage(),
       getSiteSettings(),
       getHomepageCategories(),
       getFeaturedProducts(5),
       getFeaturedArticles(3),
       getContacts(),
+      getRecentSupplies().catch(() => []),
     ]);
-    return { page, settings, categories, products, articles, contacts };
+    return { page, settings, categories, products, articles, contacts, supplies };
   } catch (error) {
     console.error("Failed to load homepage CMS data", error);
     return null;

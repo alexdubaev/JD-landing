@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { InteractiveCard } from "@/components/motion/InteractiveCard";
 import { directusAssetUrl } from "@/lib/directus/assets";
+import { trackEvent } from "@/lib/analytics";
 import {
   getProductRequestList,
   PRODUCT_REQUEST_LIST_EVENT,
@@ -84,6 +85,7 @@ export function ProductCard({
     });
     setInRequest(next);
     setRequestCount(getProductRequestList().length);
+    if (next) trackEvent("product_add_to_request", { product_id: product.id });
   };
 
   const copySku = async () => {
@@ -117,6 +119,7 @@ export function ProductCard({
           <Link
             className="product-card__category"
             href={`/catalog/${product.category.slug}`}
+            onClick={() => trackEvent("category_view", { category_id: product.category?.id ?? "" })}
           >
             {product.category.title}
           </Link>
@@ -124,7 +127,7 @@ export function ProductCard({
           <span className="product-card__category">Без категории</span>
         )}
         <Heading className="product-card__title">
-          <Link href={productUrl}>{product.title}</Link>
+          <Link href={productUrl} onClick={() => trackEvent("product_open", { product_id: product.id })}>{product.title}</Link>
         </Heading>
         <p className="product-card__sku">Артикул: {product.sku}</p>
         {product.brand || product.partType ? (
@@ -152,7 +155,7 @@ export function ProductCard({
           ) : null}
         </div>
         <div className="product-card__actions">
-          <Link className="product-card__action" href={productUrl}>
+          <Link className="product-card__action" href={productUrl} onClick={() => trackEvent("product_open", { product_id: product.id })}>
             Подробнее
             <ArrowRight
               aria-hidden="true"

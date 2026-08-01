@@ -1,6 +1,8 @@
 import { HomeArticles } from "@/components/sections/HomeArticles";
 import { HomeCategories } from "@/components/sections/HomeCategories";
 import { HomeContactHub } from "@/components/sections/HomeContactHub";
+import { HomeCompanyTrust } from "@/components/sections/HomeCompanyTrust";
+import { HomeRecentSupplies } from "@/components/sections/HomeRecentSupplies";
 import { HomeFaq } from "@/components/sections/HomeContentSections";
 import { HomeFeatured } from "@/components/sections/HomeFeatured";
 import { HomeHero } from "@/components/sections/HomeHero";
@@ -16,6 +18,7 @@ import type {
   ContentPage,
   FaqItem,
   PageSection,
+  RecentSupply,
   SectionType,
   SiteSettings,
 } from "@/types/content";
@@ -45,6 +48,7 @@ export function HomePageView({
   faq,
   page,
   products,
+  supplies,
   settings,
 }: {
   articles: ArticleCardData[];
@@ -53,6 +57,7 @@ export function HomePageView({
   faq: FaqItem[];
   page: ContentPage;
   products: ProductCardData[];
+  supplies: RecentSupply[];
   settings: SiteSettings;
 }) {
   const find = (type: SectionType) =>
@@ -83,6 +88,8 @@ export function HomePageView({
       <HomePartsRequest />
       <HomeFeatured products={products.slice(0, 5)} section={featured} />
       <HomeSelection ctaSection={find("cta")} section={process} />
+      <HomeCompanyTrust settings={settings} />
+      <HomeRecentSupplies supplies={supplies} />
       <HomeArticles articles={articles.slice(0, 3)} section={articleSection} />
       <HomeFaq faq={faq} section={faqSection} />
       <HomeContactHub

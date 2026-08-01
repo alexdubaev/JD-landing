@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 
 import type { ProductCardData } from "@/types/catalog";
+import { trackEvent } from "@/lib/analytics";
 
 const productUrl = (product: ProductCardData) =>
   product.category
@@ -49,6 +50,7 @@ export function HeroPartSearch({
         action="/catalog"
         aria-label="Поиск по каталогу"
         className="hero-part-search__form"
+        onSubmit={() => trackEvent("search_submit", { query_length: query.trim().length })}
         role="search"
       >
         <Search aria-hidden="true" />
@@ -120,7 +122,7 @@ export function HeroPartSearch({
               href={productUrl(product)}
               id={`${listboxId}-option-${index}`}
               key={product.id}
-              onClick={() => setIsOpen(false)}
+              onClick={() => { setIsOpen(false); trackEvent("search_use", { source: "suggestion" }); }}
               role="option"
             >
               <strong>{product.sku}</strong>
@@ -133,9 +135,9 @@ export function HeroPartSearch({
       <div className="hero-part-search__scenarios">
         <span>Нужно проверить несколько позиций?</span>
         <div>
-          <Link href="#parts-request">Вставить список</Link>
-          <Link href="#parts-request">Загрузить Excel</Link>
-          <Link href="#parts-request">Отправить фото</Link>
+          <Link href="#parts-request" onClick={() => trackEvent("parts_list_paste")}>Вставить список</Link>
+          <Link href="#parts-request" onClick={() => trackEvent("excel_upload")}>Загрузить Excel</Link>
+          <Link href="#parts-request" onClick={() => trackEvent("photo_upload")}>Отправить фото</Link>
         </div>
       </div>
     </div>

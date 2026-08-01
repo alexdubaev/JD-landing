@@ -4,12 +4,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { LeadForm } from "./LeadForm";
 
 describe("LeadForm", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete window.dataLayer;
+  });
 
   it("submits the lead and announces success", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), { status: 201 }),
     );
+    window.dataLayer = [];
     render(<LeadForm />);
 
     fireEvent.change(screen.getByLabelText("Имя"), {
@@ -26,5 +30,6 @@ describe("LeadForm", () => {
         "Заявка отправлена",
       ),
     );
+    expect(window.dataLayer).toContainEqual({ event: "lead_submit", source: "lead_form" });
   });
 });

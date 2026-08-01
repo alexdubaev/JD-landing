@@ -80,4 +80,20 @@ describe("POST /api/revalidate", () => {
     expect(revalidateTag).toHaveBeenCalledWith("navigation", "max");
     expect(revalidateTag).toHaveBeenCalledWith("homepage", "max");
   });
+
+  it("allows company settings and recent supplies invalidation", async () => {
+    const { POST } = await import("./route");
+    for (const collection of ["site_settings", "recent_supplies"]) {
+      const response = await POST(
+        new Request("https://site.test/api/revalidate", {
+          method: "POST",
+          headers: { "x-revalidate-secret": "test-secret" },
+          body: JSON.stringify({ collection }),
+        }),
+      );
+      expect(response.status).toBe(200);
+    }
+    expect(revalidateTag).toHaveBeenCalledWith("site-settings", "max");
+    expect(revalidateTag).toHaveBeenCalledWith("recent-supplies", "max");
+  });
 });

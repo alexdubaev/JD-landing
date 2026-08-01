@@ -28,6 +28,7 @@ const websiteCollections = [
   "advantages",
   "cta_blocks",
   "contact_channels",
+  "recent_supplies",
   "seo_text_blocks",
   "product_images",
   "product_specifications",

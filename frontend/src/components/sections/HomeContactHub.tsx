@@ -2,6 +2,11 @@ import { Clock3, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 
 import { LeadForm } from "@/components/forms/LeadForm";
 import { Container } from "@/components/ui/Container";
+import {
+  ContactChannelLink,
+  MobileContactBar,
+  TrackedPhoneLink,
+} from "@/components/sections/HomeContactActions";
 import type {
   ContactChannel,
   PageSection,
@@ -21,7 +26,9 @@ export function HomeContactHub({
   formSection?: PageSection;
   settings: SiteSettings;
 }) {
-  const publishedPhones = contacts.filter((item) => item.type === "phone");
+  const communicationTypes = new Set(["phone", "email", "messenger", "telegram", "whatsapp"]);
+  const publishedChannels = contacts.filter((item) => communicationTypes.has(item.type));
+  const publishedPhones = publishedChannels.filter((item) => item.type === "phone");
   const phoneFallback =
     publishedPhones.length === 0 && settings.phone
       ? [{
@@ -33,20 +40,30 @@ export function HomeContactHub({
           icon: null,
         }]
       : [];
-  const channels = [...publishedPhones, ...phoneFallback, ...contacts.filter(
+  const channels = [...publishedPhones, ...phoneFallback, ...publishedChannels.filter(
     (item) => item.type !== "phone",
-  )];
+  )].filter((channel, index, all) =>
+    all.findIndex((item) => `${item.type}:${item.value}` === `${channel.type}:${channel.value}`) === index,
+  );
+  const primaryPhone = channels.find((channel) => channel.type === "phone");
+  const address = settings.address ?? contacts.find((item) => item.type === "address")?.value ?? null;
+  const workingHours = settings.workingHours ?? contacts.find((item) => item.type === "hours")?.value ?? null;
 
   return (
     <section className="home-section home-contact-hub" id="consultation">
       <Container className="home-contact-hub__grid">
         <div className="home-contact-hub__details">
-          {contactSection?.subtitle ? <p>{contactSection.subtitle}</p> : null}
-          <h2>{contactSection?.title ?? "Свяжитесь с нами"}</h2>
+          {contactSection?.subtitle ? <p>{contactSection.subtitle}</p> : <p>Подбор комплектующих</p>}
+          <h2>{contactSection?.title ?? "Не нашли нужную деталь?"}</h2>
           <p>
             {contactSection?.text ??
-              "Пришлите артикул, модель техники или фото маркировки — уточним данные перед оформлением запроса."}
+              "Отправьте артикул, список или фотографию маркировки. Менеджер проверит варианты поставки."}
           </p>
+          <div className="home-contact-hub__actions">
+            <a className="button button--accent" href="#contact-form">Отправить запрос</a>
+            <a className="button button--secondary" href="#parts-request">Загрузить список</a>
+            {primaryPhone ? <TrackedPhoneLink className="button button--secondary" phone={primaryPhone.value}>Позвонить</TrackedPhoneLink> : null}
+          </div>
           <address>
             {channels.map((channel) => {
               const Icon =
@@ -55,43 +72,31 @@ export function HomeContactHub({
                   : channel.type === "email"
                     ? Mail
                     : MessageCircle;
-              const href =
-                channel.url ??
-                (channel.type === "phone"
-                  ? `tel:${phoneHref(channel.value)}`
-                  : channel.type === "email"
-                    ? `mailto:${channel.value}`
-                    : null);
-              const content = (
-                <>
+              return (
+                <span key={channel.id}>
                   <Icon aria-hidden="true" />
                   <span>
                     <small>{channel.label}</small>
-                    {channel.value}
+                    <ContactChannelLink channel={channel} />
                   </span>
-                </>
-              );
-              return href ? (
-                <a href={href} key={channel.id}>{content}</a>
-              ) : (
-                <span key={channel.id}>{content}</span>
+                </span>
               );
             })}
-            {settings.address ? (
+            {address ? (
               <span>
                 <MapPin aria-hidden="true" />
-                <span><small>Адрес</small>{settings.address}</span>
+                <span><small>Адрес</small>{address}</span>
               </span>
             ) : null}
-            {settings.workingHours ? (
+            {workingHours ? (
               <span>
                 <Clock3 aria-hidden="true" />
-                <span><small>Часы работы</small>{settings.workingHours}</span>
+                <span><small>Часы работы</small>{workingHours}</span>
               </span>
             ) : null}
           </address>
         </div>
-        <div className="home-contact-hub__form">
+        <div className="home-contact-hub__form" id="contact-form">
           <p>{formSection?.subtitle ?? "Заявка на подбор"}</p>
           <h2>{formSection?.title ?? "Опишите, что нужно найти"}</h2>
           <p>
@@ -101,6 +106,7 @@ export function HomeContactHub({
           <LeadForm />
         </div>
       </Container>
+      <MobileContactBar contacts={channels} phone={primaryPhone?.value ?? null} />
     </section>
   );
 }

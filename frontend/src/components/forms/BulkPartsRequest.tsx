@@ -31,6 +31,7 @@ import {
   reconcileProductRequestDraft,
   setProductRequestList,
 } from "@/lib/leads/product-request-list";
+import { trackEvent } from "@/lib/analytics";
 
 const storageKey = "deere-shop:parts-request-draft";
 
@@ -75,8 +76,8 @@ export function BulkPartsRequest() {
       return;
     }
     setError(null);
-    if (kind === "spreadsheet") setSpreadsheet(file);
-    else setPhoto(file);
+    if (kind === "spreadsheet") { setSpreadsheet(file); trackEvent("excel_upload"); }
+    else { setPhoto(file); trackEvent("photo_upload"); }
   }
 
   function removeFile(kind: AttachmentKind) {
@@ -130,6 +131,7 @@ export function BulkPartsRequest() {
       () => null,
     );
     if (response?.ok) {
+      trackEvent("lead_submit", { source: "parts_request" });
       setState("success");
       localStorage.removeItem(storageKey);
       clearGeneratedProductRequestLines();
@@ -162,6 +164,7 @@ export function BulkPartsRequest() {
         id="parts-request-list"
         name="parts_request_draft"
         onChange={(event) => setDraft(event.target.value)}
+        onPaste={() => trackEvent("parts_list_paste")}
         placeholder={"RE504836 — 2 шт.\nAL166181 — 1 шт.\nR123456 — 4 шт."}
         rows={7}
         value={draft}
