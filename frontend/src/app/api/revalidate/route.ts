@@ -5,6 +5,8 @@ const collectionTags = {
   categories: ["categories", "homepage", "sitemap"],
   products: ["products", "homepage", "sitemap"],
   pages: ["pages", "homepage", "sitemap"],
+  "navigation-items": ["navigation", "homepage"],
+  navigation_items: ["navigation", "homepage"],
   "contact-channels": ["contact-channels", "homepage"],
   contact_channels: ["contact-channels", "homepage"],
   homepage: ["homepage"],

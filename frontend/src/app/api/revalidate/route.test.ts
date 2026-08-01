@@ -65,4 +65,19 @@ describe("POST /api/revalidate", () => {
     expect(revalidateTag).toHaveBeenCalledWith("homepage", "max");
     expect(revalidateTag).toHaveBeenCalledWith("sitemap", "max");
   });
+
+  it("revalidates the shared header after a navigation change", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("https://site.test/api/revalidate", {
+        method: "POST",
+        headers: { "x-revalidate-secret": "test-secret" },
+        body: JSON.stringify({ collection: "navigation-items" }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(revalidateTag).toHaveBeenCalledWith("navigation", "max");
+    expect(revalidateTag).toHaveBeenCalledWith("homepage", "max");
+  });
 });
