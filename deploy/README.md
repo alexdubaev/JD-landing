@@ -18,6 +18,19 @@ through `NEXT_PUBLIC_*` variables.
 The real `.env` file must exist only at `/opt/jd-landing/.env` on the VPS.
 Never commit it.
 
+## Git LFS media
+
+The production logo and hero image are stored in Git LFS. Install Git LFS once
+on the VPS and pull its objects before every image build; otherwise Docker sees
+small pointer files instead of the actual image files.
+
+```bash
+sudo apt-get update && sudo apt-get install -y git-lfs
+git lfs install
+cd /opt/jd-landing/release
+git lfs pull
+```
+
 The root domain and the server IP are reverse-proxied to the standalone
 Next.js frontend. The frontend reaches Directus only through the private
 Docker network and receives its API token as a server-only environment

@@ -374,16 +374,21 @@ export async function syncEditorialAssets(client) {
     });
   }
 
-  await upsertItem(client, "navigation_items", "url", "/articles", {
-    status: "published",
-    label: "Статьи",
-    url: "/articles",
-    location: "header",
-    open_in_new_tab: false,
-    is_visible: true,
-    sort_order: 50,
-    translations: {},
-  });
+  const navigation = [
+    { label: "Каталог", url: "/catalog", sort_order: 10 },
+    { label: "Статьи", url: "/articles", sort_order: 20 },
+    { label: "Подбор", url: "/#consultation", sort_order: 30 },
+  ];
+  for (const item of navigation) {
+    await upsertItem(client, "navigation_items", "url", item.url, {
+      status: "published",
+      location: "header",
+      open_in_new_tab: false,
+      is_visible: true,
+      translations: {},
+      ...item,
+    });
+  }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
