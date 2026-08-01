@@ -68,9 +68,15 @@ export function HeroPartSearch({
           id="hero-part-search"
           name="q"
           onChange={(event) => {
-            setQuery(event.target.value);
+            const nextQuery = event.target.value;
+            setQuery(nextQuery);
             setActiveIndex(-1);
-            setIsOpen(true);
+            if (normalizePartQuery(nextQuery).length < 2) {
+              setSuggestions([]);
+              setIsOpen(false);
+            } else {
+              setIsOpen(true);
+            }
           }}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
@@ -135,9 +141,9 @@ export function HeroPartSearch({
       <div className="hero-part-search__scenarios">
         <span>Нужно проверить несколько позиций?</span>
         <div>
-          <Link href="#parts-request" onClick={() => trackEvent("parts_list_paste")}>Вставить список</Link>
-          <Link href="#parts-request" onClick={() => trackEvent("excel_upload")}>Загрузить Excel</Link>
-          <Link href="#parts-request" onClick={() => trackEvent("photo_upload")}>Отправить фото</Link>
+          <Link href="#parts-request" onClick={() => trackEvent("parts_request_cta", { method: "paste" })}>Вставить список</Link>
+          <Link href="#parts-request" onClick={() => trackEvent("parts_request_cta", { method: "excel" })}>Загрузить Excel</Link>
+          <Link href="#parts-request" onClick={() => trackEvent("parts_request_cta", { method: "photo" })}>Отправить фото</Link>
         </div>
       </div>
     </div>

@@ -6043,3 +6043,8 @@ p {
     border-right: 0;
   }
 }
+
+.turnstile-field {
+  width: 100%;
+  max-width: 500px;
+}

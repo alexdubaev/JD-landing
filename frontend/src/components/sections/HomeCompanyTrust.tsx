@@ -4,14 +4,11 @@ import Link from "next/link";
 import { ContactChannelLink } from "@/components/sections/HomeContactActions";
 import { Container } from "@/components/ui/Container";
 import { directusAssetUrl } from "@/lib/directus/assets";
-import type { SiteSettings } from "@/types/content";
-
-const FALLBACK_TITLE =
-  "DEERE-SHOP — специализированное направление компании СМ ТЕХНО";
+import type { PageSection, SiteSettings } from "@/types/content";
 
 const hasValue = (value: string | null) => Boolean(value?.trim());
 
-export function HomeCompanyTrust({ settings }: { settings: SiteSettings }) {
+export function HomeCompanyTrust({ section, settings }: { section: PageSection; settings: SiteSettings }) {
   const details = [
     settings.legalName,
     settings.inn ? `ИНН ${settings.inn}` : null,
@@ -42,8 +39,9 @@ export function HomeCompanyTrust({ settings }: { settings: SiteSettings }) {
     <section className="home-section home-company-trust" id="company">
       <Container className="home-company-trust__grid">
         <div className="home-company-trust__details">
-          <p>О компании</p>
-          <h2>{FALLBACK_TITLE}</h2>
+          {section.subtitle ? <p>{section.subtitle}</p> : null}
+          {section.title ? <h2>{section.title}</h2> : null}
+          {section.text ? <p>{section.text}</p> : null}
           {details.length ? (
             <dl>
               {details.map((detail) => (

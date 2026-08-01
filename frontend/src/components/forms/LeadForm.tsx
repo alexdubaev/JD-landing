@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 import { trackEvent } from "@/lib/analytics";
+import { TurnstileField } from "./TurnstileField";
 
 export function LeadForm({
   categoryId,
@@ -91,6 +92,7 @@ export function LeadForm({
           <Link href="/privacy-policy">политикой конфиденциальности</Link>
         </span>
       </label>
+      <TurnstileField />
       <button
         className="button button--primary"
         disabled={state === "sending"}

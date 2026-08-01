@@ -44,7 +44,9 @@ const stringValue = (form: FormData, name: string) => {
 
 const fileValue = (form: FormData, name: string) => {
   const value = form.get(name);
-  return value instanceof File && value.size > 0 ? value : null;
+  return value !== null && typeof value !== "string" && value.size > 0
+    ? (value as File)
+    : null;
 };
 
 function parseRequestItems(value: string | undefined) {
@@ -79,6 +81,12 @@ export async function POST(request: Request) {
       .get("content-type")
       ?.toLocaleLowerCase("en")
       .includes("multipart/form-data");
+    if (isMultipart && (!Number.isFinite(contentLength) || contentLength <= 0)) {
+      return NextResponse.json(
+        { error: "Для загрузки файлов требуется известный размер запроса." },
+        { status: 411 },
+      );
+    }
     const form = isMultipart ? await request.formData() : null;
     const input = form
       ? {

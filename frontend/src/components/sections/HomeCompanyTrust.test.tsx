@@ -2,7 +2,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { HomeCompanyTrust } from "./HomeCompanyTrust";
-import type { SiteSettings } from "@/types/content";
+import type { PageSection, SiteSettings } from "@/types/content";
+
+const companySection: PageSection = {
+  id: "company", type: "company_trust", title: "DEERE-SHOP — специализированное направление компании СМ ТЕХНО",
+  subtitle: "О компании", text: null, imageId: null, buttonText: null,
+  buttonUrl: null, items: [], settings: {}, sortOrder: 1,
+};
 
 const emptySettings: SiteSettings = {
   address: null,
@@ -31,14 +37,14 @@ const emptySettings: SiteSettings = {
 
 describe("HomeCompanyTrust", () => {
   it("does not render a trust block without factual company data", () => {
-    const { container } = render(<HomeCompanyTrust settings={emptySettings} />);
+    const { container } = render(<HomeCompanyTrust section={companySection} settings={emptySettings} />);
 
     expect(container).toBeEmptyDOMElement();
   });
 
   it("does not use a city or image alone to make an unsupported company claim", () => {
     const { container } = render(
-      <HomeCompanyTrust settings={{ ...emptySettings, city: "Санкт-Петербург", companyImageId: "company-image" }} />,
+      <HomeCompanyTrust section={companySection} settings={{ ...emptySettings, city: "Санкт-Петербург", companyImageId: "company-image" }} />,
     );
 
     expect(container).toBeEmptyDOMElement();
@@ -48,6 +54,7 @@ describe("HomeCompanyTrust", () => {
     window.dataLayer = [];
     render(
       <HomeCompanyTrust
+        section={companySection}
         settings={{
           ...emptySettings,
           city: "Санкт-Петербург",

@@ -102,7 +102,7 @@ describe("BulkPartsRequest", () => {
     render(<BulkPartsRequest />);
 
     fireEvent.change(screen.getByLabelText("Список артикулов"), {
-      target: { value: "RE504836 — 2 шт.\nre504836 3" },
+      target: { value: "RE504836 — 2 шт.\nre504836 - 3" },
     });
     fireEvent.change(screen.getByLabelText("Имя"), { target: { value: "Иван" } });
     fireEvent.change(screen.getByLabelText("Телефон"), {

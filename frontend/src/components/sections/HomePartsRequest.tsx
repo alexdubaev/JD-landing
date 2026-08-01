@@ -3,28 +3,21 @@ import { Check } from "lucide-react";
 import { BulkPartsRequest } from "@/components/forms/BulkPartsRequest";
 import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
+import type { PageSection } from "@/types/content";
 
-const outcomes = [
-  "Цену по каждой позиции",
-  "Наличие",
-  "Срок поставки",
-  "Возможные замены",
-  "Оригинал или аналог",
-  "Условия доставки",
-  "Коммерческое предложение",
-];
-
-export function HomePartsRequest() {
+export function HomePartsRequest({ section }: { section: PageSection }) {
+  const cmsOutcomes = section.items.flatMap((item) => {
+    if (typeof item === "string") return [item];
+    if (item && typeof item === "object" && "title" in item && typeof item.title === "string") return [item.title];
+    return [];
+  });
   return (
     <section className="home-parts-request" id="parts-request">
       <Container>
         <Reveal className="home-parts-request__heading">
-          <p>Проверка нескольких позиций</p>
-          <h2>Проверьте список запчастей</h2>
-          <p>
-            Вставьте артикулы в поле или загрузите Excel. Мы проверим цены,
-            наличие, сроки и возможные замены.
-          </p>
+          {section.subtitle ? <p>{section.subtitle}</p> : null}
+          <h2>{section.title}</h2>
+          {section.text ? <p>{section.text}</p> : null}
         </Reveal>
         <div className="home-parts-request__grid">
           <Reveal className="home-parts-request__form" direction="left">
@@ -33,7 +26,7 @@ export function HomePartsRequest() {
           <Reveal className="home-parts-request__outcomes" direction="right">
             <p>По запросу подготовим</p>
             <ul>
-              {outcomes.map((outcome) => (
+              {cmsOutcomes.map((outcome) => (
                 <li key={outcome}>
                   <Check aria-hidden="true" />
                   {outcome}

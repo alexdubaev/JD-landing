@@ -85,11 +85,11 @@ export function HomePageView({
         settings={settings}
       />
       <HomeCategories categories={categories} section={categoriesSection} />
-      <HomePartsRequest />
+      {find("parts_request") ? <HomePartsRequest section={find("parts_request")!} /> : null}
       <HomeFeatured products={products.slice(0, 5)} section={featured} />
       <HomeSelection ctaSection={find("cta")} section={process} />
-      <HomeCompanyTrust settings={settings} />
-      <HomeRecentSupplies supplies={supplies} />
+      {find("company_trust") ? <HomeCompanyTrust section={find("company_trust")!} settings={settings} /> : null}
+      {find("recent_supplies") ? <HomeRecentSupplies section={find("recent_supplies")!} supplies={supplies} /> : null}
       <HomeArticles articles={articles.slice(0, 3)} section={articleSection} />
       <HomeFaq faq={faq} section={faqSection} />
       <HomeContactHub

@@ -7,6 +7,7 @@ export type AnalyticsEventName =
   | "lead_submit"
   | "messenger_click"
   | "parts_list_paste"
+  | "parts_request_cta"
   | "phone_click"
   | "photo_upload"
   | "product_add_to_request"

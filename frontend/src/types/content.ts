@@ -33,13 +33,16 @@ export type SectionType =
   | "advantages"
   | "articles"
   | "categories"
+  | "company_trust"
   | "contacts"
   | "cta"
   | "faq"
   | "featured_products"
   | "hero"
   | "lead_form"
+  | "parts_request"
   | "process"
+  | "recent_supplies"
   | "seo_text";
 
 export type PageSection = {

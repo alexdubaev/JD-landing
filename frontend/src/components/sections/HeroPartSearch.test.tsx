@@ -48,4 +48,16 @@ describe("HeroPartSearch", () => {
     fireEvent.keyDown(input, { key: "ArrowDown" });
     expect(input).toHaveAttribute("aria-activedescendant", option.id);
   });
+
+  it("clears stale suggestions when the normalized query becomes too short", async () => {
+    mockSuggestions();
+    render(<HeroPartSearch />);
+    const input = screen.getByRole("combobox", { name: "Артикул детали" });
+    fireEvent.change(input, { target: { value: "RE57" } });
+    expect(await screen.findByRole("option", { name: /RE57934/ })).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "R" } });
+    await waitFor(() => expect(screen.queryByRole("option")).not.toBeInTheDocument());
+    expect(input).toHaveAttribute("aria-expanded", "false");
+  });
 });

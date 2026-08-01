@@ -20,7 +20,7 @@ const parseLine = (line: string): PartsRequestItem | null => {
   if (!compact) return null;
 
   const quantityMatch = compact.match(
-    /(?:\s+-\s*|\s+)(\d{1,5})\s*(?:шт\.?|pcs?)?$/iu,
+    /(?:\s*-\s*|\s{2,})(\d{1,5})\s*(?:шт\.?|pcs?)?$/iu,
   );
   const quantity = quantityMatch ? Number(quantityMatch[1]) : 1;
   const article = normalizeArticle(

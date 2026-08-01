@@ -32,6 +32,7 @@ import {
   setProductRequestList,
 } from "@/lib/leads/product-request-list";
 import { trackEvent } from "@/lib/analytics";
+import { TurnstileField } from "./TurnstileField";
 
 const storageKey = "deere-shop:parts-request-draft";
 
@@ -234,6 +235,7 @@ export function BulkPartsRequest() {
           Согласен с <Link href="/privacy-policy">политикой конфиденциальности</Link>
         </span>
       </label>
+      <TurnstileField />
       <button className="button button--accent" disabled={state === "sending"} type="submit">
         <Upload aria-hidden="true" />
         {state === "sending" ? "Отправляем…" : "Отправить список на расчёт"}

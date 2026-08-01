@@ -130,6 +130,7 @@ export const schemaBlueprint = {
           choices: [
             "hero",
             "categories",
+            "company_trust",
             "featured_products",
             "advantages",
             "steps",
@@ -137,6 +138,8 @@ export const schemaBlueprint = {
             "catalog_preview",
             "seo_text",
             "lead_form",
+            "parts_request",
+            "recent_supplies",
             "faq",
             "contacts",
             "articles",

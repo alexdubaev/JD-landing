@@ -64,6 +64,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_SITE_URL: https://deere-shop.ru
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     restart: unless-stopped
     depends_on:
       directus:
@@ -73,6 +74,8 @@ services:
       DIRECTUS_TOKEN: ${DIRECTUS_TOKEN}
       DIRECTUS_PUBLIC_FOLDER_ID: ${DIRECTUS_PUBLIC_FOLDER_ID}
       NEXT_PUBLIC_SITE_URL: https://deere-shop.ru
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
     healthcheck:
       test:

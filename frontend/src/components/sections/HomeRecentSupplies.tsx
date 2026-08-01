@@ -2,9 +2,9 @@ import Image from "next/image";
 
 import { Container } from "@/components/ui/Container";
 import { directusAssetUrl } from "@/lib/directus/assets";
-import type { RecentSupply } from "@/types/content";
+import type { PageSection, RecentSupply } from "@/types/content";
 
-export function HomeRecentSupplies({ supplies }: { supplies: RecentSupply[] }) {
+export function HomeRecentSupplies({ section, supplies }: { section: PageSection; supplies: RecentSupply[] }) {
   const meaningfulSupplies = supplies.filter((supply) => Boolean(
     supply.imageId ||
       supply.equipmentType ||
@@ -18,7 +18,7 @@ export function HomeRecentSupplies({ supplies }: { supplies: RecentSupply[] }) {
   return (
     <section className="home-section home-recent-supplies">
       <Container>
-        <div className="home-section__heading"><h2>Недавние поставки</h2></div>
+        <div className="home-section__heading"><h2>{section.title}</h2>{section.text ? <p>{section.text}</p> : null}</div>
         <div className="home-recent-supplies__grid">
           {meaningfulSupplies.map((supply) => {
             const imageUrl = directusAssetUrl(supply.imageId, {

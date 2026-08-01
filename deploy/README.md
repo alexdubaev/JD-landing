@@ -42,7 +42,12 @@ Required frontend variables in `/opt/jd-landing/.env`:
 DIRECTUS_TOKEN=<Frontend API static token>
 DIRECTUS_PUBLIC_FOLDER_ID=1ecf70c5-0ad4-4e5e-8d73-78ee549f064a
 REVALIDATE_SECRET=<long random secret>
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=<Cloudflare Turnstile site key>
+TURNSTILE_SECRET_KEY=<Cloudflare Turnstile secret key>
 ```
+
+Configure both Turnstile variables together. The public site key is embedded at
+image build time; the secret stays server-side and is used only by `/api/leads`.
 
 Local backups are written to `/opt/jd-landing/backups` and retained for 14 days.
 An off-server backup target is still required before launch.

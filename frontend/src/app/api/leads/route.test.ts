@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { POST } from "./route";
 
-const multipartRequest = (form: FormData, headers: HeadersInit = {}) =>
-  ({
-    headers: new Headers({ "content-type": "multipart/form-data", ...headers }),
-    formData: async () => form,
-  }) as unknown as Request;
+const multipartRequest = (form: FormData, headers: HeadersInit = {}) => {
+  const mergedHeaders = new Headers({ "content-length": "1024", "content-type": "multipart/form-data" });
+  new Headers(headers).forEach((value, key) => mergedHeaders.set(key, value));
+  return ({ headers: mergedHeaders, formData: async () => form }) as unknown as Request;
+};
 
 describe("POST /api/leads", () => {
   beforeEach(() => {
@@ -109,7 +109,6 @@ describe("POST /api/leads", () => {
     );
 
     const response = await POST(multipartRequest(form));
-
     expect(response.status).toBe(201);
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(String(fetchMock.mock.calls[0][0])).toContain("/files");
@@ -250,6 +249,14 @@ describe("POST /api/leads", () => {
 
     expect(response.status).toBe(413);
     expect(formData).not.toHaveBeenCalled();
+  });
+
+  it("rejects multipart requests without a trustworthy content length", async () => {
+    const form = new FormData();
+    form.set("name", "Иван");
+    const response = await POST(multipartRequest(form, { "content-length": "" }));
+
+    expect(response.status).toBe(411);
   });
 
   it("cleans up the first file when the second attachment upload fails", async () => {

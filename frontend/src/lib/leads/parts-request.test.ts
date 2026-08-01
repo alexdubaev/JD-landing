@@ -22,6 +22,12 @@ describe("parsePartsRequest", () => {
     });
   });
 
+  it("keeps spaced article numbers intact unless quantity is explicit", () => {
+    expect(parsePartsRequest("RE 50483").items).toEqual([
+      { article: "RE50483", quantity: 1 },
+    ]);
+  });
+
   it("rejects a request outside the supported item limit", () => {
     expect(parsePartsRequest("")).toEqual({
       items: [],
