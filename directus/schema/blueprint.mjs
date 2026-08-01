@@ -323,6 +323,12 @@ export const schemaBlueprint = {
         field("utm_campaign", "string"),
         field("utm_content", "string"),
         field("utm_term", "string"),
+        field("request_items", "json", {
+          note: "Normalized parts request lines: article and quantity.",
+        }),
+        field("attachments", "json", {
+          note: "Directus file IDs uploaded with a parts request.",
+        }),
         field("manager_comment", "text"),
         ...timestamps(),
       ],

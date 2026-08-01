@@ -53,19 +53,24 @@ export async function applyAccessBlueprint(
 ) {
   const actions = [];
 
-  const folderQuery = new URLSearchParams({
-    "filter[id][_eq]": blueprint.publicAssetFolder.id,
-    limit: "1",
-    fields: "id",
-  });
-  const folders = await client.request(`/folders?${folderQuery.toString()}`);
-  if (folders.length === 0) {
-    actions.push(`create folder ${blueprint.publicAssetFolder.name}`);
-    if (!dryRun) {
-      await client.request("/folders", {
-        method: "POST",
-        body: JSON.stringify(blueprint.publicAssetFolder),
-      });
+  for (const folder of [
+    blueprint.publicAssetFolder,
+    blueprint.leadAttachmentFolder,
+  ]) {
+    const folderQuery = new URLSearchParams({
+      "filter[id][_eq]": folder.id,
+      limit: "1",
+      fields: "id",
+    });
+    const folders = await client.request(`/folders?${folderQuery.toString()}`);
+    if (folders.length === 0) {
+      actions.push(`create folder ${folder.name}`);
+      if (!dryRun) {
+        await client.request("/folders", {
+          method: "POST",
+          body: JSON.stringify(folder),
+        });
+      }
     }
   }
 

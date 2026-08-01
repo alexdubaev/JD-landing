@@ -187,6 +187,8 @@ test("leads capture contact, context, attribution, and sales workflow fields", (
     "utm_campaign",
     "utm_content",
     "utm_term",
+    "request_items",
+    "attachments",
     "created_at",
     "status",
     "manager_comment",

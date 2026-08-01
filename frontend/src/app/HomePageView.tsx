@@ -4,6 +4,7 @@ import { HomeContactHub } from "@/components/sections/HomeContactHub";
 import { HomeFaq } from "@/components/sections/HomeContentSections";
 import { HomeFeatured } from "@/components/sections/HomeFeatured";
 import { HomeHero } from "@/components/sections/HomeHero";
+import { HomePartsRequest } from "@/components/sections/HomePartsRequest";
 import { HomeSelection } from "@/components/sections/HomeSelection";
 import type {
   ArticleCardData,
@@ -79,6 +80,7 @@ export function HomePageView({
         settings={settings}
       />
       <HomeCategories categories={categories} section={categoriesSection} />
+      <HomePartsRequest />
       <HomeFeatured products={products.slice(0, 5)} section={featured} />
       <HomeSelection ctaSection={find("cta")} section={process} />
       <HomeArticles articles={articles.slice(0, 3)} section={articleSection} />

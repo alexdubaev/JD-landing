@@ -35,7 +35,7 @@ test("public policy is closed", () => {
   assert.deepEqual(policy.permissions, []);
 });
 
-test("frontend API reads CMS content and can only create leads", () => {
+test("frontend API confines lead attachment file writes to its private folder", () => {
   const policy = accessBlueprint.policies.find(
     ({ key }) => key === "frontend_api",
   );
@@ -46,9 +46,27 @@ test("frontend API reads CMS content and can only create leads", () => {
   assert.ok(keys.has("site_settings:read"));
   assert.ok(keys.has("directus_files:read"));
   assert.ok(keys.has("leads:create"));
+  assert.ok(keys.has("directus_files:create"));
+  assert.ok(keys.has("directus_files:delete"));
   assert.ok(!keys.has("leads:read"));
   assert.ok(!keys.has("leads:update"));
   assert.ok(!keys.has("leads:delete"));
+
+  const upload = policy.permissions.find(
+    ({ collection, action }) => collection === "directus_files" && action === "create",
+  );
+  const removal = policy.permissions.find(
+    ({ collection, action }) => collection === "directus_files" && action === "delete",
+  );
+  assert.deepEqual(upload.validation, {
+    folder: { _eq: accessBlueprint.leadAttachmentFolder.id },
+  });
+  assert.deepEqual(upload.presets, {
+    folder: accessBlueprint.leadAttachmentFolder.id,
+  });
+  assert.deepEqual(removal.permissions, {
+    folder: { _eq: accessBlueprint.leadAttachmentFolder.id },
+  });
 });
 
 test("content managers cannot delete protected content", () => {
@@ -63,13 +81,19 @@ test("content managers cannot delete protected content", () => {
   assert.ok(!policy.permissions.some(({ collection }) => collection === "leads"));
 });
 
-test("sales managers can read and update leads without delete access", () => {
+test("sales managers can read attachment files only from the private lead folder", () => {
   const policy = accessBlueprint.policies.find(
     ({ key }) => key === "sales_manager",
   );
   const keys = new Set(policy.permissions.map(permissionKey));
 
-  assert.deepEqual(keys, new Set(["leads:read", "leads:update"]));
+  assert.deepEqual(keys, new Set(["leads:read", "leads:update", "directus_files:read"]));
+  const filesRead = policy.permissions.find(
+    ({ collection, action }) => collection === "directus_files" && action === "read",
+  );
+  assert.deepEqual(filesRead.permissions, {
+    folder: { _eq: accessBlueprint.leadAttachmentFolder.id },
+  });
 });
 
 test("SEO managers can update SEO-bearing collections but not leads", () => {
@@ -89,8 +113,12 @@ test("SEO managers can update SEO-bearing collections but not leads", () => {
 test("all permissions are Directus 12 Core compatible", () => {
   for (const policy of accessBlueprint.policies) {
     for (const permission of policy.permissions) {
-      assert.equal(permission.permissions, null);
-      assert.equal(permission.validation, null);
+      assert.ok(
+        permission.permissions === null || typeof permission.permissions === "object",
+      );
+      assert.ok(
+        permission.validation === null || typeof permission.validation === "object",
+      );
       assert.deepEqual(permission.fields, ["*"]);
     }
   }

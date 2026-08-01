@@ -16,6 +16,9 @@
 http://91.227.68.176 {
 	import security_headers
 	encode zstd gzip
+	request_body {
+		max_size 20MB
+	}
 
 	reverse_proxy frontend:3000
 }
@@ -23,6 +26,9 @@ http://91.227.68.176 {
 deere-shop.ru, www.deere-shop.ru {
 	import security_headers
 	encode zstd gzip
+	request_body {
+		max_size 20MB
+	}
 
 	reverse_proxy frontend:3000
 }

@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server";
 
-import { createLead } from "@/lib/directus/leads";
+import {
+  createLead,
+  deleteLeadAttachment,
+  uploadLeadAttachment,
+} from "@/lib/directus/leads";
+import {
+  normalizePartsRequestItems,
+  type PartsRequestItem,
+} from "@/lib/leads/parts-request";
+import {
+  validateLeadAttachment,
+  type AttachmentKind,
+} from "@/lib/leads/attachments";
 import { leadSchema } from "@/lib/leads/schema";
+
+const MAX_LEAD_REQUEST_BYTES = 20 * 1024 * 1024;
+
+class LeadValidationError extends Error {}
 
 async function isHuman(token: string | undefined, remoteIp: string | null) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
@@ -21,14 +37,84 @@ async function isHuman(token: string | undefined, remoteIp: string | null) {
   return result.success === true;
 }
 
-export async function POST(request: Request) {
+const stringValue = (form: FormData, name: string) => {
+  const value = form.get(name);
+  return typeof value === "string" ? value : undefined;
+};
+
+const fileValue = (form: FormData, name: string) => {
+  const value = form.get(name);
+  return value instanceof File && value.size > 0 ? value : null;
+};
+
+function parseRequestItems(value: string | undefined) {
+  if (!value) return undefined;
   try {
-    const parsed = leadSchema.safeParse(await request.json());
-    if (!parsed.success) {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) throw new LeadValidationError();
+    return parsed as PartsRequestItem[];
+  } catch {
+    throw new LeadValidationError();
+  }
+}
+
+function attachmentError(files: Array<[AttachmentKind, File | null]>) {
+  return files.reduce<string | null>(
+    (error, [kind, file]) => error ?? validateLeadAttachment(kind, file),
+    null,
+  );
+}
+
+export async function POST(request: Request) {
+  const uploadedIds: string[] = [];
+  try {
+    const contentLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > MAX_LEAD_REQUEST_BYTES) {
       return NextResponse.json(
-        { error: "Проверьте заполнение формы" },
-        { status: 400 },
+        { error: "Размер запроса превышает допустимый лимит." },
+        { status: 413 },
       );
+    }
+    const isMultipart = request.headers
+      .get("content-type")
+      ?.toLocaleLowerCase("en")
+      .includes("multipart/form-data");
+    const form = isMultipart ? await request.formData() : null;
+    const input = form
+      ? {
+          name: stringValue(form, "name"),
+          phone: stringValue(form, "phone"),
+          email: stringValue(form, "email"),
+          message: stringValue(form, "message"),
+          product: stringValue(form, "product"),
+          category: stringValue(form, "category"),
+          page_url: stringValue(form, "page_url"),
+          utm_source: stringValue(form, "utm_source"),
+          utm_medium: stringValue(form, "utm_medium"),
+          utm_campaign: stringValue(form, "utm_campaign"),
+          utm_content: stringValue(form, "utm_content"),
+          utm_term: stringValue(form, "utm_term"),
+          turnstile_token: stringValue(form, "turnstile_token"),
+          website: stringValue(form, "website"),
+          request_items: parseRequestItems(stringValue(form, "request_items")),
+        }
+      : await request.json();
+    const parsed = leadSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new LeadValidationError();
+    }
+
+    const spreadsheet = form ? fileValue(form, "spreadsheet") : null;
+    const photo = form ? fileValue(form, "photo") : null;
+    const fileError = attachmentError([
+      ["spreadsheet", spreadsheet],
+      ["photo", photo],
+    ]);
+    if (fileError) {
+      return NextResponse.json({ error: fileError }, { status: 400 });
+    }
+    if (form && !parsed.data.request_items?.length && !spreadsheet && !photo) {
+      throw new LeadValidationError();
     }
     if (
       !(await isHuman(
@@ -42,9 +128,26 @@ export async function POST(request: Request) {
       );
     }
 
-    await createLead(parsed.data);
+    for (const file of [spreadsheet, photo]) {
+      if (file) uploadedIds.push(await uploadLeadAttachment(file));
+    }
+    await createLead(parsed.data, {
+      attachments: uploadedIds,
+      requestItems: parsed.data.request_items
+        ? normalizePartsRequestItems(parsed.data.request_items)
+        : undefined,
+    });
     return NextResponse.json({ ok: true }, { status: 201 });
-  } catch {
+  } catch (error) {
+    if (uploadedIds.length) {
+      await Promise.allSettled(uploadedIds.map(deleteLeadAttachment));
+    }
+    if (error instanceof LeadValidationError || error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: "Проверьте заполнение формы" },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
       { error: "Не удалось отправить заявку. Попробуйте ещё раз." },
       { status: 503 },

@@ -1,14 +1,16 @@
-const permission = (collection, action) => ({
+const permission = (collection, action, options = {}) => ({
   collection,
   action,
-  permissions: null,
-  validation: null,
+  permissions: options.permissions ?? null,
+  validation: options.validation ?? null,
+  presets: options.presets ?? null,
   fields: ["*"],
 });
 
-const read = (collection) => permission(collection, "read");
-const create = (collection) => permission(collection, "create");
+const read = (collection, options) => permission(collection, "read", options);
+const create = (collection, options) => permission(collection, "create", options);
 const update = (collection) => permission(collection, "update");
+const remove = (collection, options) => permission(collection, "delete", options);
 
 const websiteCollections = [
   "site_settings",
@@ -37,10 +39,21 @@ const contentCollections = websiteCollections.filter(
   (collection) => collection !== "site_settings",
 );
 
+const publicAssetFolderId = "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a";
+const leadAttachmentFolderId = "20fe4272-2f18-4ec8-a52a-f0efce9bcef8";
+const folderFilter = (folderId) => ({ folder: { _eq: folderId } });
+
 const frontendPermissions = [
   ...websiteCollections.map(read),
-  read("directus_files"),
+  read("directus_files", { permissions: folderFilter(publicAssetFolderId) }),
   read("directus_folders"),
+  create("directus_files", {
+    validation: folderFilter(leadAttachmentFolderId),
+    presets: { folder: leadAttachmentFolderId },
+  }),
+  remove("directus_files", {
+    permissions: folderFilter(leadAttachmentFolderId),
+  }),
   create("leads"),
 ];
 
@@ -79,12 +92,14 @@ const seoPermissions = [
   ]),
 ];
 
-const publicAssetFolderId = "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a";
-
 export const accessBlueprint = {
   publicAssetFolder: {
     id: publicAssetFolderId,
     name: "Public",
+  },
+  leadAttachmentFolder: {
+    id: leadAttachmentFolderId,
+    name: "Lead attachments",
   },
   policies: [
     {
@@ -131,7 +146,13 @@ export const accessBlueprint = {
       policyName: "Sales Manager",
       appAccess: true,
       adminAccess: false,
-      permissions: [read("leads"), update("leads")],
+      permissions: [
+        read("leads"),
+        update("leads"),
+        read("directus_files", {
+          permissions: folderFilter(leadAttachmentFolderId),
+        }),
+      ],
     },
     {
       key: "seo_manager",

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { MAX_PARTS_REQUEST_ITEMS } from "./parts-request";
+
 const optionalText = (maximum: number) =>
   z
     .string()
@@ -7,6 +9,16 @@ const optionalText = (maximum: number) =>
     .max(maximum)
     .optional()
     .transform((value) => value || undefined);
+
+const requestItemSchema = z.object({
+  article: z
+    .string()
+    .trim()
+    .min(1)
+    .max(128)
+    .transform((value) => value.replace(/\s+/gu, "").toLocaleUpperCase("ru")),
+  quantity: z.coerce.number().int().min(1).max(100_000),
+});
 
 export const leadSchema = z
   .object({
@@ -25,6 +37,11 @@ export const leadSchema = z
     utm_content: optionalText(200),
     utm_term: optionalText(200),
     turnstile_token: optionalText(2048),
+    request_items: z
+      .array(requestItemSchema)
+      .min(1)
+      .max(MAX_PARTS_REQUEST_ITEMS)
+      .optional(),
     website: z.string().max(0).optional().default(""),
   })
   .strict();
