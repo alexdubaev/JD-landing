@@ -53,4 +53,3 @@ export function buildHomepageStructuredData({
   }
   return schemas;
 }
-
