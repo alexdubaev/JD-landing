@@ -4634,6 +4634,202 @@ p {
   padding-block: 1.2rem;
 }
 
+/* Plan 1: retain the technical manifesto while making the first action path compact. */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: rgb(5 24 13 / 94%);
+  backdrop-filter: blur(12px);
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+
+.site-header__main {
+  background: transparent;
+}
+
+.site-header__inner {
+  min-height: 80px;
+  gap: clamp(0.65rem, 1.1vw, 1.25rem);
+}
+
+.site-header[data-scrolled="true"] {
+  background: rgb(5 20 11 / 98%);
+  box-shadow: 0 0.5rem 1.25rem rgb(0 0 0 / 18%);
+}
+
+.site-header[data-scrolled="true"] .site-header__inner {
+  min-height: 68px;
+}
+
+.site-header__navigation {
+  min-width: 0;
+  flex: 1;
+  justify-content: center;
+  gap: clamp(0.55rem, 1.15vw, 1.1rem);
+  margin-left: 0;
+}
+
+.site-header__navigation a {
+  position: relative;
+  min-height: 44px;
+  color: rgb(255 255 255 / 86%);
+  font-size: clamp(0.56rem, 0.66vw, 0.69rem);
+  letter-spacing: 0.065em;
+  white-space: nowrap;
+}
+
+.site-header__navigation a::after {
+  bottom: 0.35rem;
+  background: var(--accent);
+}
+
+.site-header[data-pathname^="/catalog"] .site-header__navigation a[href="/catalog"]::after,
+.site-header[data-pathname^="/delivery"] .site-header__navigation a[href="/delivery"]::after,
+.site-header[data-pathname^="/about"] .site-header__navigation a[href="/about"]::after,
+.site-header[data-pathname^="/documents"] .site-header__navigation a[href="/documents"]::after,
+.site-header[data-pathname^="/articles"] .site-header__navigation a[href="/articles"]::after,
+.site-header[data-pathname^="/contacts"] .site-header__navigation a[href="/contacts"]::after {
+  transform: scaleX(1);
+}
+
+.site-header__navigation a[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+.site-header__navigation a[aria-current="page"] {
+  color: #ffffff;
+}
+
+.site-header__actions {
+  min-width: 0;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+}
+
+.site-header__actions > svg {
+  display: none;
+}
+
+.site-header__phone {
+  color: #ffffff;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.site-header__request {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.8rem;
+  background: var(--accent);
+  color: #151b16;
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.site-header__request:hover,
+.site-header__request:focus-visible {
+  background: #ffffff;
+  color: #101812;
+}
+
+.hero-part-search__scenarios {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  color: rgb(255 255 255 / 76%);
+  font-size: 0.78rem;
+}
+
+.hero-part-search__scenarios > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.95rem;
+}
+
+.hero-part-search__scenarios a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border-bottom: 1px solid rgb(255 207 0 / 62%);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.hero-part-search__scenarios a:hover,
+.hero-part-search__scenarios a:focus-visible {
+  border-color: #ffffff;
+  color: var(--accent);
+}
+
+@media (min-width: 64rem) and (max-width: 68rem) {
+  .site-header__brand {
+    min-width: 10.5rem;
+    padding-inline: 0.45rem;
+  }
+
+  .site-header__logo {
+    width: 9.5rem;
+  }
+
+  .site-header__navigation,
+  .site-header__actions {
+    display: flex;
+  }
+
+  .mobile-navigation {
+    display: none;
+  }
+}
+
+@media (max-width: 63.999rem) {
+  .site-header__navigation,
+  .site-header__actions {
+    display: none;
+  }
+
+  .mobile-navigation {
+    display: block;
+  }
+
+  .mobile-navigation__panel {
+    background: rgb(5 24 13 / 99%);
+  }
+
+  .mobile-navigation__phone {
+    color: #ffffff;
+  }
+
+  .mobile-navigation__request {
+    background: var(--accent);
+    color: #151b16 !important;
+  }
+}
+
+@media (max-width: 48rem) {
+  .hero-part-search__scenarios > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .hero-part-search__scenarios a {
+    min-height: 44px;
+    justify-content: center;
+    padding-inline: 0.15rem;
+    font-size: 0.63rem;
+    text-align: center;
+  }
+}
+
 .home-categories .home-section__heading {
   margin-bottom: 0.9rem;
 }

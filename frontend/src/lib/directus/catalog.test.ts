@@ -90,6 +90,22 @@ describe("catalog queries", () => {
     expect(result.total).toBe(49);
   });
 
+  it("matches SKUs with hyphens or spaces through a published-only SKU index", async () => {
+    envelopeRequestMock.mockResolvedValue({ data: [], meta: { filter_count: 0 } });
+    requestMock.mockResolvedValue([]);
+
+    await getCatalogPage({
+      search: "re-57 934",
+      page: 1,
+      pageSize: 24,
+      sort: "relevance",
+    });
+
+    const skuIndex = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(skuIndex.searchParams.get("fields")).toBe("id,sku");
+    expect(skuIndex.searchParams.get("filter[status][_eq]")).toBe("published");
+  });
+
   it("loads only categories selected for the homepage", async () => {
     requestMock.mockResolvedValue([]);
 
@@ -108,4 +124,5 @@ describe("catalog queries", () => {
     expect(url.searchParams.get("filter[is_featured][_eq]")).toBe("true");
     expect(url.searchParams.get("limit")).toBe("5");
   });
+
 });

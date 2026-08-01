@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Header } from "./Header";
+import { getHeaderNavigation, Header } from "./Header";
 
 const navigation = [
   { id: "catalog", label: "Каталог", url: "/catalog" },
@@ -9,6 +9,17 @@ const navigation = [
 ];
 
 describe("Header", () => {
+  it("keeps a non-empty published CMS navigation exactly as configured", () => {
+    expect(
+      getHeaderNavigation([
+        { label: "Запчасти", url: "/catalog" },
+        { label: "О компании", url: "/about" },
+      ]),
+    ).toEqual([
+      { label: "Запчасти", url: "/catalog" },
+      { label: "О компании", url: "/about" },
+    ]);
+  });
   it("renders the wide DEERE-SHOP logo and accessible navigation", () => {
     const { container } = render(
       <Header navigation={navigation} phone="+7 900 000-00-00" />,
@@ -33,6 +44,12 @@ describe("Header", () => {
     expect(
       screen.getByRole("link", { name: "+7 900 000-00-00" }),
     ).toHaveAttribute("href", "tel:+79000000000");
+    expect(
+      screen.getAllByRole("link", { name: "Отправить запрос" }).at(-1),
+    ).toHaveAttribute("href", "/#parts-request");
+    expect(
+      screen.getByRole("link", { name: "Доставка" }),
+    ).toHaveAttribute("href", "/delivery");
     expect(container.querySelector(".site-header-spacer")).not.toBeInTheDocument();
   });
 
@@ -50,14 +67,18 @@ describe("Header", () => {
     expect(
       screen.getByRole("navigation", { name: "Мобильная навигация" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("link", { name: "Отправить запрос" }).at(-1),
+    ).toHaveAttribute("href", "/#parts-request");
   });
 
-  it("does not switch to a sticky compact state while scrolling", () => {
+  it("switches to a compact sticky state while scrolling", () => {
     render(<Header navigation={navigation} />);
 
     const header = screen.getByRole("banner");
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 16 });
     fireEvent.scroll(window);
 
-    expect(header).not.toHaveAttribute("data-scrolled");
+    expect(header).toHaveAttribute("data-scrolled", "true");
   });
 });

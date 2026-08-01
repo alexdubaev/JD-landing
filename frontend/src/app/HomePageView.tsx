@@ -75,11 +75,10 @@ export function HomePageView({
         benefitsSection={find("advantages") ?? null}
         contacts={contacts}
         h1={page.h1}
-        products={products}
         section={hero}
         settings={settings}
       />
-      <HomeCategories categories={categories.slice(0, 12)} section={categoriesSection} />
+      <HomeCategories categories={categories} section={categoriesSection} />
       <HomeFeatured products={products.slice(0, 5)} section={featured} />
       <HomeSelection ctaSection={find("cta")} section={process} />
       <HomeArticles articles={articles.slice(0, 3)} section={articleSection} />

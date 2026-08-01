@@ -7,10 +7,26 @@ import { BRAND_LOGO_PATH, BRAND_NAME } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
 
 import { HeaderChrome } from "./HeaderChrome";
+import { HeaderNavigation } from "./HeaderNavigation";
 import { MobileNavigation } from "./MobileNavigation";
 import type { NavigationItem } from "./types";
 
 const normalizePhone = (phone: string) => phone.replace(/[^\d+]/gu, "");
+
+const FALLBACK_NAVIGATION = [
+  { label: "Каталог", url: "/catalog" },
+  {
+    label: "Доставка и оплата",
+    url: "/delivery",
+  },
+  { label: "Компания", url: "/about" },
+  { label: "Документы", url: "/documents" },
+  { label: "Статьи", url: "/articles" },
+  { label: "Контакты", url: "/contacts" },
+] as const;
+
+export const getHeaderNavigation = (navigation: NavigationItem[]) =>
+  navigation.length ? navigation : [...FALLBACK_NAVIGATION];
 
 export function Header({
   companyName = BRAND_NAME,
@@ -24,6 +40,7 @@ export function Header({
   navigation: NavigationItem[];
   phone?: string | null;
 }) {
+  const headerNavigation = getHeaderNavigation(navigation);
   const logoUrl =
     directusAssetUrl(logoId, {
       width: 720,
@@ -50,16 +67,7 @@ export function Header({
               width={1829}
             />
           </Link>
-          <nav
-            aria-label="Основная навигация"
-            className="site-header__navigation"
-          >
-            {navigation.map((item) => (
-              <Link href={item.url} key={`${item.url}:${item.label}`}>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <HeaderNavigation navigation={headerNavigation} />
           <div className="site-header__actions">
             <Headphones aria-hidden="true" />
             {phone ? (
@@ -74,8 +82,11 @@ export function Header({
                 Консультация
               </Link>
             )}
+            <Link className="site-header__request" href="/#parts-request">
+              Отправить запрос
+            </Link>
           </div>
-          <MobileNavigation navigation={navigation} phone={phone} />
+          <MobileNavigation navigation={headerNavigation} phone={phone} />
         </Container>
       </div>
     </HeaderChrome>

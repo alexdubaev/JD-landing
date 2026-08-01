@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import type { Category } from "@/types/catalog";
 import type { PageSection } from "@/types/content";
 
-import { HomeCategories } from "./HomeCategories";
+import { getHomepageCategories, HomeCategories } from "./HomeCategories";
 
 const category: Category = {
-  id: "filters",
-  title: "Фильтры",
-  slug: "filters",
+  id: "engine",
+  title: "Двигатель",
+  slug: "engine",
   parentId: null,
   description: null,
   imageId: null,
@@ -41,8 +41,31 @@ describe("HomeCategories", () => {
 
     expect(
       screen
-        .getByRole("link", { name: "Фильтры — перейти в каталог" })
+        .getByRole("link", { name: "Двигатель — перейти в каталог" })
         .closest("article"),
     ).toHaveClass("home-category--text-only");
+  });
+
+  it("keeps the CMS homepage order, excludes obvious misc categories and caps output", () => {
+    const categories = [
+      { ...category, id: "hydraulics", title: "Гидравлика", slug: "hydraulics" },
+      { ...category, id: "engine", title: "Двигатель", slug: "engine" },
+      { ...category, id: "misc", title: "Прочее", slug: "misc" },
+      { ...category, id: "electrics", title: "Электрика", slug: "electrics" },
+    ];
+
+    expect(getHomepageCategories(categories).map(({ title }) => title)).toEqual([
+      "Гидравлика",
+      "Двигатель",
+      "Электрика",
+    ]);
+  });
+
+  it("uses the all-categories label for the catalog entry point", () => {
+    render(<HomeCategories categories={[category]} section={section} />);
+
+    expect(
+      screen.getByRole("link", { name: "Смотреть все категории" }),
+    ).toHaveAttribute("href", "/catalog");
   });
 });

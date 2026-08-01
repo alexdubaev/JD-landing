@@ -85,6 +85,8 @@ type RawSitemapProduct = {
   category: { slug: string } | null;
 };
 
+type RawSkuIndexProduct = Pick<RawProduct, "id" | "sku">;
+
 const fileId = (relation: FileRelation | undefined) =>
   typeof relation === "string" ? relation : (relation?.id ?? null);
 
@@ -188,6 +190,28 @@ const queryString = (parameters: Record<string, string | undefined>) => {
   return search.toString();
 };
 
+const normalizeSku = (value: string) =>
+  value.trim().replace(/[\s-]+/gu, "").toLocaleLowerCase("ru");
+
+const looksLikeSkuQuery = (value: string) => /^[a-z0-9\s-]+$/iu.test(value);
+
+async function resolveNormalizedSkuIds(search: string) {
+  if (!looksLikeSkuQuery(search)) return null;
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    fields: "id,sku",
+    limit: "-1",
+  });
+  const index = await directusRequest<RawSkuIndexProduct[]>(
+    `/items/products?${query}`,
+    { next: { revalidate: 300, tags: ["products"] } },
+  );
+  const needle = normalizeSku(search);
+  return index
+    .filter((product) => normalizeSku(product.sku).includes(needle))
+    .map((product) => product.id);
+}
+
 export async function getCategories(): Promise<Category[]> {
   const query = queryString({
     "filter[status][_eq]": "published",
@@ -235,6 +259,23 @@ export async function getFeaturedProducts(
   return items.map(mapProductCard);
 }
 
+export async function getCatalogSuggestions(search: string, limit = 6) {
+  const safeLimit = Math.min(6, Math.max(1, Math.floor(limit)));
+  const matchedIds = await resolveNormalizedSkuIds(search);
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[id][_in]": matchedIds?.length ? matchedIds.join(",") : undefined,
+    search: matchedIds?.length ? undefined : search,
+    fields: cardFields,
+    sort: "-popularity_score,title",
+    limit: String(safeLimit),
+  });
+  const items = await directusRequest<RawProduct[]>(`/items/products?${query}`, {
+    next: { revalidate: 60, tags: ["products"] },
+  });
+  return items.map(mapProductCard);
+}
+
 const sortByQuery: Record<CatalogQuery["sort"], string> = {
   relevance: "-popularity_score,title",
   price_asc: "price,title",
@@ -245,12 +286,14 @@ const sortByQuery: Record<CatalogQuery["sort"], string> = {
 export async function getCatalogPage(
   input: CatalogQuery,
 ): Promise<CatalogPage> {
+  const matchedIds = input.search ? await resolveNormalizedSkuIds(input.search) : null;
   const query = queryString({
     "filter[status][_eq]": "published",
     "filter[category][slug][_eq]": input.categorySlug,
     "filter[availability_status][_eq]": input.availability,
     "filter[price_status][_eq]": input.priceStatus,
-    search: input.search,
+    "filter[id][_in]": matchedIds?.length ? matchedIds.join(",") : undefined,
+    search: matchedIds?.length ? undefined : input.search,
     fields: cardFields,
     sort: sortByQuery[input.sort],
     page: String(input.page),

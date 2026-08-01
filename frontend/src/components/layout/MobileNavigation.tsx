@@ -51,12 +51,20 @@ export function MobileNavigation({
               </Link>
             ))}
             {phone ? (
-              <a href={`tel:${phone.replace(/[^\d+]/gu, "")}`} onClick={() => setIsOpen(false)}>
+              <a
+                className="mobile-navigation__phone"
+                href={`tel:${phone.replace(/[^\d+]/gu, "")}`}
+                onClick={() => setIsOpen(false)}
+              >
                 {phone}
               </a>
             ) : null}
-            <Link href="/contacts#consultation" onClick={() => setIsOpen(false)}>
-              Оставить заявку
+            <Link
+              className="mobile-navigation__request"
+              href="/#parts-request"
+              onClick={() => setIsOpen(false)}
+            >
+              Отправить запрос
             </Link>
           </motion.nav>
         ) : null}

@@ -15,9 +15,7 @@ import Link from "next/link";
 import { HeroMotion } from "@/components/motion/HeroMotion";
 import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
-import { BRAND_DISCLAIMER } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
-import type { ProductCardData } from "@/types/catalog";
 import type { ContactChannel, PageSection, SiteSettings } from "@/types/content";
 
 import { HeroPartSearch } from "./HeroPartSearch";
@@ -53,6 +51,33 @@ const isBenefit = (value: unknown): value is BenefitItem => {
   return typeof item.title === "string" && typeof item.text === "string";
 };
 
+const HERO_TITLE = "Запчасти John Deere с подбором и доставкой по России";
+const HERO_SUBTITLE =
+  "Найдём нужную деталь по артикулу, модели техники или фотографии маркировки";
+
+const DEFAULT_BENEFITS: BenefitItem[] = [
+  {
+    icon: "clipboard",
+    title: "Проверяем применимость",
+    text: "Сверяем артикул, модификацию техники и возможные замены.",
+  },
+  {
+    icon: "package",
+    title: "Предлагаем варианты",
+    text: "Оригинал, OEM или проверенный аналог — при наличии выбора.",
+  },
+  {
+    icon: "headset",
+    title: "Работаем с организациями",
+    text: "Счёт, договор и закрывающие документы.",
+  },
+  {
+    icon: "truck",
+    title: "Доставляем по России",
+    text: "Согласовываем склад, срок и способ отправки до оплаты.",
+  },
+];
+
 function HeroTitle({ title }: { title: string }) {
   const match = title.match(/john deere/iu);
   if (!match || match.index === undefined) return <>{title}</>;
@@ -72,14 +97,12 @@ export function HomeHero({
   benefitsSection,
   contacts,
   h1,
-  products,
   section,
   settings,
 }: {
   benefitsSection?: PageSection | null;
   contacts: ContactChannel[];
   h1: string;
-  products: ProductCardData[];
   section: PageSection;
   settings: SiteSettings;
 }) {
@@ -92,7 +115,12 @@ export function HomeHero({
         format: "webp",
       }) ?? "/images/home/deere-shop-hero.webp")
     : "/images/home/deere-shop-hero.webp";
-  const benefits = (benefitsSection?.items ?? []).filter(isBenefit).slice(0, 4);
+  const configuredBenefits = (benefitsSection?.items ?? []).filter(isBenefit);
+  const benefits = configuredBenefits.length
+    ? configuredBenefits.slice(0, 4)
+    : DEFAULT_BENEFITS;
+  const title = section.title?.trim() || HERO_TITLE;
+  const description = section.text?.trim() || HERO_SUBTITLE;
   const phone =
     contacts.find((channel) => channel.type === "phone")?.value ?? settings.phone;
   const messengers = contacts
@@ -119,16 +147,11 @@ export function HomeHero({
     >
       <Container className="commerce-hero__content">
         <Reveal className="commerce-hero__copy">
-          {section.subtitle ? (
-            <p className="commerce-hero__eyebrow">{section.subtitle}</p>
-          ) : null}
           <h1 id="home-title">
-            <HeroTitle title={section.title ?? h1} />
+            <HeroTitle title={title || h1} />
           </h1>
-          {section.text ? (
-            <p className="commerce-hero__description">{section.text}</p>
-          ) : null}
-          <HeroPartSearch products={products} />
+          <p className="commerce-hero__description">{description}</p>
+          <HeroPartSearch />
           <div className="commerce-hero__contacts">
             {phone ? (
               <a href={`tel:${phone.replace(/[^\d+]/gu, "")}`}>
@@ -144,9 +167,6 @@ export function HomeHero({
             ))}
             <Link href="#consultation">Отправить запрос</Link>
           </div>
-          <small>
-            {settingString(section.settings, "disclaimer") ?? BRAND_DISCLAIMER}
-          </small>
         </Reveal>
       </Container>
 

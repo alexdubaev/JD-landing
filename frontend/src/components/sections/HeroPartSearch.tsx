@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import Link from "next/link";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import type { ProductCardData } from "@/types/catalog";
 
@@ -11,34 +11,37 @@ const productUrl = (product: ProductCardData) =>
     ? `/catalog/${product.category.slug}/${product.slug}`
     : `/catalog?q=${encodeURIComponent(product.sku)}`;
 
+export const normalizePartQuery = (value: string) =>
+  value.trim().replace(/[\s-]+/gu, "").toLocaleLowerCase("ru");
+
 export function HeroPartSearch({
-  products,
-}: {
-  products: ProductCardData[];
-}) {
+}: Record<string, never>) {
   const listboxId = useId();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isOpen, setIsOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<ProductCardData[]>([]);
 
-  const suggestions = useMemo(() => {
-    const needle = query.trim().toLocaleLowerCase("ru");
-    if (needle.length < 2) return [];
-
-    return products
-      .filter(
-        (product) =>
-          product.sku.toLocaleLowerCase("ru").includes(needle) ||
-          product.title.toLocaleLowerCase("ru").includes(needle),
-      )
-      .slice(0, 4);
-  }, [products, query]);
-
-  const selectSuggestion = (product: ProductCardData) => {
-    setQuery(product.sku);
-    setActiveIndex(-1);
-    setIsOpen(false);
-  };
+  useEffect(() => {
+    const needle = normalizePartQuery(query);
+    if (needle.length < 2) {
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/catalog/suggestions?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { items?: ProductCardData[] };
+        setSuggestions(Array.isArray(payload.items) ? payload.items.slice(0, 6) : []);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") setSuggestions([]);
+      }
+    }, 180);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [query]);
 
   return (
     <div className="hero-part-search">
@@ -54,6 +57,9 @@ export function HeroPartSearch({
         </label>
         <input
           aria-autocomplete="list"
+          aria-activedescendant={
+            activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
+          }
           aria-controls={listboxId}
           aria-expanded={isOpen && suggestions.length > 0}
           autoComplete="off"
@@ -84,7 +90,9 @@ export function HeroPartSearch({
               );
             } else if (event.key === "Enter" && activeIndex >= 0) {
               event.preventDefault();
-              selectSuggestion(suggestions[activeIndex]);
+              document
+                .getElementById(`${listboxId}-option-${activeIndex}`)
+                ?.click();
             }
           }}
           onFocus={() => setIsOpen(true)}
@@ -106,28 +114,29 @@ export function HeroPartSearch({
           role="listbox"
         >
           {suggestions.map((product, index) => (
-            <button
+            <Link
               aria-selected={activeIndex === index}
               className={activeIndex === index ? "is-active" : undefined}
+              href={productUrl(product)}
+              id={`${listboxId}-option-${index}`}
               key={product.id}
-              onClick={() => selectSuggestion(product)}
+              onClick={() => setIsOpen(false)}
               role="option"
-              type="button"
             >
               <strong>{product.sku}</strong>
               <span>{product.title}</span>
-            </button>
+            </Link>
           ))}
         </div>
       ) : null}
 
-      <div className="hero-part-search__examples">
-        <span>Например:</span>
-        {products.slice(0, 3).map((product) => (
-          <Link href={productUrl(product)} key={product.id}>
-            {product.sku}
-          </Link>
-        ))}
+      <div className="hero-part-search__scenarios">
+        <span>Нужно проверить несколько позиций?</span>
+        <div>
+          <Link href="#parts-request">Вставить список</Link>
+          <Link href="#parts-request">Загрузить Excel</Link>
+          <Link href="#parts-request">Отправить фото</Link>
+        </div>
       </div>
     </div>
   );

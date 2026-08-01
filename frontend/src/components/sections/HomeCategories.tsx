@@ -7,6 +7,18 @@ import { directusAssetUrl } from "@/lib/directus/assets";
 import type { Category } from "@/types/catalog";
 import type { PageSection } from "@/types/content";
 
+export const getHomepageCategories = (categories: Category[]) =>
+  categories.reduce<Category[]>((result, category) => {
+    const identity = `${category.title} ${category.slug}`.toLocaleLowerCase("ru");
+    const isMisc = /(?:^|\s)(?:прочее|other|misc)(?:\s|$)/iu.test(identity);
+    const isDuplicate = result.some(
+      (item) => item.id === category.id || item.slug === category.slug,
+    );
+
+    if (result.length < 8 && !isMisc && !isDuplicate) result.push(category);
+    return result;
+  }, []);
+
 export function HomeCategories({
   categories,
   section,
@@ -14,7 +26,8 @@ export function HomeCategories({
   categories: Category[];
   section: PageSection;
 }) {
-  if (!categories.length) return null;
+  const curatedCategories = getHomepageCategories(categories);
+  if (!curatedCategories.length) return null;
 
   return (
     <section className="home-section home-categories">
@@ -25,7 +38,7 @@ export function HomeCategories({
             <h2>{section.title ?? "Категории продукции"}</h2>
           </div>
           <Link href={section.buttonUrl ?? "/catalog"}>
-            {section.buttonText ?? "Весь каталог"}
+            Смотреть все категории
             <ArrowRight aria-hidden="true" />
           </Link>
         </div>
@@ -33,8 +46,8 @@ export function HomeCategories({
           aria-label={section.title ?? "Категории продукции"}
           className="home-categories__grid"
         >
-          {categories.slice(0, 12).map((category) => {
-            const icon = directusAssetUrl(category.iconId ?? null, {
+          {curatedCategories.map((category) => {
+            const image = directusAssetUrl(category.imageId ?? category.iconId ?? null, {
               width: 96,
               height: 96,
               fit: "cover",
@@ -43,7 +56,7 @@ export function HomeCategories({
             });
             return (
               <article
-                className={`home-category${icon ? "" : " home-category--text-only"}`}
+                className={`home-category${image ? "" : " home-category--text-only"}`}
                 key={category.id}
               >
                 <Link
@@ -51,12 +64,12 @@ export function HomeCategories({
                   href={`/catalog/${category.slug}`}
                 >
                   <span className="home-category__media">
-                    {icon ? (
+                    {image ? (
                       <Image
-                        alt={category.iconAlt ?? category.title}
+                        alt={category.imageAlt ?? category.iconAlt ?? category.title}
                         fill
-                        sizes="40px"
-                        src={icon}
+                        sizes="(max-width: 48rem) 36px, 40px"
+                        src={image}
                       />
                     ) : (
                       <PackageSearch aria-hidden="true" />
