@@ -1,11 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { ProductCardData } from "@/types/catalog";
 
 import { ProductCard } from "./ProductCard";
 
-const product: ProductCardData = {
+const product = {
   id: "product-1",
   title: "Фильтр гидравлический",
   slug: "hydraulic-filter",
@@ -22,7 +22,10 @@ const product: ProductCardData = {
   currency: "RUB",
   priceStatus: "fixed",
   availabilityStatus: "in_stock",
-};
+  brand: "John Deere",
+  partType: "original",
+  deliveryStatus: "На складе поставщика",
+} as ProductCardData;
 
 describe("ProductCard", () => {
   it("renders a fixed price, SKU, image, and catalog links", () => {
@@ -44,6 +47,27 @@ describe("ProductCard", () => {
     expect(
       screen.getByTestId("product-card-action-arrow"),
     ).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("John Deere")).toBeInTheDocument();
+    expect(screen.getByText("Оригинал")).toBeInTheDocument();
+    expect(screen.getByText("На складе поставщика")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Подробнее" })).toHaveAttribute(
+      "href",
+      "/catalog/filters/hydraulic-filter",
+    );
+  });
+
+  it("adds and removes a product from the persistent request list", () => {
+    render(<ProductCard product={product} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "В запрос" }));
+    expect(screen.getByRole("button", { name: "Убрать из запроса" })).toBeInTheDocument();
+    expect(localStorage.getItem("deere-shop:product-request-list")).toContain("RE123456");
+    expect(
+      screen.getByRole("link", { name: "Перейти к списку запроса: 1 поз." }),
+    ).toHaveAttribute("href", "/#parts-request");
+
+    fireEvent.click(screen.getByRole("button", { name: "Убрать из запроса" }));
+    expect(localStorage.getItem("deere-shop:product-request-list")).toBe("[]");
   });
 
   it("renders request pricing and a safe missing-image fallback", () => {
@@ -78,5 +102,32 @@ describe("ProductCard", () => {
 
     expect(screen.getByText("Уточнить условия")).toBeInTheDocument();
     expect(screen.queryByText(/₽/)).not.toBeInTheDocument();
+  });
+
+  it("does not invent optional commercial labels", () => {
+    render(
+      <ProductCard
+        product={{
+          ...product,
+          brand: null,
+          partType: null,
+          deliveryStatus: null,
+        } as ProductCardData}
+      />,
+    );
+
+    expect(screen.queryByText("John Deere")).not.toBeInTheDocument();
+    expect(screen.queryByText("Оригинал")).not.toBeInTheDocument();
+    expect(screen.queryByText("На складе поставщика")).not.toBeInTheDocument();
+  });
+
+  it("does not render a generic order status", () => {
+    render(
+      <ProductCard
+        product={{ ...product, availabilityStatus: "on_request" }}
+      />,
+    );
+
+    expect(screen.queryByText("Под заказ")).not.toBeInTheDocument();
   });
 });

@@ -34,6 +34,29 @@ const selectionInputs = [
   "Описание задачи",
 ];
 
+const fallbackSteps: ProcessItem[] = [
+  {
+    number: "01",
+    title: "Отправьте номера деталей",
+    text: "Вставьте артикулы, загрузите Excel или прикрепите фото",
+  },
+  {
+    number: "02",
+    title: "Мы проверим запрос",
+    text: "Уточним применимость, наличие, замену и комплектацию",
+  },
+  {
+    number: "03",
+    title: "Получите предложение",
+    text: "Цена, сроки, склад и доступные варианты",
+  },
+  {
+    number: "04",
+    title: "Оформите поставку",
+    text: "Выставим счёт и отправим заказ в ваш регион",
+  },
+];
+
 export function HomeSelection({
   ctaSection,
   section,
@@ -41,8 +64,9 @@ export function HomeSelection({
   ctaSection?: PageSection;
   section: PageSection;
 }) {
-  const steps = section.items.filter(isProcessItem).slice(0, 4);
-  if (!steps.length) return null;
+  const steps = section.items.filter(isProcessItem);
+  const visibleSteps =
+    section.items.length === 4 && steps.length === 4 ? steps : fallbackSteps;
   const ctaTitle =
     ctaSection?.title ??
     (typeof section.settings.cta_title === "string"
@@ -69,7 +93,7 @@ export function HomeSelection({
         </div>
         <ProcessMotion>
           <div className="home-selection__steps">
-            {steps.map(({ details, number, text, title }, index) => {
+            {visibleSteps.map(({ details, number, text, title }, index) => {
               const Icon = icons[index % icons.length];
               return (
                 <article className="home-step" key={`${title}:${index}`}>

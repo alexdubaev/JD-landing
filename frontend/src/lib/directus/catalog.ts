@@ -52,6 +52,9 @@ type RawProduct = {
   currency: string;
   price_status: ProductCardData["priceStatus"];
   availability_status: ProductCardData["availabilityStatus"];
+  brand?: string | null;
+  part_type?: ProductCardData["partType"];
+  delivery_status?: string | null;
   specifications?: unknown;
   documents?: unknown;
   seo_title?: string | null;
@@ -130,6 +133,12 @@ const mapProductCard = (raw: RawProduct): ProductCardData => ({
   currency: raw.currency,
   priceStatus: raw.price_status,
   availabilityStatus: raw.availability_status,
+  brand: raw.brand?.trim() || null,
+  partType:
+    raw.part_type === "original" || raw.part_type === "oem" || raw.part_type === "analog"
+      ? raw.part_type
+      : null,
+  deliveryStatus: raw.delivery_status?.trim() || null,
 });
 
 const mapProduct = (raw: RawProduct): Product => ({
@@ -178,6 +187,9 @@ const cardFields = [
   "currency",
   "price_status",
   "availability_status",
+  "brand",
+  "part_type",
+  "delivery_status",
 ].join(",");
 
 const detailFields = `${cardFields},full_description,seo_text,gallery,specifications,documents,seo_title,seo_description,og_image,related_products,cta_text`;
@@ -245,18 +257,37 @@ export async function getFeaturedProducts(
   limit = 5,
 ): Promise<ProductCardData[]> {
   const safeLimit = Math.min(12, Math.max(1, Math.floor(limit)));
+  const fetchLimit = Math.min(36, safeLimit * 3);
   const query = queryString({
     "filter[status][_eq]": "published",
     "filter[is_featured][_eq]": "true",
+    "filter[main_image][_nnull]": "true",
+    "filter[title][_nnull]": "true",
+    "filter[sku][_nnull]": "true",
+    "filter[price_status][_eq]": "fixed",
+    "filter[price][_nnull]": "true",
+    "filter[delivery_status][_nnull]": "true",
     fields: cardFields,
     sort: "sort_order,-popularity_score,title",
-    limit: String(safeLimit),
+    limit: String(fetchLimit),
   });
   const items = await directusRequest<RawProduct[]>(
     `/items/products?${query}`,
     { next: { revalidate: 300, tags: ["products", "homepage"] } },
   );
-  return items.map(mapProductCard);
+  return items
+    .map(mapProductCard)
+    .filter(
+      (product) =>
+        Boolean(product.mainImageId) &&
+        Boolean(product.title.trim()) &&
+        Boolean(product.sku.trim()) &&
+        product.priceStatus === "fixed" &&
+        typeof product.price === "number" &&
+        Number.isFinite(product.price) &&
+        Boolean(product.deliveryStatus?.trim()),
+    )
+    .slice(0, safeLimit);
 }
 
 export async function getCatalogSuggestions(search: string, limit = 6) {

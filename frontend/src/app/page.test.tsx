@@ -110,12 +110,13 @@ const products: ProductCardData[] = [
     sku: "TEST-1",
     category: { id: "engine", title: "Двигатель", slug: "engine" },
     shortDescription: "Тестовый товар",
-    mainImageId: null,
+    mainImageId: "product-image",
     imageAlt: null,
-    price: null,
+    price: 120000,
     currency: "RUB",
-    priceStatus: "on_request",
+    priceStatus: "fixed",
     availabilityStatus: "on_request",
+    deliveryStatus: "Срок уточняется",
   },
 ];
 

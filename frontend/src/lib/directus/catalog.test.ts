@@ -116,13 +116,58 @@ describe("catalog queries", () => {
   });
 
   it("loads featured homepage products with a bounded result size", async () => {
-    requestMock.mockResolvedValue([]);
+    requestMock.mockResolvedValue([
+      {
+        id: "complete",
+        title: "Насос гидравлический",
+        slug: "hydraulic-pump",
+        sku: "RE504836",
+        category: { id: "hydraulic", title: "Гидравлика", slug: "hydraulics" },
+        short_description: null,
+        main_image: "product-image",
+        image_alt: "Насос",
+        price: "125000",
+        currency: "RUB",
+        price_status: "fixed",
+        availability_status: "in_stock",
+        brand: "John Deere",
+        part_type: "original",
+        delivery_status: "На складе поставщика",
+      },
+      {
+        id: "incomplete",
+        title: "Без срока поставки",
+        slug: "without-delivery",
+        sku: "RE000000",
+        category: null,
+        short_description: null,
+        main_image: "product-image",
+        image_alt: null,
+        price: "1200",
+        currency: "RUB",
+        price_status: "fixed",
+        availability_status: "on_request",
+        brand: null,
+        part_type: null,
+        delivery_status: "",
+      },
+    ]);
 
-    await getFeaturedProducts();
+    const products = await getFeaturedProducts(1);
 
     const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
     expect(url.searchParams.get("filter[is_featured][_eq]")).toBe("true");
-    expect(url.searchParams.get("limit")).toBe("5");
+    expect(url.searchParams.get("filter[price_status][_eq]")).toBe("fixed");
+    expect(url.searchParams.get("fields")).toContain("delivery_status");
+    expect(url.searchParams.get("limit")).toBe("3");
+    expect(products).toEqual([
+      expect.objectContaining({
+        id: "complete",
+        brand: "John Deere",
+        partType: "original",
+        deliveryStatus: "На складе поставщика",
+      }),
+    ]);
   });
 
 });

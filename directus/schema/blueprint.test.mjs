@@ -54,6 +54,9 @@ const requiredProductFields = [
   "cta_text",
   "related_products",
   "lead_form",
+  "brand",
+  "part_type",
+  "delivery_status",
   "created_at",
   "updated_at",
 ];
@@ -132,6 +135,8 @@ test("articles contain publishing, cover, content and SEO fields", () => {
     "cover_image",
     "image_alt",
     "published_at",
+    "category_label",
+    "reading_time_minutes",
     "is_featured",
     "sort_order",
     "seo_title",

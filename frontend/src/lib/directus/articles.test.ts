@@ -29,13 +29,32 @@ describe("article queries", () => {
   });
 
   it("paginates published articles by twelve", async () => {
-    envelopeRequestMock.mockResolvedValue({ data: [], meta: { filter_count: 25 } });
+    envelopeRequestMock.mockResolvedValue({
+      data: [
+        {
+          id: "article-1",
+          title: "Подбор запчасти",
+          slug: "parts-selection",
+          excerpt: "Короткая инструкция.",
+          cover_image: null,
+          image_alt: null,
+          published_at: "2026-07-10T09:00:00.000Z",
+          category_label: "Подбор запчастей",
+          reading_time_minutes: 4,
+        },
+      ],
+      meta: { filter_count: 25 },
+    });
     const result = await getArticlesPage(2);
     const url = new URL(envelopeRequestMock.mock.calls[0][0], "https://cms.test");
     expect(url.searchParams.get("page")).toBe("2");
     expect(url.searchParams.get("limit")).toBe("12");
     expect(result.total).toBe(25);
     expect(result.totalPages).toBe(3);
+    expect(result.items[0]).toMatchObject({
+      categoryLabel: "Подбор запчастей",
+      readingTimeMinutes: 4,
+    });
   });
 
   it("does not expose draft or unknown article slugs", async () => {

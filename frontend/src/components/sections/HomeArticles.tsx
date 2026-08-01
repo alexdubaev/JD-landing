@@ -20,7 +20,7 @@ export function HomeArticles({
         <div className="home-section__heading">
           <div>
             {section.subtitle ? <p>{section.subtitle}</p> : null}
-            <h2>{section.title ?? "Практические статьи"}</h2>
+            <h2>{section.title ?? "Полезные материалы"}</h2>
           </div>
           <Link href={section.buttonUrl ?? "/articles"}>
             {section.buttonText ?? "Все статьи"}

@@ -25,6 +25,12 @@ import {
   validateLeadAttachment,
   type AttachmentKind,
 } from "@/lib/leads/attachments";
+import {
+  clearGeneratedProductRequestLines,
+  PRODUCT_REQUEST_LIST_EVENT,
+  reconcileProductRequestDraft,
+  setProductRequestList,
+} from "@/lib/leads/product-request-list";
 
 const storageKey = "deere-shop:parts-request-draft";
 
@@ -34,7 +40,9 @@ const readableSize = (bytes: number) =>
     : `${Math.max(1, Math.ceil(bytes / 1024))} КБ`;
 
 const initialDraft = () =>
-  typeof window === "undefined" ? "" : localStorage.getItem(storageKey) ?? "";
+  typeof window === "undefined"
+    ? ""
+    : reconcileProductRequestDraft(localStorage.getItem(storageKey) ?? "");
 
 export function BulkPartsRequest() {
   const [draft, setDraft] = useState(initialDraft);
@@ -50,6 +58,13 @@ export function BulkPartsRequest() {
     if (draft) localStorage.setItem(storageKey, draft);
     else localStorage.removeItem(storageKey);
   }, [draft]);
+
+  useEffect(() => {
+    const syncProducts = () =>
+      setDraft((current) => reconcileProductRequestDraft(current));
+    window.addEventListener(PRODUCT_REQUEST_LIST_EVENT, syncProducts);
+    return () => window.removeEventListener(PRODUCT_REQUEST_LIST_EVENT, syncProducts);
+  }, []);
 
   function changeFile(kind: AttachmentKind, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
@@ -77,6 +92,8 @@ export function BulkPartsRequest() {
   function clearDraft() {
     setDraft("");
     localStorage.removeItem(storageKey);
+    clearGeneratedProductRequestLines();
+    setProductRequestList([]);
     setError(null);
   }
 
@@ -115,6 +132,8 @@ export function BulkPartsRequest() {
     if (response?.ok) {
       setState("success");
       localStorage.removeItem(storageKey);
+      clearGeneratedProductRequestLines();
+      setProductRequestList([]);
       return;
     }
     const body = await response?.json().catch(() => null);

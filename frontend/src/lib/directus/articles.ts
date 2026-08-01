@@ -19,6 +19,8 @@ type RawArticle = {
   cover_image: FileRelation;
   image_alt: string | null;
   published_at: string;
+  category_label?: string | null;
+  reading_time_minutes?: string | number | null;
   seo_title?: string | null;
   seo_description?: string | null;
   og_image?: FileRelation;
@@ -29,7 +31,7 @@ const fileId = (relation: FileRelation | undefined) =>
   typeof relation === "string" ? relation : (relation?.id ?? null);
 
 const cardFields =
-  "id,title,slug,excerpt,cover_image,image_alt,published_at";
+  "id,title,slug,excerpt,cover_image,image_alt,published_at,category_label,reading_time_minutes";
 const detailFields = `${cardFields},content,seo_title,seo_description,og_image,updated_at`;
 
 const queryString = (parameters: Record<string, string | undefined>) => {
@@ -48,6 +50,17 @@ const mapCard = (raw: RawArticle): ArticleCardData => ({
   coverImageId: fileId(raw.cover_image),
   imageAlt: raw.image_alt,
   publishedAt: raw.published_at,
+  categoryLabel: raw.category_label?.trim() || null,
+  readingTimeMinutes:
+    typeof raw.reading_time_minutes === "number" &&
+    Number.isInteger(raw.reading_time_minutes) &&
+    raw.reading_time_minutes > 0
+      ? raw.reading_time_minutes
+      : typeof raw.reading_time_minutes === "string" &&
+          /^\d+$/u.test(raw.reading_time_minutes) &&
+          Number(raw.reading_time_minutes) > 0
+        ? Number(raw.reading_time_minutes)
+        : null,
 });
 
 const mapArticle = (raw: RawArticle): Article => ({

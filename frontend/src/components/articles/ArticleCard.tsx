@@ -37,15 +37,21 @@ export function ArticleCard({ article }: { article: ArticleCardData }) {
         )}
       </Link>
       <div className="article-card__body">
-        <time dateTime={article.publishedAt}>
-          {dateFormatter.format(new Date(article.publishedAt))}
-        </time>
+        <div className="article-card__meta">
+          {article.categoryLabel ? <span>{article.categoryLabel}</span> : null}
+          <time dateTime={article.publishedAt}>
+            {dateFormatter.format(new Date(article.publishedAt))}
+          </time>
+          {article.readingTimeMinutes ? (
+            <span>{article.readingTimeMinutes} мин чтения</span>
+          ) : null}
+        </div>
         <h3>
           <Link href={`/articles/${article.slug}`}>{article.title}</Link>
         </h3>
         <p>{article.excerpt}</p>
         <Link className="article-card__link" href={`/articles/${article.slug}`}>
-          Читать статью
+          Читать
           <ArrowUpRight aria-hidden="true" />
         </Link>
       </div>

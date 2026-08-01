@@ -44,34 +44,30 @@ const articles = [
   },
 ];
 
-const processItems = [
+export const processItems = [
   {
     number: "01",
     icon: "clipboard",
-    title: "Отправка запроса",
-    text: "Вы передаёте артикул, модель техники или фото детали.",
-    details: ["Форма на сайте", "Телефон или мессенджер"],
+    title: "Отправьте номера деталей",
+    text: "Вставьте артикулы, загрузите Excel или прикрепите фото",
   },
   {
     number: "02",
     icon: "search",
-    title: "Проверка данных",
-    text: "Уточняем маркировку, исполнение узла и исходные параметры.",
-    details: ["Без догадок по внешнему виду", "Запрашиваем недостающие данные"],
+    title: "Мы проверим запрос",
+    text: "Уточним применимость, наличие, замену и комплектацию",
   },
   {
     number: "03",
     icon: "check",
-    title: "Предложение",
-    text: "Формируем вариант по подтверждённым исходным данным.",
-    details: ["Состав комплекта", "Доступность и условия"],
+    title: "Получите предложение",
+    text: "Цена, сроки, склад и доступные варианты",
   },
   {
     number: "04",
     icon: "handshake",
-    title: "Согласование поставки",
-    text: "Фиксируем состав запроса и дальнейший порядок действий.",
-    details: ["Проверка перед оформлением", "Подтверждение контакта"],
+    title: "Оформите поставку",
+    text: "Выставим счёт и отправим заказ в ваш регион",
   },
 ];
 
@@ -255,6 +251,22 @@ async function upsertPageSection(client, pageId, definition) {
   });
 }
 
+export function isCompleteHomepageProduct(product) {
+  return (
+    typeof product.title === "string" &&
+    product.title.trim().length > 0 &&
+    typeof product.sku === "string" &&
+    product.sku.trim().length > 0 &&
+    Boolean(product.main_image) &&
+    product.price_status === "fixed" &&
+    product.price !== null &&
+    product.price !== "" &&
+    Number.isFinite(Number(product.price)) &&
+    typeof product.delivery_status === "string" &&
+    product.delivery_status.trim().length > 0
+  );
+}
+
 async function publishCatalog(client) {
   const categories = await client.request(
     "/items/categories?fields=id,slug,parent&limit=-1",
@@ -267,12 +279,18 @@ async function publishCatalog(client) {
     });
   }
 
-  const products = await client.request("/items/products?fields=id&limit=-1");
-  for (const [index, product] of products.entries()) {
+  const products = await client.request(
+    "/items/products?fields=id,title,sku,main_image,price,price_status,delivery_status&limit=-1",
+  );
+  const featuredIds = new Set(
+    products.filter(isCompleteHomepageProduct).slice(0, 5).map(({ id }) => id),
+  );
+  for (const product of products) {
+    const isFeatured = featuredIds.has(product.id);
     await patchItem(client, "products", product.id, {
       status: "published",
-      is_featured: index < 5,
-      show_on_homepage: index < 5,
+      is_featured: isFeatured,
+      show_on_homepage: isFeatured,
     });
   }
 }

@@ -1,5 +1,6 @@
 export type AvailabilityStatus = "in_stock" | "on_request" | "out_of_stock";
 export type PriceStatus = "fixed" | "on_request" | "hidden";
+export type PartType = "original" | "oem" | "analog";
 export type CatalogSort =
   | "relevance"
   | "price_asc"
@@ -46,6 +47,9 @@ export type ProductCardData = {
   currency: string;
   priceStatus: PriceStatus;
   availabilityStatus: AvailabilityStatus;
+  brand?: string | null;
+  partType?: PartType | null;
+  deliveryStatus?: string | null;
 };
 
 export type Product = ProductCardData & {
@@ -93,6 +97,8 @@ export type ArticleCardData = {
   coverImageId: string | null;
   imageAlt: string | null;
   publishedAt: string;
+  categoryLabel?: string | null;
+  readingTimeMinutes?: number | null;
 };
 
 export type Article = ArticleCardData & {
