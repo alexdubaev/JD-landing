@@ -95,6 +95,27 @@ describe("BulkPartsRequest", () => {
     expect(screen.queryByText("parts.csv")).not.toBeInTheDocument();
   });
 
+  it.each([
+    ["excel", "Загрузить Excel"],
+    ["photo", "Прикрепить фото"],
+  ] as const)("activates and focuses the %s attachment control", async (mode, label) => {
+    const pickerSpy = vi.spyOn(HTMLInputElement.prototype, "click");
+    render(<BulkPartsRequest initialMode={mode} />);
+
+    const input = screen.getByLabelText(label);
+    const control = screen.getByRole("button", { name: label });
+    await waitFor(() => expect(control).toHaveClass("is-active"));
+    expect(control).toHaveFocus();
+    expect(input).not.toHaveFocus();
+    expect(pickerSpy).not.toHaveBeenCalled();
+  });
+
+  it("focuses the article list for the default request mode", async () => {
+    render(<BulkPartsRequest initialMode="list" />);
+
+    await waitFor(() => expect(screen.getByLabelText("Список артикулов")).toHaveFocus());
+  });
+
   it("submits normalized items as multipart data", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), { status: 201 }),

@@ -183,7 +183,7 @@ export function ProductCard({
             <Link
               aria-label={`Перейти к списку запроса: ${requestCount} поз.`}
               className="product-card__request-summary"
-              href="/#parts-request"
+              href="/parts-request"
             >
               В списке: {requestCount}
             </Link>

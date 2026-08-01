@@ -141,9 +141,9 @@ export function HeroPartSearch({
       <div className="hero-part-search__scenarios">
         <span>Нужно проверить несколько позиций?</span>
         <div>
-          <Link href="#parts-request" onClick={() => trackEvent("parts_request_cta", { method: "paste" })}>Вставить список</Link>
-          <Link href="#parts-request" onClick={() => trackEvent("parts_request_cta", { method: "excel" })}>Загрузить Excel</Link>
-          <Link href="#parts-request" onClick={() => trackEvent("parts_request_cta", { method: "photo" })}>Отправить фото</Link>
+          <Link href="/parts-request" onClick={() => trackEvent("parts_request_cta", { method: "paste" })}>Вставить список</Link>
+          <Link href="/parts-request?mode=excel#attachments" onClick={() => trackEvent("parts_request_cta", { method: "excel" })}>Загрузить Excel</Link>
+          <Link href="/parts-request?mode=photo#attachments" onClick={() => trackEvent("parts_request_cta", { method: "photo" })}>Отправить фото</Link>
         </div>
       </div>
     </div>

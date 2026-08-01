@@ -6048,3 +6048,119 @@ p {
   width: 100%;
   max-width: 500px;
 }
+
+/* Final density lock: keep the homepage aligned with the production catalog. */
+.home-categories__grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+  border: 0;
+}
+
+.home-category,
+.home-category > a {
+  height: 78px;
+  min-height: 78px;
+}
+
+.home-category > a {
+  grid-template-columns: 40px minmax(0, 1fr) 20px;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.home-category .home-category__media,
+.home-category--text-only .home-category__media {
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  aspect-ratio: auto;
+}
+
+.home-category .home-category__media > svg {
+  width: 30px;
+  height: 30px;
+}
+
+.home-category h3 {
+  max-height: 2.24em;
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.92rem;
+  line-height: 1.12;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.home-section__heading h2,
+.home-selection__intro h2,
+.home-faq__heading h2,
+.home-contact-hub h2,
+.related-articles h2 {
+  font-size: clamp(2rem, 3vw, 2.5rem);
+}
+
+.parts-request-page__heading {
+  padding-block: 1.25rem 1.75rem;
+  background: #f4f5f0;
+}
+
+.parts-request-page__heading h1 {
+  max-width: 18ch;
+  margin: 1rem 0 0;
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  line-height: 0.98;
+}
+
+.parts-request-page__heading p {
+  max-width: 48rem;
+  margin: 0.8rem 0 0;
+  color: var(--muted-foreground);
+}
+
+#attachments {
+  scroll-margin-top: 7rem;
+}
+
+.parts-request__attachments .button.is-active,
+.parts-request__attachments .button:focus-visible {
+  border-color: var(--accent);
+  outline: 3px solid rgb(242 201 76 / 38%);
+  outline-offset: 2px;
+}
+
+@media (max-width: 72rem) {
+  .home-categories__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 48rem) {
+  .home-categories__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .home-category,
+  .home-category > a {
+    height: 72px;
+    min-height: 72px;
+  }
+
+  .home-category > a {
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+    padding: 0.55rem;
+  }
+
+  .home-category .home-category__media,
+  .home-category--text-only .home-category__media {
+    width: 36px;
+    height: 36px;
+  }
+
+  .parts-request-page__heading {
+    padding-block: 1rem 1.4rem;
+  }
+}

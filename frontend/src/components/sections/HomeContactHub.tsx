@@ -1,4 +1,5 @@
 import { Clock3, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import Link from "next/link";
 
 import { LeadForm } from "@/components/forms/LeadForm";
 import { Container } from "@/components/ui/Container";
@@ -61,7 +62,7 @@ export function HomeContactHub({
           </p>
           <div className="home-contact-hub__actions">
             <a className="button button--accent" href="#contact-form">Отправить запрос</a>
-            <a className="button button--secondary" href="#parts-request">Загрузить список</a>
+            <Link className="button button--secondary" href="/parts-request">Загрузить список</Link>
             {primaryPhone ? <TrackedPhoneLink className="button button--secondary" phone={primaryPhone.value}>Позвонить</TrackedPhoneLink> : null}
           </div>
           <address>

@@ -18,6 +18,23 @@ const mockSuggestions = () => vi.spyOn(globalThis, "fetch").mockResolvedValue(
 );
 
 describe("HeroPartSearch", () => {
+  it("routes each bulk-request scenario to its dedicated page mode", () => {
+    render(<HeroPartSearch />);
+
+    expect(screen.getByRole("link", { name: "Вставить список" })).toHaveAttribute(
+      "href",
+      "/parts-request",
+    );
+    expect(screen.getByRole("link", { name: "Загрузить Excel" })).toHaveAttribute(
+      "href",
+      "/parts-request?mode=excel#attachments",
+    );
+    expect(screen.getByRole("link", { name: "Отправить фото" })).toHaveAttribute(
+      "href",
+      "/parts-request?mode=photo#attachments",
+    );
+  });
+
   it("submits the article query to the catalog", () => {
     render(<HeroPartSearch />);
     const input = screen.getByRole("combobox", { name: "Артикул детали" });

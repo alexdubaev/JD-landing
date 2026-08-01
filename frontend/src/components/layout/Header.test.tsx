@@ -46,7 +46,7 @@ describe("Header", () => {
     ).toHaveAttribute("href", "tel:+79000000000");
     expect(
       screen.getAllByRole("link", { name: "Отправить запрос" }).at(-1),
-    ).toHaveAttribute("href", "/#parts-request");
+    ).toHaveAttribute("href", "/parts-request");
     expect(
       screen.getByRole("link", { name: "Доставка" }),
     ).toHaveAttribute("href", "/delivery");
@@ -69,7 +69,7 @@ describe("Header", () => {
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole("link", { name: "Отправить запрос" }).at(-1),
-    ).toHaveAttribute("href", "/#parts-request");
+    ).toHaveAttribute("href", "/parts-request");
   });
 
   it("switches to a compact sticky state while scrolling", () => {

@@ -250,23 +250,44 @@ async function upsertItem(client, collection, field, value, data) {
 }
 
 async function ensureHomePage(client) {
+  const data = {
+    status: "published",
+    title: "Каталог комплектующих John Deere",
+    slug: "home",
+    page_type: "home",
+    h1: "Запчасти и комплектующие John Deere",
+    seo_title: "Каталог комплектующих John Deere — DEERE-SHOP",
+    seo_description: "Каталог деталей и подбор комплектующих John Deere по артикулу, модели техники или фотографии маркировки.",
+    seo_text: null,
+    translations: {},
+  };
   const existing = await findOne(client, "pages", "slug", "home");
   if (existing) {
-    return existing;
+    return patchItem(client, "pages", existing.id, data);
   }
   return client.request("/items/pages", {
     method: "POST",
-    body: JSON.stringify({
-      status: "published",
-      title: "Каталог комплектующих John Deere",
-      slug: "home",
-      page_type: "home",
-      h1: "Запчасти и комплектующие John Deere",
-      seo_title: "Каталог комплектующих John Deere — DEERE-SHOP",
-      seo_description: "Каталог деталей и подбор комплектующих John Deere по артикулу, модели техники и фотографии маркировки.",
-      seo_text: null,
-      translations: {},
-    }),
+    body: JSON.stringify(data),
+  });
+}
+
+async function ensurePartsRequestPage(client) {
+  const data = {
+    status: "published",
+    title: "Проверка списка запчастей",
+    slug: "parts-request",
+    page_type: "standard",
+    h1: "Проверка списка запчастей",
+    seo_title: "Проверка списка запчастей John Deere — DEERE-SHOP",
+    seo_description: "Отправьте список, Excel/CSV или фотографию для проверки цены, наличия, сроков и возможных замен.",
+    seo_text: null,
+    translations: {},
+  };
+  const existing = await findOne(client, "pages", "slug", "parts-request");
+  if (existing) return patchItem(client, "pages", existing.id, data);
+  return client.request("/items/pages", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }
 
@@ -301,14 +322,42 @@ export function isCompleteHomepageProduct(product) {
     product.title.trim().length > 0 &&
     typeof product.sku === "string" &&
     product.sku.trim().length > 0 &&
-    Boolean(product.main_image) &&
-    product.price_status === "fixed" &&
-    product.price !== null &&
-    product.price !== "" &&
-    Number.isFinite(Number(product.price)) &&
-    typeof product.delivery_status === "string" &&
-    product.delivery_status.trim().length > 0
+    Boolean(product.main_image)
   );
+}
+
+export async function syncPartsRequestSection(
+  client,
+  homePageId,
+  partsPageId,
+  definition,
+) {
+  const findSection = async (pageId) => {
+    const query = `/items/page_sections?filter[page][_eq]=${encode(pageId)}&filter[section_type][_eq]=parts_request&fields=id,page,section_type&limit=1`;
+    return (await client.request(query))[0] ?? null;
+  };
+  const target = await findSection(partsPageId);
+  const existing = target ?? (await findSection(homePageId));
+  const data = {
+    page: partsPageId,
+    status: "published",
+    title: null,
+    subtitle: null,
+    text: null,
+    image: null,
+    button_text: null,
+    button_url: null,
+    items: [],
+    settings: {},
+    is_visible: true,
+    translations: {},
+    ...definition,
+  };
+  if (existing) return patchItem(client, "page_sections", existing.id, data);
+  return client.request("/items/page_sections", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 async function publishCatalog(client) {
@@ -324,7 +373,7 @@ async function publishCatalog(client) {
   }
 
   const products = await client.request(
-    "/items/products?fields=id,title,sku,main_image,price,price_status,delivery_status&limit=-1",
+    "/items/products?fields=id,title,sku,main_image&limit=-1",
   );
   const featuredIds = new Set(
     products.filter(isCompleteHomepageProduct).slice(0, 5).map(({ id }) => id),
@@ -373,19 +422,31 @@ export async function syncEditorialAssets(client) {
   }
 
   const home = await ensureHomePage(client);
+  const partsRequestPage = await ensurePartsRequestPage(client);
   const heroAssetId = await uploadAsset(
     client,
     manifest.homeHero.file,
     "home-hero:deere-shop-v2",
   );
 
-  for (const section of homeSections) {
+  const partsRequestSection = homeSections.find(
+    ({ section_type }) => section_type === "parts_request",
+  );
+  for (const section of homeSections.filter(
+    ({ section_type }) => section_type !== "parts_request",
+  )) {
     await upsertPageSection(
       client,
       home.id,
       section.section_type === "hero" ? { ...section, image: heroAssetId } : section,
     );
   }
+  await syncPartsRequestSection(
+    client,
+    home.id,
+    partsRequestPage.id,
+    partsRequestSection,
+  );
 
   const faqItems = homepageFaqItems;
   for (const [index, [question, answer]] of faqItems.entries()) {

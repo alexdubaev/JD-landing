@@ -36,6 +36,8 @@ import { TurnstileField, type TurnstileFieldHandle } from "./TurnstileField";
 
 const storageKey = "deere-shop:parts-request-draft";
 
+export type PartsRequestMode = "list" | "excel" | "photo";
+
 const readableSize = (bytes: number) =>
   bytes >= 1024 * 1024
     ? `${(bytes / (1024 * 1024)).toFixed(1)} МБ`
@@ -46,7 +48,11 @@ const initialDraft = () =>
     ? ""
     : reconcileProductRequestDraft(localStorage.getItem(storageKey) ?? "");
 
-export function BulkPartsRequest() {
+export function BulkPartsRequest({
+  initialMode = "list",
+}: {
+  initialMode?: PartsRequestMode;
+}) {
   const [draft, setDraft] = useState(initialDraft);
   const [spreadsheet, setSpreadsheet] = useState<File | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
@@ -54,6 +60,9 @@ export function BulkPartsRequest() {
   const [state, setState] = useState<"idle" | "sending" | "success">("idle");
   const spreadsheetInput = useRef<HTMLInputElement>(null);
   const photoInput = useRef<HTMLInputElement>(null);
+  const listInput = useRef<HTMLTextAreaElement>(null);
+  const spreadsheetControl = useRef<HTMLButtonElement>(null);
+  const photoControl = useRef<HTMLButtonElement>(null);
   const turnstile = useRef<TurnstileFieldHandle>(null);
   const parsed = useMemo(() => parsePartsRequest(draft), [draft]);
 
@@ -68,6 +77,22 @@ export function BulkPartsRequest() {
     window.addEventListener(PRODUCT_REQUEST_LIST_EVENT, syncProducts);
     return () => window.removeEventListener(PRODUCT_REQUEST_LIST_EVENT, syncProducts);
   }, []);
+
+  useEffect(() => {
+    const focusTimer = window.setTimeout(() => {
+      if (initialMode === "list") {
+        listInput.current?.focus({ preventScroll: true });
+        return;
+      }
+
+      document.getElementById("attachments")?.scrollIntoView?.({
+        block: "center",
+      });
+      const control = initialMode === "excel" ? spreadsheetControl : photoControl;
+      control.current?.focus({ preventScroll: true });
+    }, 250);
+    return () => window.clearTimeout(focusTimer);
+  }, [initialMode]);
 
   function changeFile(kind: AttachmentKind, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
@@ -164,11 +189,13 @@ export function BulkPartsRequest() {
         Список артикулов
       </label>
       <textarea
+        autoFocus={initialMode === "list"}
         id="parts-request-list"
         name="parts_request_draft"
         onChange={(event) => setDraft(event.target.value)}
         onPaste={() => trackEvent("parts_list_paste")}
         placeholder={"RE504836 — 2 шт.\nAL166181 — 1 шт.\nR123456 — 4 шт."}
+        ref={listInput}
         rows={7}
         value={draft}
       />
@@ -177,31 +204,43 @@ export function BulkPartsRequest() {
           ? `Позиций в списке: ${parsed.items.length}`
           : "Добавьте от 1 до 100 позиций"}
       </div>
-      <div className="parts-request__attachments">
-        <label className="button button--secondary" htmlFor="parts-request-sheet">
+      <div className="parts-request__attachments" id="attachments">
+        <button
+          autoFocus={initialMode === "excel"}
+          className={`button button--secondary${initialMode === "excel" ? " is-active" : ""}`}
+          onClick={() => spreadsheetInput.current?.click()}
+          ref={spreadsheetControl}
+          type="button"
+        >
           <FileSpreadsheet aria-hidden="true" />
           Загрузить Excel
-          <input
-            accept=".xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-            aria-label="Загрузить Excel"
-            id="parts-request-sheet"
-            onChange={(event) => changeFile("spreadsheet", event)}
-            ref={spreadsheetInput}
-            type="file"
-          />
-        </label>
-        <label className="button button--secondary" htmlFor="parts-request-photo">
+        </button>
+        <input
+          accept=".xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+          aria-label="Загрузить Excel"
+          id="parts-request-sheet"
+          onChange={(event) => changeFile("spreadsheet", event)}
+          ref={spreadsheetInput}
+          type="file"
+        />
+        <button
+          autoFocus={initialMode === "photo"}
+          className={`button button--secondary${initialMode === "photo" ? " is-active" : ""}`}
+          onClick={() => photoInput.current?.click()}
+          ref={photoControl}
+          type="button"
+        >
           <Camera aria-hidden="true" />
           Прикрепить фото
-          <input
-            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-            aria-label="Прикрепить фото"
-            id="parts-request-photo"
-            onChange={(event) => changeFile("photo", event)}
-            ref={photoInput}
-            type="file"
-          />
-        </label>
+        </button>
+        <input
+          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+          aria-label="Прикрепить фото"
+          id="parts-request-photo"
+          onChange={(event) => changeFile("photo", event)}
+          ref={photoInput}
+          type="file"
+        />
         <button className="button button--ghost" onClick={clearDraft} type="button">
           <Trash2 aria-hidden="true" />
           Очистить

@@ -6,7 +6,6 @@ import { HomeRecentSupplies } from "@/components/sections/HomeRecentSupplies";
 import { HomeFaq } from "@/components/sections/HomeContentSections";
 import { HomeFeatured } from "@/components/sections/HomeFeatured";
 import { HomeHero } from "@/components/sections/HomeHero";
-import { HomePartsRequest } from "@/components/sections/HomePartsRequest";
 import { HomeSelection } from "@/components/sections/HomeSelection";
 import type {
   ArticleCardData,
@@ -85,7 +84,6 @@ export function HomePageView({
         settings={settings}
       />
       <HomeCategories categories={categories} section={categoriesSection} />
-      {find("parts_request") ? <HomePartsRequest section={find("parts_request")!} /> : null}
       <HomeFeatured products={products.slice(0, 5)} section={featured} />
       <HomeSelection ctaSection={find("cta")} section={process} />
       {find("company_trust") ? <HomeCompanyTrust section={find("company_trust")!} settings={settings} /> : null}

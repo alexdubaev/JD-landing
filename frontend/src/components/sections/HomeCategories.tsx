@@ -18,7 +18,7 @@ export const getHomepageCategories = (categories: Category[]) =>
       (item) => item.id === category.id || item.slug === category.slug,
     );
 
-    if (result.length < 8 && !isMisc && !isDuplicate) result.push(category);
+    if (result.length < 11 && !isMisc && !isDuplicate) result.push(category);
     return result;
   }, []);
 

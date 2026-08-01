@@ -182,8 +182,8 @@ describe("HomePageView", () => {
       screen.getByRole("heading", { name: "Категории запчастей" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Проверьте список запчастей" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "Проверьте список запчастей" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Фильтр")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Как отправить запрос?" }),

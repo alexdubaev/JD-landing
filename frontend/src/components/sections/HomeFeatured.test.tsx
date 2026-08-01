@@ -39,19 +39,26 @@ const completeProduct = {
 } as ProductCardData;
 
 describe("HomeFeatured", () => {
-  it("uses the catalog fallback heading and excludes incomplete products", () => {
+  it("keeps products with factual identity when optional commercial data is missing", () => {
     render(
       <HomeFeatured
         products={[
           completeProduct,
-          { ...completeProduct, id: "missing-delivery", deliveryStatus: null },
+          {
+            ...completeProduct,
+            id: "missing-commercial-data",
+            price: null,
+            priceStatus: "on_request",
+            deliveryStatus: null,
+          },
         ]}
         section={section}
       />,
     );
 
     expect(screen.getByRole("heading", { name: "Позиции каталога" })).toBeInTheDocument();
-    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.getAllByRole("article")).toHaveLength(2);
+    expect(screen.getByText("Цена по запросу")).toBeInTheDocument();
   });
 
   it("hides the block when every featured product is incomplete", () => {

@@ -153,21 +153,15 @@ describe("catalog queries", () => {
       },
     ]);
 
-    const products = await getFeaturedProducts(1);
+    const products = await getFeaturedProducts(2);
 
     const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
     expect(url.searchParams.get("filter[is_featured][_eq]")).toBe("true");
-    expect(url.searchParams.get("filter[price_status][_eq]")).toBe("fixed");
+    expect(url.searchParams.get("filter[price_status][_eq]")).toBeNull();
+    expect(url.searchParams.get("filter[delivery_status][_nnull]")).toBeNull();
     expect(url.searchParams.get("fields")).toContain("delivery_status");
-    expect(url.searchParams.get("limit")).toBe("3");
-    expect(products).toEqual([
-      expect.objectContaining({
-        id: "complete",
-        brand: "John Deere",
-        partType: "original",
-        deliveryStatus: "На складе поставщика",
-      }),
-    ]);
+    expect(url.searchParams.get("limit")).toBe("6");
+    expect(products.map(({ id }) => id)).toEqual(["complete", "incomplete"]);
   });
 
 });

@@ -56,18 +56,20 @@ describe("HomeCategories", () => {
   });
 
   it("keeps the CMS homepage order, excludes obvious misc categories and caps output", () => {
-    const categories = [
-      { ...category, id: "hydraulics", title: "Гидравлика", slug: "hydraulics" },
-      { ...category, id: "engine", title: "Двигатель", slug: "engine" },
+    const categories = Array.from({ length: 12 }, (_, index) => ({
+      ...category,
+      id: `category-${index + 1}`,
+      title: `Категория ${index + 1}`,
+      slug: `category-${index + 1}`,
+    }));
+    categories.splice(2, 0,
       { ...category, id: "misc", title: "Прочее", slug: "misc" },
-      { ...category, id: "electrics", title: "Электрика", slug: "electrics" },
-    ];
+    );
 
-    expect(getHomepageCategories(categories).map(({ title }) => title)).toEqual([
-      "Гидравлика",
-      "Двигатель",
-      "Электрика",
-    ]);
+    expect(getHomepageCategories(categories)).toHaveLength(11);
+    expect(getHomepageCategories(categories).map(({ title }) => title)).toEqual(
+      Array.from({ length: 11 }, (_, index) => `Категория ${index + 1}`),
+    );
   });
 
   it("uses the all-categories label for the catalog entry point", () => {

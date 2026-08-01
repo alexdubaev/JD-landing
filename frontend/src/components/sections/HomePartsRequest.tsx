@@ -1,11 +1,20 @@
 import { Check } from "lucide-react";
 
-import { BulkPartsRequest } from "@/components/forms/BulkPartsRequest";
+import {
+  BulkPartsRequest,
+  type PartsRequestMode,
+} from "@/components/forms/BulkPartsRequest";
 import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
 import type { PageSection } from "@/types/content";
 
-export function HomePartsRequest({ section }: { section: PageSection }) {
+export function HomePartsRequest({
+  initialMode,
+  section,
+}: {
+  initialMode?: PartsRequestMode;
+  section: PageSection;
+}) {
   const cmsOutcomes = section.items.flatMap((item) => {
     if (typeof item === "string") return [item];
     if (item && typeof item === "object" && "title" in item && typeof item.title === "string") return [item.title];
@@ -21,7 +30,7 @@ export function HomePartsRequest({ section }: { section: PageSection }) {
         </Reveal>
         <div className="home-parts-request__grid">
           <Reveal className="home-parts-request__form" direction="left">
-            <BulkPartsRequest />
+            <BulkPartsRequest initialMode={initialMode} />
           </Reveal>
           <Reveal className="home-parts-request__outcomes" direction="right">
             <p>По запросу подготовим</p>

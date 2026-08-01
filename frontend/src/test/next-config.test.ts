@@ -18,4 +18,8 @@ describe("Next image configuration", () => {
       ]),
     );
   });
+
+  it("allows the loopback host used by local browser QA", () => {
+    expect(nextConfig.allowedDevOrigins).toContain("127.0.0.1");
+  });
 });

@@ -10,11 +10,7 @@ import type { PageSection } from "@/types/content";
 const isCompleteHomepageProduct = (product: ProductCardData) =>
   Boolean(product.mainImageId) &&
   Boolean(product.title.trim()) &&
-  Boolean(product.sku.trim()) &&
-  product.priceStatus === "fixed" &&
-  typeof product.price === "number" &&
-  Number.isFinite(product.price) &&
-  Boolean(product.deliveryStatus?.trim());
+  Boolean(product.sku.trim());
 
 export function HomeFeatured({
   products,

@@ -264,9 +264,6 @@ export async function getFeaturedProducts(
     "filter[main_image][_nnull]": "true",
     "filter[title][_nnull]": "true",
     "filter[sku][_nnull]": "true",
-    "filter[price_status][_eq]": "fixed",
-    "filter[price][_nnull]": "true",
-    "filter[delivery_status][_nnull]": "true",
     fields: cardFields,
     sort: "sort_order,-popularity_score,title",
     limit: String(fetchLimit),
@@ -281,11 +278,7 @@ export async function getFeaturedProducts(
       (product) =>
         Boolean(product.mainImageId) &&
         Boolean(product.title.trim()) &&
-        Boolean(product.sku.trim()) &&
-        product.priceStatus === "fixed" &&
-        typeof product.price === "number" &&
-        Number.isFinite(product.price) &&
-        Boolean(product.deliveryStatus?.trim()),
+        Boolean(product.sku.trim()),
     )
     .slice(0, safeLimit);
 }

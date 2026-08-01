@@ -61,7 +61,7 @@ export function MobileNavigation({
             ) : null}
             <Link
               className="mobile-navigation__request"
-              href="/#parts-request"
+              href="/parts-request"
               onClick={() => setIsOpen(false)}
             >
               Отправить запрос

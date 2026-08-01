@@ -65,7 +65,7 @@ describe("ProductCard", () => {
     expect(localStorage.getItem("deere-shop:product-request-list")).toContain("RE123456");
     expect(
       screen.getByRole("link", { name: "Перейти к списку запроса: 1 поз." }),
-    ).toHaveAttribute("href", "/#parts-request");
+    ).toHaveAttribute("href", "/parts-request");
 
     fireEvent.click(screen.getByRole("button", { name: "Убрать из запроса" }));
     expect(localStorage.getItem("deere-shop:product-request-list")).toBe("[]");

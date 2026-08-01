@@ -82,7 +82,7 @@ export function Header({
                 Консультация
               </Link>
             )}
-            <Link className="site-header__request" href="/#parts-request">
+            <Link className="site-header__request" href="/parts-request">
               Отправить запрос
             </Link>
           </div>
