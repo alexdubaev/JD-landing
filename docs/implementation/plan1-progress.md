@@ -66,5 +66,6 @@
 ## Progress log
 
 - 2026-08-01: baseline completed; Refero unavailable; reference lock created.
-- 2026-08-01: Tasks 2-4 implemented with independent review after each batch; 125 frontend and 39 Directus tests pass.
+- 2026-08-01: Tasks 2-4 implemented with independent review after each batch; 128 frontend and 39 Directus tests pass.
 - 2026-08-01: production build, typecheck, lint and browser screenshots completed; final narrow-phone containment override added after visual QA.
+- 2026-08-01: final whole-branch review findings resolved: CMS visibility, Turnstile retry handling, bounded multipart requests, unambiguous quantity parsing, stale search results and analytics semantics.

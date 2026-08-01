@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 import { trackEvent } from "@/lib/analytics";
-import { TurnstileField } from "./TurnstileField";
+import { TurnstileField, type TurnstileFieldHandle } from "./TurnstileField";
 
 export function LeadForm({
   categoryId,
@@ -16,6 +16,7 @@ export function LeadForm({
   const [state, setState] = useState<"idle" | "sending" | "success" | "error">(
     "idle",
   );
+  const turnstile = useRef<TurnstileFieldHandle>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,6 +45,7 @@ export function LeadForm({
       setState("success");
       return;
     }
+    turnstile.current?.reset();
     setState("error");
   }
 
@@ -92,7 +94,7 @@ export function LeadForm({
           <Link href="/privacy-policy">политикой конфиденциальности</Link>
         </span>
       </label>
-      <TurnstileField />
+      <TurnstileField ref={turnstile} />
       <button
         className="button button--primary"
         disabled={state === "sending"}

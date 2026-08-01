@@ -32,7 +32,7 @@ import {
   setProductRequestList,
 } from "@/lib/leads/product-request-list";
 import { trackEvent } from "@/lib/analytics";
-import { TurnstileField } from "./TurnstileField";
+import { TurnstileField, type TurnstileFieldHandle } from "./TurnstileField";
 
 const storageKey = "deere-shop:parts-request-draft";
 
@@ -54,6 +54,7 @@ export function BulkPartsRequest() {
   const [state, setState] = useState<"idle" | "sending" | "success">("idle");
   const spreadsheetInput = useRef<HTMLInputElement>(null);
   const photoInput = useRef<HTMLInputElement>(null);
+  const turnstile = useRef<TurnstileFieldHandle>(null);
   const parsed = useMemo(() => parsePartsRequest(draft), [draft]);
 
   useEffect(() => {
@@ -140,6 +141,7 @@ export function BulkPartsRequest() {
       return;
     }
     const body = await response?.json().catch(() => null);
+    turnstile.current?.reset();
     setError(body?.error ?? "Не удалось отправить список. Попробуйте ещё раз.");
     setState("idle");
   }
@@ -235,7 +237,7 @@ export function BulkPartsRequest() {
           Согласен с <Link href="/privacy-policy">политикой конфиденциальности</Link>
         </span>
       </label>
-      <TurnstileField />
+      <TurnstileField ref={turnstile} />
       <button className="button button--accent" disabled={state === "sending"} type="submit">
         <Upload aria-hidden="true" />
         {state === "sending" ? "Отправляем…" : "Отправить список на расчёт"}

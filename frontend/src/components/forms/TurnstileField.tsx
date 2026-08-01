@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 type TurnstileApi = {
   render: (
@@ -16,7 +16,10 @@ type TurnstileApi = {
     },
   ) => string;
   remove: (widgetId: string) => void;
+  reset: (widgetId: string) => void;
 };
+
+export type TurnstileFieldHandle = { reset: () => void };
 
 declare global {
   interface Window {
@@ -26,7 +29,7 @@ declare global {
 
 const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-export function TurnstileField() {
+export const TurnstileField = forwardRef<TurnstileFieldHandle>(function TurnstileField(_, ref) {
   const container = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
   const [token, setToken] = useState("");
@@ -51,6 +54,13 @@ export function TurnstileField() {
     };
   }, [renderWidget]);
 
+  useImperativeHandle(ref, () => ({
+    reset() {
+      setToken("");
+      if (widgetId.current && window.turnstile) window.turnstile.reset(widgetId.current);
+    },
+  }), []);
+
   if (!siteKey) return null;
 
   return (
@@ -65,4 +75,4 @@ export function TurnstileField() {
       <input name="turnstile_token" type="hidden" value={token} />
     </div>
   );
-}
+});
