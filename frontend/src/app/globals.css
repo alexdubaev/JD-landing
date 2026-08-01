@@ -5979,3 +5979,67 @@ p {
     width: 100%;
   }
 }
+
+/* Keep the compact hero inside narrow phone viewports. This final override is
+   intentionally colocated with the Plan 1 responsive rules so later desktop
+   density adjustments cannot restore wider grids on phones. */
+@media (max-width: 32rem) {
+  .commerce-hero__content,
+  .commerce-hero__copy,
+  .hero-part-search,
+  .hero-part-search__form,
+  .hero-part-search__scenarios,
+  .commerce-hero__benefits,
+  .commerce-hero__benefits-grid {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .commerce-hero__content {
+    min-height: 700px;
+  }
+
+  .commerce-hero__copy h1 {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-size: clamp(2.05rem, 10vw, 2.75rem);
+  }
+
+  .commerce-hero__description {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-part-search__form {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .hero-part-search__form button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hero-part-search__scenarios > div {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hero-part-search__scenarios a {
+    justify-content: center;
+    padding-inline: 0.1rem;
+    text-align: center;
+  }
+
+  .commerce-hero__benefits-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .commerce-hero__benefit,
+  .commerce-hero__benefit:nth-child(2) {
+    min-width: 0;
+  }
+
+  .commerce-hero__benefit:nth-child(even) {
+    border-right: 0;
+  }
+}

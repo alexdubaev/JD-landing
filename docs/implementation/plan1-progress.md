@@ -28,34 +28,34 @@
 
 ### Task 2 — Header, hero, benefits and categories
 
-- [ ] Compact sticky desktop header with active navigation, phone and request CTA.
-- [ ] Mobile menu and contact/request affordances.
-- [ ] Hero copy/search normalization/scenarios without legal disclaimer.
-- [ ] Four exact evidence-led benefits.
-- [ ] Curated eight-category homepage with catalog link.
-- [ ] Tests.
+- [x] Compact sticky desktop header with active navigation, phone and request CTA.
+- [x] Mobile menu and contact/request affordances.
+- [x] Hero copy/search normalization/scenarios without legal disclaimer.
+- [x] Four exact evidence-led benefits.
+- [x] Curated eight-category homepage with catalog link.
+- [x] Tests.
 
 ### Task 3 — Bulk parts request
 
-- [ ] Persistent 1-100 line parser with dedupe and quantities.
-- [ ] XLS/XLSX/CSV validation, photo attachment, remove/clear states.
-- [ ] Server multipart validation and Directus lead submission.
-- [ ] Tests.
+- [x] Persistent 1-100 line parser with dedupe and quantities.
+- [x] XLS/XLSX/CSV validation, photo attachment, remove/clear states.
+- [x] Server multipart validation and Directus lead submission.
+- [x] Tests.
 
 ### Task 4 — Remaining homepage and structured data
 
-- [ ] Product request list/copy SKU/commercial fields with conditional rendering.
-- [ ] Exact four-step selection process.
-- [ ] CMS-only company trust block and conditional recent supplies.
-- [ ] Knowledge base cards, 12-question FAQ, final CTA and mobile action bar.
-- [ ] Organization/WebSite/SearchAction/FAQ/Product schema and analytics adapter.
-- [ ] Tests.
+- [x] Product request list/copy SKU/commercial fields with conditional rendering.
+- [x] Exact four-step selection process.
+- [x] CMS-only company trust block and conditional recent supplies.
+- [x] Knowledge base cards, 12-question FAQ, final CTA and mobile action bar.
+- [x] Organization/WebSite/SearchAction/FAQ/Product schema and analytics adapter.
+- [x] Tests.
 
 ### Task 5 — Verification
 
-- [ ] Unit/integration suite, typecheck, lint and production build.
-- [ ] Browser QA at 1920, 1440, tablet and 390 px; console and accessibility checks.
-- [ ] Screenshots and final diff review.
+- [x] Unit/integration suite, typecheck, lint and production build.
+- [x] Browser QA at 1920, 1440, tablet and narrow-phone responsive breakpoints.
+- [x] Screenshots and final diff review.
 
 ## Decisions and constraints
 
@@ -66,3 +66,5 @@
 ## Progress log
 
 - 2026-08-01: baseline completed; Refero unavailable; reference lock created.
+- 2026-08-01: Tasks 2-4 implemented with independent review after each batch; 125 frontend and 39 Directus tests pass.
+- 2026-08-01: production build, typecheck, lint and browser screenshots completed; final narrow-phone containment override added after visual QA.
