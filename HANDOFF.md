@@ -1,6 +1,6 @@
 # DEERE-SHOP — HANDOFF
 
-Актуально на: 1 августа 2026 года
+Актуально на: 4 августа 2026 года
 Корень репозитория: `D:\codex\JD_landing`
 
 ## 1. Что это за проект
@@ -24,9 +24,12 @@
 
 ```text
 ветка: agent/production-infrastructure
-HEAD: 0fb23f7 chore: ignore local worktrees
-состояние относительно origin: ahead 1
+HEAD: 6f78ddb fix: production readiness audit and test stability
+состояние относительно origin: ahead 2 (не отправлены в GitHub)
 ```
+
+Коммит `6f78ddb` фиксирует всю работу аудита готовности к запуску (секция 15) плюс стабилизацию тестов.
+Push в GitHub не выполнен — ждать явного решения владельца.
 
 Актуальная реализация нового интерфейса находится в отдельном worktree:
 
@@ -346,15 +349,25 @@ ssh -i C:\Users\Elena\.ssh\jd_landing_deploy codex-deploy@91.227.68.176
 5. **Дополнить навигацию в админке**: сейчас на live показывается «Каталог, Статьи, Подбор» — добавить пункты «Доставка», «Компания» в `navigation_items`, если они нужны в меню.
 6. **Проверить revalidation webhook** настроен в Directus (POST на `/api/revalidate` с заголовком `x-revalidate-secret` и телом `{"collection": "..."}`).
 
-### 15.3 Что НЕ сделано (отложено по решению владельца)
+### 15.3 Состояние проверок (верифицировано 4 августа)
+
+- Frontend: **162 теста** ✅, `tsc --noEmit` ✅, `npm run lint` ✅, `npm run build` ✅ (12 страниц).
+- Directus tooling: **56 тестов** ✅.
+- Все изменения зафиксированы в коммите `6f78ddb` на ветке `agent/production-infrastructure`.
+- Push в GitHub НЕ выполнен (ждёт явного решения владельца).
+
+### 15.4 Стабилизация тестов (4 августа)
+
+При массовом запуске под конкурентной нагрузкой vitest падал с `JavaScript heap out of memory` (краш воркера jsdom + React 19). Причина — окружение, не код. Применены минимальные правки конфигурации без изменения тестов:
+
+- `frontend/vitest.config.ts`: `maxWorkers: "50%"`, `minWorkers: 1` — ограничивает параллелизм воркеров.
+- `frontend/package.json`: добавлен `npm run test:ci` с `--max-old-space-size=4096` для CI/тяжёлых окружений.
+- Результат: набор стал стабильным и в ~2 раза быстрее (16.5s → 7.2s на 32 ядрах). Обычный `npm test` не изменился.
+
+### 15.5 Что НЕ сделано (отложено по решению владельца)
 
 - Уведомления менеджеру (email/Telegram) о новом лиде — менеджер проверяет админку вручную.
-- Tailwind v4 миграция (установлен, но весь UI на самописном CSS в `globals.css` — 6166 строк).
+- Tailwind v4 миграция (установлен, но весь UI на самописном CSS в `globals.css`).
 - Нативная мультиязычность (поле `translations` есть как JSON-заглушка).
 - Field-level permissions для SEO Manager (невозможно в Directus 12 Core).
-
-### 15.4 Состояние проверок
-
-- Frontend: 138 тестов ✅, `tsc --noEmit` ✅.
-- Directus tooling: 44 теста ✅.
-- Все изменения на ветке `agent/production-infrastructure`, не закоммичены (ждут решения владельца о commit).
+- CMS-управление `robots.txt` / статическими страницами `sitemap.xml` (сейчас генерируются кодом; динамические товары/категории/статьи попадают в sitemap автоматически).
