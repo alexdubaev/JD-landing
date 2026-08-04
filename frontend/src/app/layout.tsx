@@ -1,24 +1,65 @@
 import type { Metadata } from "next";
 
+import { Analytics } from "@/components/layout/Analytics";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { RouteTransition } from "@/components/motion/RouteTransition";
 import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/brand";
+import { directusAssetUrl } from "@/lib/directus/assets";
 import { getContacts, getNavigation, getSiteSettings } from "@/lib/directus/content";
 import type { NavigationItem, SiteSettings } from "@/types/content";
 
 import "./globals.css";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://deere-shop.ru",
-  ),
-  title: {
-    default: `${BRAND_NAME} — каталог комплектующих John Deere`,
-    template: `%s — ${BRAND_NAME}`,
-  },
-  description: BRAND_DESCRIPTION,
-};
+export const metadataBase = new URL(
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://deere-shop.ru",
+);
+
+export async function generateMetadata(): Promise<Metadata> {
+  let settings: SiteSettings | null = null;
+  try {
+    settings = await getSiteSettings();
+  } catch {
+    settings = null;
+  }
+
+  const companyName = settings?.companyName ?? BRAND_NAME;
+  const title = settings?.seoTitle?.trim()
+    ? `${settings.seoTitle} — ${companyName}`
+    : `${companyName} — каталог комплектующих John Deere`;
+  const description = settings?.seoDescription?.trim() || BRAND_DESCRIPTION;
+  const ogTitle = settings?.ogTitle?.trim() || title;
+  const ogDescription = settings?.ogDescription?.trim() || description;
+  const ogImage = settings?.defaultOgImageId
+    ? directusAssetUrl(settings.defaultOgImageId, {
+        width: 1200,
+        height: 630,
+      })
+    : undefined;
+
+  return {
+    metadataBase,
+    title: {
+      default: title,
+      template: `%s — ${companyName}`,
+    },
+    description,
+    openGraph: {
+      title: ogTitle,
+      description: ogDescription,
+      type: "website",
+      locale: "ru_RU",
+      siteName: companyName,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description: ogDescription,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+  };
+}
 
 async function getLayoutContent(): Promise<{
   navigation: NavigationItem[];
@@ -48,6 +89,10 @@ export default async function RootLayout({
   return (
     <html data-scroll-behavior="smooth" lang="ru">
       <body>
+        <Analytics
+          gtmId={settings?.gtmId}
+          yandexMetricaId={settings?.yandexMetricaId}
+        />
         <a className="skip-link" href="#main-content">
           Перейти к содержанию
         </a>
@@ -64,6 +109,7 @@ export default async function RootLayout({
             companyName={settings?.companyName}
             email={settings?.email}
             footerText={settings?.footerText}
+            footerDisclaimer={settings?.footerDisclaimer}
             logoId={settings?.logoId}
             navigation={navigation}
             phone={settings?.phone}

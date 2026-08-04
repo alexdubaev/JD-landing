@@ -8,10 +8,10 @@ describe("buildHomepageStructuredData", () => {
       faq: [{ id: "faq", question: "Как отправить список?", answer: "Через форму." }],
       settings: {
         address: null, accentColor: null, city: "Санкт-Петербург", companyImageId: null,
-        companyName: "DEERE-SHOP", documentsUrl: null, email: "info@example.test", footerText: null,
+        companyName: "DEERE-SHOP", defaultOgImageId: null, documentsUrl: null, email: "info@example.test", footerDisclaimer: null, footerText: null,
         inn: "7812345678", kpp: null, legalAddress: null, legalName: "ООО «СМ ТЕХНО»", logoId: null,
-        messengers: [], ogrn: null, phone: "+7 900 000-00-00", primaryColor: null,
-        primaryCtaText: null, primaryCtaUrl: null, requisitesUrl: null, vatInfo: null, workingHours: null,
+        messengers: [], ogrn: null, ogDescription: null, ogTitle: null, phone: "+7 900 000-00-00", primaryColor: null,
+        primaryCtaText: null, primaryCtaUrl: null, requisitesUrl: null, seoDescription: null, seoTitle: null, vatInfo: null, workingHours: null, yandexMetricaId: null, gtmId: null,
       },
     });
 

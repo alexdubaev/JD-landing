@@ -21,6 +21,9 @@ type RawArticle = {
   published_at: string;
   category_label?: string | null;
   reading_time_minutes?: string | number | null;
+  author?: string | null;
+  reviewer?: string | null;
+  sources?: unknown;
   seo_title?: string | null;
   seo_description?: string | null;
   og_image?: FileRelation;
@@ -30,9 +33,12 @@ type RawArticle = {
 const fileId = (relation: FileRelation | undefined) =>
   typeof relation === "string" ? relation : (relation?.id ?? null);
 
+const sourceList = (value: unknown): unknown[] =>
+  Array.isArray(value) ? value : [];
+
 const cardFields =
   "id,title,slug,excerpt,cover_image,image_alt,published_at,category_label,reading_time_minutes";
-const detailFields = `${cardFields},content,seo_title,seo_description,og_image,updated_at`;
+const detailFields = `${cardFields},content,author,reviewer,sources,seo_title,seo_description,og_image,updated_at`;
 
 const queryString = (parameters: Record<string, string | undefined>) => {
   const search = new URLSearchParams();
@@ -66,6 +72,9 @@ const mapCard = (raw: RawArticle): ArticleCardData => ({
 const mapArticle = (raw: RawArticle): Article => ({
   ...mapCard(raw),
   content: raw.content ?? "",
+  author: raw.author ?? null,
+  reviewer: raw.reviewer ?? null,
+  sources: sourceList(raw.sources),
   seoTitle: raw.seo_title ?? null,
   seoDescription: raw.seo_description ?? null,
   ogImageId: fileId(raw.og_image),

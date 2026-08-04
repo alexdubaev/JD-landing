@@ -1,15 +1,14 @@
 import type { MetadataRoute } from "next";
 
 import {
-  getCategories,
+  getCategorySitemapEntries,
   getProductSitemapEntries,
 } from "@/lib/directus/catalog";
 import { getArticleSitemapEntries } from "@/lib/directus/articles";
+import { siteOrigin } from "@/lib/seo/url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const origin = (
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://deere-shop.ru"
-  ).replace(/\/+$/u, "");
+  const origin = siteOrigin();
   const staticPaths = [
     "",
     "/catalog",
@@ -18,7 +17,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/delivery",
     "/contacts",
     "/privacy-policy",
-    "/parts-request",
   ];
   const result: MetadataRoute.Sitemap = staticPaths.map((path) => ({
     url: `${origin}${path}`,
@@ -28,13 +26,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const [categories, products, articles] = await Promise.all([
-      getCategories(),
+      getCategorySitemapEntries(),
       getProductSitemapEntries(),
       getArticleSitemapEntries(),
     ]);
     result.push(
       ...categories.map((category) => ({
         url: `${origin}/catalog/${category.slug}`,
+        lastModified: category.updatedAt
+          ? new Date(category.updatedAt)
+          : undefined,
         changeFrequency: "weekly" as const,
         priority: 0.8,
       })),

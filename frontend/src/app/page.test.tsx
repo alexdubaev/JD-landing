@@ -5,11 +5,11 @@ import type { Category, ProductCardData } from "@/types/catalog";
 import type { ContentPage, FaqItem, SiteSettings } from "@/types/content";
 
 import { HomePageView } from "./HomePageView";
-import { dynamic as homePageDynamic } from "./page";
+import { revalidate as homePageRevalidate } from "./page";
 
 describe("HomePage runtime rendering", () => {
-  it("reads CMS content at request time in production containers", () => {
-    expect(homePageDynamic).toBe("force-dynamic");
+  it("uses ISR with short revalidation kept fresh by the Directus webhook", () => {
+    expect(homePageRevalidate).toBe(300);
   });
 });
 
@@ -94,6 +94,7 @@ const settings: SiteSettings = {
   city: null,
   companyImageId: null,
   companyName: "DEERE-SHOP",
+  defaultOgImageId: null,
   documentsUrl: null,
   phone: "+7 900 000-00-00",
   email: "info@example.test",
@@ -105,6 +106,11 @@ const settings: SiteSettings = {
   primaryCtaText: "Получить консультацию",
   primaryCtaUrl: "/contacts",
   footerText: null,
+  footerDisclaimer: null,
+  seoTitle: null,
+  seoDescription: null,
+  ogTitle: null,
+  ogDescription: null,
   inn: null,
   kpp: null,
   legalAddress: null,
@@ -113,6 +119,8 @@ const settings: SiteSettings = {
   ogrn: null,
   requisitesUrl: null,
   vatInfo: null,
+  yandexMetricaId: null,
+  gtmId: null,
 };
 
 const categories: Category[] = [
@@ -128,8 +136,7 @@ const categories: Category[] = [
     seoTitle: null,
     seoDescription: null,
     seoText: null,
-    ogImageId: null,
-  },
+    ogImageId: null, intro: null, selectionGuide: [], internalLinks: [], isIndexable: true, redirectTarget: null, },
 ];
 
 const products: ProductCardData[] = [

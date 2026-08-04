@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 import { ArticleCard } from "@/components/articles/ArticleCard";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { Pagination } from "@/components/catalog/Pagination";
 import { Container } from "@/components/ui/Container";
 import { getArticlesPage } from "@/lib/directus/articles";
+import { absoluteUrl } from "@/lib/seo/url";
 
 export const metadata: Metadata = {
   title: "Статьи о подборе комплектующих John Deere",
@@ -16,7 +18,7 @@ export const metadata: Metadata = {
     description:
       "Практические материалы для подготовки запроса и проверки исходных данных.",
     type: "website",
-    url: "/articles",
+    url: absoluteUrl("/articles"),
   },
 };
 
@@ -29,6 +31,9 @@ export default async function ArticlesPage({
   const parsedPage = Number(params.page ?? "1");
   const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
   const result = await getArticlesPage(page);
+
+  // 404 for out-of-range page numbers
+  if (page > 1 && page > result.totalPages) notFound();
 
   return (
     <main className="articles-page" id="main-content">

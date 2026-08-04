@@ -16,11 +16,13 @@ export function LeadForm({
   const [state, setState] = useState<"idle" | "sending" | "success" | "error">(
     "idle",
   );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const turnstile = useRef<TurnstileFieldHandle>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setState("sending");
+    setErrorMessage(null);
     const form = new FormData(event.currentTarget);
     const payload = Object.fromEntries(form.entries());
     delete payload.consent;
@@ -45,7 +47,11 @@ export function LeadForm({
       setState("success");
       return;
     }
+    const body = await response?.json().catch(() => null);
     turnstile.current?.reset();
+    setErrorMessage(
+      body?.error ?? "Не удалось отправить заявку. Проверьте данные и попробуйте ещё раз.",
+    );
     setState("error");
   }
 
@@ -102,9 +108,9 @@ export function LeadForm({
       >
         {state === "sending" ? "Отправляем…" : "Отправить заявку"}
       </button>
-      {state === "error" ? (
+      {state === "error" && errorMessage ? (
         <p className="lead-form__error" role="alert">
-          Не удалось отправить заявку. Проверьте данные и попробуйте ещё раз.
+          {errorMessage}
         </p>
       ) : null}
     </form>

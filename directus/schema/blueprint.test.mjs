@@ -26,6 +26,8 @@ const requiredCollections = [
   "product_specifications",
   "product_documents",
   "seo_redirects",
+  "orders",
+  "order_items",
 ];
 
 const requiredProductFields = [
@@ -65,8 +67,8 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 22);
-  assert.ok(names.length <= 25);
+  assert.equal(names.length, 24);
+  assert.ok(names.length <= 26);
 });
 
 test("stores factual company fields and translation-ready recent supplies", () => {

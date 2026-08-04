@@ -12,6 +12,9 @@ import {
   getArticleBySlug,
   getRelatedArticles,
 } from "@/lib/directus/articles";
+import { getSiteSettings } from "@/lib/directus/content";
+import { absoluteUrl } from "@/lib/seo/url";
+import { buildBreadcrumbSchema, buildOrganizationSchema } from "@/lib/seo/schema";
 
 const formatDate = new Intl.DateTimeFormat("ru-RU", {
   day: "2-digit",
@@ -42,7 +45,7 @@ export async function generateMetadata({
       title: article.seoTitle ?? article.title,
       description: article.seoDescription ?? article.excerpt,
       type: "article",
-      url: canonical,
+      url: absoluteUrl(canonical),
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt ?? undefined,
       images: image ? [{ url: image, alt: article.imageAlt ?? article.title }] : [],
@@ -66,10 +69,7 @@ export default async function ArticlePage({
     quality: 86,
     format: "webp",
   });
-  const origin = (
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://deere-shop.ru"
-  ).replace(/\/+$/u, "");
-  const url = `${origin}/articles/${article.slug}`;
+  const canonical = `/articles/${article.slug}`;
   const coverUrl = directusAssetUrl(article.coverImageId, {
     width: 1200,
     height: 630,
@@ -77,8 +77,20 @@ export default async function ArticlePage({
     format: "webp",
   });
 
+  const breadcrumbItems = [
+    { name: "Главная", url: absoluteUrl("/") },
+    { name: "Статьи", url: absoluteUrl("/articles") },
+    { name: article.title, url: absoluteUrl(canonical) },
+  ];
+
+  const settings = await getSiteSettings().catch(() => null);
+  const organizationSchema = settings
+    ? buildOrganizationSchema(settings)
+    : null;
+
   return (
     <main className="article-page" id="main-content">
+      {organizationSchema ? <JsonLdSchema data={organizationSchema} /> : null}
       <JsonLdSchema
         data={{
           "@context": "https://schema.org",
@@ -88,25 +100,11 @@ export default async function ArticlePage({
           datePublished: article.publishedAt,
           dateModified: article.updatedAt ?? article.publishedAt,
           image: coverUrl ? [coverUrl] : undefined,
-          mainEntityOfPage: url,
+          mainEntityOfPage: absoluteUrl(canonical),
+          publisher: { "@id": `${absoluteUrl("/")}#organization` },
         }}
       />
-      <JsonLdSchema
-        data={{
-          "@context": "https://schema.org",
-          "@type": "BreadcrumbList",
-          itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Главная", item: origin },
-            {
-              "@type": "ListItem",
-              position: 2,
-              name: "Статьи",
-              item: `${origin}/articles`,
-            },
-            { "@type": "ListItem", position: 3, name: article.title, item: url },
-          ],
-        }}
-      />
+      <JsonLdSchema data={buildBreadcrumbSchema(breadcrumbItems)} />
       <Container>
         <Breadcrumbs
           items={[

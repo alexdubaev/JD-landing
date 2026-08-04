@@ -8,6 +8,7 @@ export type SiteSettings = {
   city: string | null;
   companyImageId: string | null;
   companyName: string;
+  defaultOgImageId: string | null;
   documentsUrl: string | null;
   phone: string | null;
   email: string | null;
@@ -19,6 +20,11 @@ export type SiteSettings = {
   primaryCtaText: string | null;
   primaryCtaUrl: string | null;
   footerText: string | null;
+  footerDisclaimer: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
   inn: string | null;
   kpp: string | null;
   legalAddress: string | null;
@@ -27,6 +33,8 @@ export type SiteSettings = {
   ogrn: string | null;
   requisitesUrl: string | null;
   vatInfo: string | null;
+  yandexMetricaId: string | null;
+  gtmId: string | null;
 };
 
 export type SectionType =
@@ -81,20 +89,6 @@ export type HomePageData = {
   settings: SiteSettings;
 };
 
-export type HeroBlock = {
-  id: string;
-  eyebrow: string | null;
-  title: string;
-  text: string | null;
-  imageId: string | null;
-  imageAlt: string | null;
-  primaryCtaText: string | null;
-  primaryCtaUrl: string | null;
-  secondaryCtaText: string | null;
-  secondaryCtaUrl: string | null;
-  disclaimer: string | null;
-};
-
 export type ContactChannel = {
   id: string;
   type: string;
@@ -114,16 +108,4 @@ export type RecentSupply = {
   region: string | null;
   suppliedAt: string | null;
   supplyFormat: string | null;
-};
-
-export type SeoTextBlock = {
-  id: string;
-  h1: string | null;
-  introText: string | null;
-  contentBlocks: unknown[];
-  conclusionText: string | null;
-  ctaText: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
-  canonicalUrl: string | null;
 };

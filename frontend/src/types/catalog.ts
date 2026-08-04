@@ -12,6 +12,7 @@ export type CatalogQuery = {
   categorySlug?: string;
   availability?: AvailabilityStatus;
   priceStatus?: PriceStatus;
+  partType?: PartType;
   sort: CatalogSort;
   page: number;
   pageSize: number;
@@ -31,7 +32,12 @@ export type Category = {
   seoTitle: string | null;
   seoDescription: string | null;
   seoText: string | null;
+  intro: string | null;
+  selectionGuide: unknown[];
+  internalLinks: unknown[];
   ogImageId: string | null;
+  isIndexable: boolean;
+  redirectTarget: string | null;
 };
 
 export type ProductCardData = {
@@ -48,6 +54,8 @@ export type ProductCardData = {
   priceStatus: PriceStatus;
   availabilityStatus: AvailabilityStatus;
   brand?: string | null;
+  mpn?: string | null;
+  gtin?: string | null;
   partType?: PartType | null;
   deliveryStatus?: string | null;
 };
@@ -58,9 +66,15 @@ export type Product = ProductCardData & {
   galleryIds: string[];
   specifications: unknown[];
   documentIds: string[];
+  sourceName?: string | null;
+  sourceUrl?: string | null;
+  verifiedAt?: string | null;
+  reviewedBy?: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
   ogImageId: string | null;
+  seoQualityStatus?: string | null;
+  isIndexable?: boolean;
   relatedProductIds: string[];
   ctaText: string | null;
 };
@@ -82,6 +96,8 @@ export type CatalogPage = {
 export type PageSeo = {
   title: string;
   h1: string;
+  eyebrow: string | null;
+  intro: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
   ogImageId: string | null;
@@ -103,6 +119,11 @@ export type ArticleCardData = {
 
 export type Article = ArticleCardData & {
   content: string;
+  author?: string | null;
+  reviewer?: string | null;
+  sources?: unknown[];
+  relatedCategorySlugs?: string[];
+  relatedProductSlugs?: string[];
   seoTitle: string | null;
   seoDescription: string | null;
   ogImageId: string | null;

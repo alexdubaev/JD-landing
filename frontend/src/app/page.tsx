@@ -19,7 +19,7 @@ import {
 
 import { HomePageView } from "./HomePageView";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   try {

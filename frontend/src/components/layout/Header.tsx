@@ -20,7 +20,6 @@ const FALLBACK_NAVIGATION = [
     url: "/delivery",
   },
   { label: "Компания", url: "/about" },
-  { label: "Документы", url: "/documents" },
   { label: "Статьи", url: "/articles" },
   { label: "Контакты", url: "/contacts" },
 ] as const;

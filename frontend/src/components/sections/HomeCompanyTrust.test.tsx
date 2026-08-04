@@ -16,9 +16,15 @@ const emptySettings: SiteSettings = {
   city: null,
   companyImageId: null,
   companyName: "DEERE-SHOP",
+  defaultOgImageId: null,
   documentsUrl: null,
   email: null,
   footerText: null,
+  footerDisclaimer: null,
+  seoTitle: null,
+  seoDescription: null,
+  ogTitle: null,
+  ogDescription: null,
   inn: null,
   kpp: null,
   legalAddress: null,
@@ -33,6 +39,8 @@ const emptySettings: SiteSettings = {
   requisitesUrl: null,
   vatInfo: null,
   workingHours: null,
+  yandexMetricaId: null,
+  gtmId: null,
 };
 
 describe("HomeCompanyTrust", () => {

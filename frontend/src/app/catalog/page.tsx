@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { CatalogControls } from "@/components/catalog/CatalogControls";
@@ -6,6 +7,7 @@ import { EmptyCatalog } from "@/components/catalog/EmptyCatalog";
 import { Pagination } from "@/components/catalog/Pagination";
 import { ProductGrid } from "@/components/catalog/ProductGrid";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { JsonLdSchema } from "@/components/seo/JsonLdSchema";
 import { Container } from "@/components/ui/Container";
 import {
   type CatalogSearchParams,
@@ -17,21 +19,43 @@ import {
   getCategories,
   getPageSeoBySlug,
 } from "@/lib/directus/catalog";
+import {
+  buildCatalogMetadata,
+  isPageOutOfRange,
+} from "@/lib/seo/catalog-metadata";
+import {
+  buildBreadcrumbSchema,
+  buildCollectionPageSchema,
+} from "@/lib/seo/schema";
+import { absoluteUrl } from "@/lib/seo/url";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<CatalogSearchParams>;
+}): Promise<Metadata> {
+  const rawSearchParams = await searchParams;
+  const query = parseCatalogSearchParams(rawSearchParams);
   const page = await getPageSeoBySlug("catalog");
-  if (!page) return { title: "Каталог продукции" };
-  const image = directusAssetUrl(page.ogImageId, { width: 1200, height: 630 });
 
-  return {
-    title: page.seoTitle || page.title,
-    description: page.seoDescription,
-    alternates: page.canonicalUrl ? { canonical: page.canonicalUrl } : undefined,
-    robots: page.isIndexable ? undefined : { index: false, follow: false },
-    openGraph: image ? { images: [image] } : undefined,
-  };
+  const title = page?.seoTitle || page?.title || "Каталог продукции";
+  const description = page?.seoDescription;
+  const image = directusAssetUrl(page?.ogImageId, {
+    width: 1200,
+    height: 630,
+  });
+
+  return buildCatalogMetadata({
+    query,
+    basePath: "/catalog",
+    title,
+    description,
+    image,
+    indexable: page?.isIndexable ?? true,
+    canonicalPathOverride: page?.canonicalUrl ?? null,
+  });
 }
 
 export default async function CatalogPage({
@@ -47,20 +71,36 @@ export default async function CatalogPage({
     getPageSeoBySlug("catalog"),
   ]);
 
+  // 404 for out-of-range page numbers
+  if (isPageOutOfRange(query, catalog.total)) notFound();
+
   return (
     <main className="catalog-page" id="main-content">
+      <JsonLdSchema
+        data={buildCollectionPageSchema({
+          name: page?.h1 || page?.title || "Каталог продукции John Deere",
+          url: absoluteUrl("/catalog"),
+          description: page?.intro,
+        })}
+      />
+      <JsonLdSchema
+        data={buildBreadcrumbSchema([
+          { name: "Главная", url: absoluteUrl("/") },
+          { name: "Каталог", url: absoluteUrl("/catalog") },
+        ])}
+      />
       <Container>
         <Breadcrumbs
           items={[{ href: "/", label: "Главная" }, { label: "Каталог" }]}
         />
         <header className="catalog-heading">
-          <p className="catalog-heading__eyebrow">
-            Техника и комплектующие
-          </p>
+          {page?.eyebrow ? (
+            <p className="catalog-heading__eyebrow">{page.eyebrow}</p>
+          ) : null}
           <h1>{page?.h1 || "Каталог продукции John Deere"}</h1>
           <p>
-            Найдите товар по названию или артикулу. Для проверки совместимости
-            и условий поставки отправьте заявку на консультацию.
+            {page?.intro ??
+              "Найдите товар по названию или артикулу. Для проверки совместимости и условий поставки отправьте заявку на консультацию."}
           </p>
         </header>
         <Suspense fallback={<div className="catalog-controls-skeleton" />}>

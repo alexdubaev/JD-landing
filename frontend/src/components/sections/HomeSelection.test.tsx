@@ -31,7 +31,7 @@ describe("HomeSelection", () => {
     expect(screen.getByRole("heading", { name: "Оформите поставку" })).toBeInTheDocument();
   });
 
-  it("falls back when CMS does not provide exactly four valid steps", () => {
+  it("renders the steps configured in the CMS even when not exactly four", () => {
     render(
       <HomeSelection
         section={{
@@ -45,8 +45,9 @@ describe("HomeSelection", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Оформите поставку" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "CMS 1" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CMS 1" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CMS 3" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Оформите поставку" })).not.toBeInTheDocument();
   });
 
   it("uses CMS steps only when all four are valid", () => {

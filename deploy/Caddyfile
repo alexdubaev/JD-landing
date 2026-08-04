@@ -13,6 +13,17 @@
 	}
 }
 
+# HTTP→HTTPS redirect for apex and www (preserves path + query)
+http://deere-shop.ru, http://www.deere-shop.ru {
+	redir https://deere-shop.ru{uri} permanent
+}
+
+# www→apex redirect (preserves path + query)
+www.deere-shop.ru {
+	redir https://deere-shop.ru{uri} permanent
+}
+
+# Plain IP access (health checks, internal) — no redirect
 http://91.227.68.176 {
 	import security_headers
 	encode zstd gzip
@@ -23,7 +34,7 @@ http://91.227.68.176 {
 	reverse_proxy frontend:3000
 }
 
-deere-shop.ru, www.deere-shop.ru {
+deere-shop.ru {
 	import security_headers
 	encode zstd gzip
 	request_body {

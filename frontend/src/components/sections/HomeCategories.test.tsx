@@ -18,8 +18,7 @@ const category: Category = {
   seoTitle: null,
   seoDescription: null,
   seoText: null,
-  ogImageId: null,
-};
+  ogImageId: null, intro: null, selectionGuide: [], internalLinks: [], isIndexable: true, redirectTarget: null, };
 
 const section: PageSection = {
   id: "categories",

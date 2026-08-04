@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ContentPageView } from "@/components/pages/ContentPageView";
+import { JsonLdSchema } from "@/components/seo/JsonLdSchema";
 import {
   getFaqItems,
   getPageBySlug,
   getSiteSettings,
 } from "@/lib/directus/content";
+import { absoluteUrl } from "@/lib/seo/url";
+import { buildBreadcrumbSchema } from "@/lib/seo/schema";
 
 const informationSlugs = new Set([
   "about",
@@ -15,6 +18,8 @@ const informationSlugs = new Set([
   "privacy-policy",
   "thank-you",
 ]);
+
+const noindexSlugs = new Set(["thank-you"]);
 
 type Props = { params: Promise<{ infoSlug: string }> };
 
@@ -32,18 +37,34 @@ async function loadPage(slug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { infoSlug } = await params;
   const page = await getPageBySlug(infoSlug).catch(() => null);
-  return page
-    ? {
-        title: page.seoTitle ?? page.title,
-        description: page.seoDescription,
-        alternates: { canonical: `/${infoSlug}` },
-      }
-    : {};
+  if (!page) return {};
+  const isNoindex = noindexSlugs.has(infoSlug);
+  return {
+    title: page.seoTitle ?? page.title,
+    description: page.seoDescription,
+    alternates: { canonical: `/${infoSlug}` },
+    ...(isNoindex ? { robots: { index: false, follow: true } } : {}),
+  };
 }
 
 export default async function InformationPage({ params }: Props) {
   const { infoSlug } = await params;
   const data = await loadPage(infoSlug);
   if (!data) notFound();
-  return <ContentPageView {...data} />;
+  const isNoindex = noindexSlugs.has(infoSlug);
+  const url = absoluteUrl(`/${infoSlug}`);
+
+  return (
+    <>
+      {!isNoindex ? (
+        <JsonLdSchema
+          data={buildBreadcrumbSchema([
+            { name: "Главная", url: absoluteUrl("/") },
+            { name: data.page.title, url },
+          ])}
+        />
+      ) : null}
+      <ContentPageView {...data} />
+    </>
+  );
 }

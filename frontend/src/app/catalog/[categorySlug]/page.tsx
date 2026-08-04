@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { CatalogControls } from "@/components/catalog/CatalogControls";
@@ -17,9 +17,19 @@ import { directusAssetUrl } from "@/lib/directus/assets";
 import {
   getCatalogPage,
   getCategoryBySlug,
+  getCategoryRedirect,
 } from "@/lib/directus/catalog";
+import {
+  buildCatalogMetadata,
+  isPageOutOfRange,
+} from "@/lib/seo/catalog-metadata";
+import { absoluteUrl } from "@/lib/seo/url";
+import {
+  buildBreadcrumbSchema,
+  buildCollectionPageSchema,
+} from "@/lib/seo/schema";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type CategoryRouteProps = {
   params: Promise<{ categorySlug: string }>;
@@ -28,22 +38,29 @@ type CategoryRouteProps = {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: CategoryRouteProps): Promise<Metadata> {
-  const { categorySlug } = await params;
+  const [{ categorySlug }, rawSearchParams] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const category = await getCategoryBySlug(categorySlug);
   if (!category) return {};
+
   const image = directusAssetUrl(category.ogImageId || category.imageId, {
     width: 1200,
     height: 630,
     fit: "contain",
   });
 
-  return {
+  return buildCatalogMetadata({
+    query: parseCatalogSearchParams(rawSearchParams),
+    basePath: `/catalog/${category.slug}`,
     title: category.seoTitle || category.title,
     description: category.seoDescription || category.description,
-    alternates: { canonical: `/catalog/${category.slug}` },
-    openGraph: image ? { images: [image] } : undefined,
-  };
+    image,
+    indexable: category.isIndexable,
+  });
 }
 
 export default async function CategoryPage({
@@ -55,25 +72,37 @@ export default async function CategoryPage({
     searchParams,
   ]);
   const category = await getCategoryBySlug(categorySlug);
-  if (!category) notFound();
+  if (!category) {
+    const redirectTarget = await getCategoryRedirect(categorySlug);
+    if (redirectTarget) permanentRedirect(`/catalog/${redirectTarget}`);
+    notFound();
+  }
   const query = {
     ...parseCatalogSearchParams(rawSearchParams),
     categorySlug,
   };
   const catalog = await getCatalogPage(query);
 
+  // 404 for out-of-range page numbers
+  if (isPageOutOfRange(query, catalog.total)) notFound();
+
+  const breadcrumbItems = [
+    { name: "Главная", url: absoluteUrl("/") },
+    { name: "Каталог", url: absoluteUrl("/catalog") },
+    { name: category.title, url: absoluteUrl(`/catalog/${category.slug}`) },
+  ];
+
   return (
     <main className="catalog-page" id="main-content">
+      <JsonLdSchema
+        data={buildCollectionPageSchema({
+          name: category.title,
+          url: absoluteUrl(`/catalog/${category.slug}`),
+          description: category.description,
+        })}
+      />
+      <JsonLdSchema data={buildBreadcrumbSchema(breadcrumbItems)} />
       <Container>
-        <JsonLdSchema
-          data={{
-            "@context": "https://schema.org",
-            "@type": "CollectionPage",
-            name: category.title,
-            description: category.description,
-            url: `/catalog/${category.slug}`,
-          }}
-        />
         <Breadcrumbs
           items={[
             { href: "/", label: "Главная" },

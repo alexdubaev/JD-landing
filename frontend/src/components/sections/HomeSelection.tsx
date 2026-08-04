@@ -57,6 +57,11 @@ const fallbackSteps: ProcessItem[] = [
   },
 ];
 
+const stringArray = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+
 export function HomeSelection({
   ctaSection,
   section,
@@ -65,8 +70,8 @@ export function HomeSelection({
   section: PageSection;
 }) {
   const steps = section.items.filter(isProcessItem);
-  const visibleSteps =
-    section.items.length === 4 && steps.length === 4 ? steps : fallbackSteps;
+  const visibleSteps = steps.length ? steps : fallbackSteps;
+  const helpInputs = stringArray(section.settings.help_inputs);
   const ctaTitle =
     ctaSection?.title ??
     (typeof section.settings.cta_title === "string"
@@ -117,7 +122,9 @@ export function HomeSelection({
           <div className="home-selection__inputs">
             <strong>Что поможет подбору</strong>
             <ul>
-              {selectionInputs.map((item) => <li key={item}>{item}</li>)}
+              {(helpInputs.length ? helpInputs : selectionInputs).map((item) => (
+                <li key={item}>{item}</li>
+              ))}
             </ul>
           </div>
           <div className="home-selection__cta">

@@ -34,6 +34,8 @@ const websiteCollections = [
   "product_specifications",
   "product_documents",
   "seo_redirects",
+  "orders",
+  "order_items",
 ];
 
 const contentCollections = websiteCollections.filter(
@@ -52,10 +54,18 @@ const frontendPermissions = [
     validation: folderFilter(leadAttachmentFolderId),
     presets: { folder: leadAttachmentFolderId },
   }),
+  // Needed so the API route can move a freshly uploaded attachment into the
+  // Lead attachments folder — Directus 12 Core ignores the multipart `folder`
+  // field without a permission preset, and the preset is stripped by the
+  // RESOURCE_RESTRICTED fallback, so the move is done via PATCH instead.
+  // The route only ever patches the `folder` field on ids it just uploaded.
+  update("directus_files"),
   remove("directus_files", {
     permissions: folderFilter(leadAttachmentFolderId),
   }),
   create("leads"),
+  create("orders"),
+  create("order_items"),
 ];
 
 const contentPermissions = [
@@ -150,6 +160,9 @@ export const accessBlueprint = {
       permissions: [
         read("leads"),
         update("leads"),
+        read("orders"),
+        update("orders"),
+        read("order_items"),
         read("directus_files", {
           permissions: folderFilter(leadAttachmentFolderId),
         }),

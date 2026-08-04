@@ -29,7 +29,7 @@ export function CatalogControls({
 
   const clearFilters = () => {
     const next = new URLSearchParams(searchParams.toString());
-    for (const name of ["q", "category", "availability", "price", "page"]) {
+    for (const name of ["q", "category", "availability", "price", "part_type", "page"]) {
       next.delete(name);
     }
     router.replace(`${pathname}${next.size ? `?${next.toString()}` : ""}`);
@@ -87,6 +87,20 @@ export function CatalogControls({
         </select>
       </label>
       <label>
+        Тип детали
+        <select
+          defaultValue={searchParams.get("part_type") ?? ""}
+          onChange={(event) =>
+            replaceParameter("part_type", event.target.value)
+          }
+        >
+          <option value="">Любой</option>
+          <option value="original">Оригинал</option>
+          <option value="oem">OEM</option>
+          <option value="analog">Аналог</option>
+        </select>
+      </label>
+      <label>
         Сортировка
         <select
           defaultValue={searchParams.get("sort") ?? "relevance"}
@@ -122,6 +136,13 @@ export function CatalogControls({
       : searchParams.get("price") === "on_request"
         ? { key: "price", label: "Цена по запросу" }
         : null,
+    searchParams.get("part_type") === "original"
+      ? { key: "part_type", label: "Оригинал" }
+      : searchParams.get("part_type") === "oem"
+        ? { key: "part_type", label: "OEM" }
+        : searchParams.get("part_type") === "analog"
+          ? { key: "part_type", label: "Аналог" }
+          : null,
   ].filter((item): item is { key: string; label: string } => item !== null);
 
   return (

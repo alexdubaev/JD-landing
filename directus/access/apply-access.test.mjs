@@ -16,9 +16,6 @@ test("builds a Directus policy permission payload", () => {
     policy: "policy-id",
     collection: "products",
     action: "read",
-    permissions: null,
-    validation: null,
-    presets: null,
     fields: ["*"],
   });
 });
@@ -28,9 +25,6 @@ test("detects whether an existing permission matches the blueprint", () => {
     policy: "policy-id",
     collection: "products",
     action: "read",
-    permissions: null,
-    validation: null,
-    presets: null,
     fields: ["*"],
   };
 

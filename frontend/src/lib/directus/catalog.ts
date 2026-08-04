@@ -34,7 +34,12 @@ type RawCategory = {
   seo_title: string | null;
   seo_description: string | null;
   seo_text: string | null;
+  intro: string | null;
+  selection_guide: unknown;
+  internal_links: unknown;
   og_image: FileRelation;
+  is_indexable: boolean | null;
+  redirect_target: string | null;
 };
 
 type RawProduct = {
@@ -53,14 +58,22 @@ type RawProduct = {
   price_status: ProductCardData["priceStatus"];
   availability_status: ProductCardData["availabilityStatus"];
   brand?: string | null;
+  mpn?: string | null;
+  gtin?: string | null;
   part_type?: ProductCardData["partType"];
   delivery_status?: string | null;
   specifications?: unknown;
   documents?: unknown;
+  source_name?: string | null;
+  source_url?: string | null;
+  verified_at?: string | null;
+  reviewed_by?: string | null;
   seo_title?: string | null;
   seo_description?: string | null;
   og_image?: FileRelation;
   image_alt: string | null;
+  seo_quality_status?: string | null;
+  is_indexable?: boolean | null;
   related_products?: unknown;
   cta_text?: string | null;
 };
@@ -68,6 +81,8 @@ type RawProduct = {
 type RawPageSeo = {
   title: string;
   h1: string;
+  eyebrow: string | null;
+  intro: string | null;
   seo_title: string | null;
   seo_description: string | null;
   og_image: FileRelation;
@@ -86,6 +101,11 @@ type RawSitemapProduct = {
   slug: string;
   updated_at: string | null;
   category: { slug: string } | null;
+};
+
+type RawSitemapCategory = {
+  slug: string;
+  updated_at: string | null;
 };
 
 type RawSkuIndexProduct = Pick<RawProduct, "id" | "sku">;
@@ -117,7 +137,12 @@ const mapCategory = (raw: RawCategory): Category => ({
   seoTitle: raw.seo_title,
   seoDescription: raw.seo_description,
   seoText: raw.seo_text,
+  intro: raw.intro,
+  selectionGuide: asUnknownArray(raw.selection_guide),
+  internalLinks: asUnknownArray(raw.internal_links),
   ogImageId: fileId(raw.og_image),
+  isIndexable: raw.is_indexable !== false,
+  redirectTarget: raw.redirect_target?.trim() || null,
 });
 
 const mapProductCard = (raw: RawProduct): ProductCardData => ({
@@ -134,6 +159,8 @@ const mapProductCard = (raw: RawProduct): ProductCardData => ({
   priceStatus: raw.price_status,
   availabilityStatus: raw.availability_status,
   brand: raw.brand?.trim() || null,
+  mpn: raw.mpn?.trim() || null,
+  gtin: raw.gtin?.trim() || null,
   partType:
     raw.part_type === "original" || raw.part_type === "oem" || raw.part_type === "analog"
       ? raw.part_type
@@ -148,9 +175,15 @@ const mapProduct = (raw: RawProduct): Product => ({
   galleryIds: asStringArray(raw.gallery),
   specifications: asUnknownArray(raw.specifications),
   documentIds: asStringArray(raw.documents),
+  sourceName: raw.source_name?.trim() || null,
+  sourceUrl: raw.source_url?.trim() || null,
+  verifiedAt: raw.verified_at ?? null,
+  reviewedBy: raw.reviewed_by?.trim() || null,
   seoTitle: raw.seo_title ?? null,
   seoDescription: raw.seo_description ?? null,
   ogImageId: fileId(raw.og_image),
+  seoQualityStatus: raw.seo_quality_status ?? null,
+  isIndexable: raw.is_indexable !== false,
   relatedProductIds: asStringArray(raw.related_products),
   ctaText: raw.cta_text ?? null,
 });
@@ -169,7 +202,12 @@ const categoryFields = [
   "seo_title",
   "seo_description",
   "seo_text",
+  "intro",
+  "selection_guide",
+  "internal_links",
   "og_image",
+  "is_indexable",
+  "redirect_target",
 ].join(",");
 
 const cardFields = [
@@ -188,11 +226,13 @@ const cardFields = [
   "price_status",
   "availability_status",
   "brand",
+  "mpn",
+  "gtin",
   "part_type",
   "delivery_status",
 ].join(",");
 
-const detailFields = `${cardFields},full_description,seo_text,gallery,specifications,documents,seo_title,seo_description,og_image,related_products,cta_text`;
+const detailFields = `${cardFields},full_description,seo_text,gallery,specifications,documents,source_name,source_url,verified_at,reviewed_by,seo_title,seo_description,og_image,seo_quality_status,is_indexable,related_products,cta_text`;
 
 const queryString = (parameters: Record<string, string | undefined>) => {
   const search = new URLSearchParams();
@@ -316,6 +356,7 @@ export async function getCatalogPage(
     "filter[category][slug][_eq]": input.categorySlug,
     "filter[availability_status][_eq]": input.availability,
     "filter[price_status][_eq]": input.priceStatus,
+    "filter[part_type][_eq]": input.partType,
     "filter[id][_in]": matchedIds?.length ? matchedIds.join(",") : undefined,
     search: matchedIds?.length ? undefined : input.search,
     fields: cardFields,
@@ -352,12 +393,36 @@ export async function getCategoryBySlug(
   return items[0] ? mapCategory(items[0]) : null;
 }
 
+/**
+ * Returns a redirect target slug for a category that has been archived
+ * (for example after merging a duplicate). Returns null when the slug
+ * is not an archived category with a redirect_target.
+ */
+export async function getCategoryRedirect(
+  slug: string,
+): Promise<string | null> {
+  const query = queryString({
+    "filter[slug][_eq]": slug,
+    "filter[redirect_target][_null]": "false",
+    fields: "status,redirect_target",
+    limit: "1",
+  });
+  const items = await directusRequest<
+    Array<{ status: string; redirect_target: string | null }>
+  >(`/items/categories?${query}`, {
+    next: { revalidate: 300, tags: ["categories", `category:${slug}`] },
+  });
+  const category = items?.[0];
+  if (!category || category.status === "published") return null;
+  return category.redirect_target?.trim() || null;
+}
+
 export async function getPageSeoBySlug(slug: string): Promise<PageSeo | null> {
   const query = queryString({
     "filter[status][_eq]": "published",
     "filter[slug][_eq]": slug,
     fields:
-      "title,h1,seo_title,seo_description,og_image,canonical_url,is_indexable",
+      "title,h1,eyebrow,intro,seo_title,seo_description,og_image,canonical_url,is_indexable",
     limit: "1",
   });
   const items = await directusRequest<RawPageSeo[]>(
@@ -369,6 +434,8 @@ export async function getPageSeoBySlug(slug: string): Promise<PageSeo | null> {
     ? {
         title: page.title,
         h1: page.h1,
+        eyebrow: page.eyebrow,
+        intro: page.intro,
         seoTitle: page.seo_title,
         seoDescription: page.seo_description,
         ogImageId: fileId(page.og_image),
@@ -443,6 +510,7 @@ export async function getFilesByIds(ids: string[]): Promise<PublicFile[]> {
 export async function getProductSitemapEntries() {
   const query = queryString({
     "filter[status][_eq]": "published",
+    "filter[is_indexable][_neq]": "false",
     fields: "slug,updated_at,category.slug",
     sort: "category.slug,slug",
     limit: "-1",
@@ -461,4 +529,26 @@ export async function getProductSitemapEntries() {
       productSlug: item.slug,
       updatedAt: item.updated_at,
     }));
+}
+
+/**
+ * Lightweight category list for the sitemap: includes updated_at for lastmod
+ * and excludes categories the SEO manager has marked is_indexable = false.
+ */
+export async function getCategorySitemapEntries() {
+  const query = queryString({
+    "filter[status][_eq]": "published",
+    "filter[is_indexable][_neq]": "false",
+    fields: "slug,updated_at",
+    sort: "slug",
+    limit: "-1",
+  });
+  const items = await directusRequest<RawSitemapCategory[]>(
+    `/items/categories?${query}`,
+    { next: { revalidate: 3600, tags: ["categories", "sitemap"] } },
+  );
+  return items.map((item) => ({
+    slug: item.slug,
+    updatedAt: item.updated_at,
+  }));
 }

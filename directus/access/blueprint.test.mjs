@@ -87,7 +87,14 @@ test("sales managers can read attachment files only from the private lead folder
   );
   const keys = new Set(policy.permissions.map(permissionKey));
 
-  assert.deepEqual(keys, new Set(["leads:read", "leads:update", "directus_files:read"]));
+  assert.deepEqual(keys, new Set([
+    "leads:read",
+    "leads:update",
+    "directus_files:read",
+    "orders:read",
+    "orders:update",
+    "order_items:read",
+  ]));
   const filesRead = policy.permissions.find(
     ({ collection, action }) => collection === "directus_files" && action === "read",
   );

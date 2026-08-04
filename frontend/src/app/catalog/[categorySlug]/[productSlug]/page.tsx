@@ -15,7 +15,15 @@ import {
   getProductBySlugs,
   getProductsByIds,
 } from "@/lib/directus/catalog";
-import { getFaqItems } from "@/lib/directus/content";
+import { getFaqItems, getSiteSettings } from "@/lib/directus/content";
+import { absoluteUrl } from "@/lib/seo/url";
+import {
+  buildBreadcrumbSchema,
+  buildFaqSchema,
+  buildOrganizationSchema,
+  buildProductSchema,
+} from "@/lib/seo/schema";
+import type { SiteSettings } from "@/types/content";
 
 type ProductRouteProps = {
   params: Promise<{ categorySlug: string; productSlug: string }>;
@@ -28,49 +36,87 @@ export async function generateMetadata({
 }: ProductRouteProps): Promise<Metadata> {
   const { categorySlug, productSlug } = await params;
   const product = await getProductBySlugs(categorySlug, productSlug);
-  if (!product) return {};
+  // Not found: keep the page out of the index rather than serving an empty {}.
+  if (!product) {
+    return { robots: { index: false, follow: false } };
+  }
+  const canonical = `/catalog/${categorySlug}/${productSlug}`;
   const image = directusAssetUrl(
     product.ogImageId || product.mainImageId,
     { width: 1200, height: 630, fit: "contain" },
   );
+  const title = product.seoTitle || product.title;
+  const description = product.seoDescription || product.shortDescription;
 
   return {
-    title: product.seoTitle || product.title,
-    description: product.seoDescription || product.shortDescription,
-    alternates: {
-      canonical: `/catalog/${categorySlug}/${productSlug}`,
+    title,
+    description: description ?? undefined,
+    alternates: { canonical },
+    ...(product.isIndexable === false
+      ? { robots: { index: false, follow: true } }
+      : {}),
+    openGraph: {
+      title,
+      description: description ?? undefined,
+      // og:type intentionally left as "website": Next.js' OpenGraph union does
+      // not allow "product", and Google derives product rich results from the
+      // Product JSON-LD (emitted below), not from og:type.
+      type: "website",
+      url: absoluteUrl(canonical),
+      images: image ? [{ url: image, alt: product.imageAlt || product.title }] : [],
     },
-    openGraph: image ? { images: [image] } : undefined,
   };
+}
+
+async function getProductPageSettings(): Promise<SiteSettings | null> {
+  try {
+    return await getSiteSettings();
+  } catch {
+    return null;
+  }
 }
 
 export default async function ProductPage({ params }: ProductRouteProps) {
   const { categorySlug, productSlug } = await params;
   const product = await getProductBySlugs(categorySlug, productSlug);
   if (!product) notFound();
-  const [documents, relatedProducts, faq] = await Promise.all([
+  const [documents, relatedProducts, faq, settings] = await Promise.all([
     getFilesByIds(product.documentIds),
     getProductsByIds(product.relatedProductIds),
     getFaqItems({ productId: product.id }).catch(() => []),
+    getProductPageSettings(),
   ]);
+
+  const breadcrumbItems = [
+    { name: "Главная", url: absoluteUrl("/") },
+    { name: "Каталог", url: absoluteUrl("/catalog") },
+    ...(product.category
+      ? [
+          {
+            name: product.category.title,
+            url: absoluteUrl(`/catalog/${product.category.slug}`),
+          },
+        ]
+      : []),
+    {
+      name: product.title,
+      url: absoluteUrl(`/catalog/${categorySlug}/${productSlug}`),
+    },
+  ];
+
+  const faqSchema = buildFaqSchema(faq);
 
   return (
     <main className="product-page" id="main-content">
+      <JsonLdSchema
+        data={buildProductSchema({ product, categorySlug })}
+      />
+      <JsonLdSchema data={buildBreadcrumbSchema(breadcrumbItems)} />
+      {settings ? (
+        <JsonLdSchema data={buildOrganizationSchema(settings)} />
+      ) : null}
+      {faqSchema ? <JsonLdSchema data={faqSchema} /> : null}
       <Container>
-        <JsonLdSchema
-          data={{
-            "@context": "https://schema.org",
-            "@type": "Product",
-            name: product.title,
-            sku: product.sku,
-            description: product.shortDescription,
-            image: directusAssetUrl(product.mainImageId, {
-              width: 1200,
-              height: 900,
-              fit: "contain",
-            }),
-          }}
-        />
         <Breadcrumbs
           items={[
             { href: "/", label: "Главная" },

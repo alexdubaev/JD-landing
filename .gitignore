@@ -12,6 +12,7 @@ coverage/
 
 # Local tooling and temporary files
 .codex-tmp/
+.seo-cache/
 .worktrees/
 tmp/
 *.inspect.ndjson

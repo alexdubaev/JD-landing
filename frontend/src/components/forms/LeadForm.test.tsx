@@ -32,4 +32,48 @@ describe("LeadForm", () => {
     );
     expect(window.dataLayer).toContainEqual({ event: "lead_submit", source: "lead_form" });
   });
+
+  it("shows the server-provided error message on validation failure", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ error: "Проверьте заполнение формы" }), {
+        status: 400,
+      }),
+    );
+    render(<LeadForm />);
+
+    fireEvent.change(screen.getByLabelText("Имя"), {
+      target: { value: "Иван" },
+    });
+    fireEvent.change(screen.getByLabelText("Телефон"), {
+      target: { value: "+7 900 000-00-00" },
+    });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Отправить заявку" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Проверьте заполнение формы",
+      ),
+    );
+  });
+
+  it("falls back to a generic error when the network fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(null as unknown as Response);
+    render(<LeadForm />);
+
+    fireEvent.change(screen.getByLabelText("Имя"), {
+      target: { value: "Иван" },
+    });
+    fireEvent.change(screen.getByLabelText("Телефон"), {
+      target: { value: "+7 900 000-00-00" },
+    });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Отправить заявку" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        /Не удалось отправить заявку/,
+      ),
+    );
+  });
 });

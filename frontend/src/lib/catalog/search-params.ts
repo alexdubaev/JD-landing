@@ -2,6 +2,7 @@ import type {
   AvailabilityStatus,
   CatalogQuery,
   CatalogSort,
+  PartType,
   PriceStatus,
 } from "@/types/catalog";
 
@@ -18,6 +19,7 @@ const priceStatusValues = new Set<PriceStatus>([
   "on_request",
   "hidden",
 ]);
+const partTypeValues = new Set<PartType>(["original", "oem", "analog"]);
 const sortValues = new Set<CatalogSort>([
   "relevance",
   "price_asc",
@@ -36,6 +38,7 @@ export function parseCatalogSearchParams(
     | AvailabilityStatus
     | undefined;
   const rawPriceStatus = first(input.price) as PriceStatus | undefined;
+  const rawPartType = first(input.part_type) as PartType | undefined;
   const rawSort = first(input.sort) as CatalogSort | undefined;
   const rawCategory = (first(input.category) ?? "").trim();
   const categorySlug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(rawCategory)
@@ -52,6 +55,9 @@ export function parseCatalogSearchParams(
       : {}),
     ...(rawPriceStatus && priceStatusValues.has(rawPriceStatus)
       ? { priceStatus: rawPriceStatus }
+      : {}),
+    ...(rawPartType && partTypeValues.has(rawPartType)
+      ? { partType: rawPartType }
       : {}),
     sort: rawSort && sortValues.has(rawSort) ? rawSort : "relevance",
   };

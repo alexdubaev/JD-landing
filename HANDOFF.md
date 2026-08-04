@@ -1,332 +1,360 @@
-# Передача проекта JD Landing новому агенту
+# DEERE-SHOP — HANDOFF
 
-Актуально на: 28 июля 2026 года
+Актуально на: 1 августа 2026 года
+Корень репозитория: `D:\codex\JD_landing`
 
-Рабочая папка: `D:\codex\JD_landing`
+## 1. Что это за проект
 
-## 1. Цель проекта
+Коммерческий сайт-каталог комплектующих John Deere под брендом **DEERE-SHOP** для ООО «СМ ТЕХНО».
 
-Нужно создать коммерческий сайт-каталог продукции John Deere для ООО «СМ ТЕХНО»:
+- Frontend: Next.js 16, React 19, TypeScript, App Router.
+- CMS: Directus + PostgreSQL.
+- Production: Docker Compose + Caddy на VPS.
+- GitHub: <https://github.com/alexdubaev/JD-landing>.
+- Production-сайт: <https://deere-shop.ru/>.
+- CMS: <https://cms.deere-shop.ru/admin>.
+- В каталоге импортировано около 299 товаров и 19 категорий.
+- Нельзя заявлять, что компания является официальным представителем или дилером John Deere, пока владелец явно не подтвердит этот статус.
 
-- frontend: Next.js + TypeScript, App Router;
-- CMS/админка: Directus;
-- база Directus: PostgreSQL;
-- визуальная основа: шаблон `https://github.com/di-sukharev/vibe`;
-- ориентир на 300 товаров при запуске и масштабирование до 1000+;
-- все важные тексты, контакты, товары, изображения, SEO и формы должны редактироваться через Directus;
-- нельзя представлять компанию официальным дилером или представителем John Deere без отдельного подтверждения владельца.
+Полные продуктовые, CMS, SEO и инфраструктурные правила находятся в `AGENTS.md`. Прочитать его до продолжения работ.
 
-Полные требования находятся в `AGENTS.md`. Перед любой разработкой обязательно прочитать его полностью.
+## 2. Где находится актуальная работа
 
-## 2. Данные компании
+В корне сейчас открыта инфраструктурная ветка:
 
-- Компания: ООО «СМ ТЕХНО»
-- Телефон: +7 (812) 468-82-99
-- Email: info@cmteh.ru
-- Местонахождение: Санкт-Петербург
-- Регион работы и доставки: вся Россия
-- ИНН: 7804702073
-- КПП: 780401001
-- ОГРН: 1237800071410
-- Юридический адрес: 195009, Санкт-Петербург, Кондратьевский пр., д. 2, к. 4, лит. А, пом./офис 10Н/704/1
+```text
+ветка: agent/production-infrastructure
+HEAD: 0fb23f7 chore: ignore local worktrees
+состояние относительно origin: ahead 1
+```
 
-Исходный документ:
+Актуальная реализация нового интерфейса находится в отдельном worktree:
 
-`D:\YandexDisk\Саша\СМ ТЕХНО\Документы\Карточка компании.pdf`
+```text
+папка: D:\codex\JD_landing\.worktrees\codex-plan1-homepage
+ветка: codex/plan1-homepage
+HEAD: eccc156 fix: reset lead verification after failures
+```
 
-## 3. Репозиторий и Git
+Ветка `codex/plan1-homepage` содержит восемь коммитов поверх `agent/production-infrastructure`:
 
-- GitHub: `https://github.com/alexdubaev/JD-landing`
-- Remote в локальном репозитории использует HTTPS.
-- Рабочая ветка: `agent/production-infrastructure`
-- Ветка отслеживает соответствующую ветку в `origin`.
-- Draft PR: `https://github.com/alexdubaev/JD-landing/pull/1`
-- Базовая ветка PR: `main`
-- Последний опубликованный инфраструктурный коммит до этого файла: `6b2eb36 Add production infrastructure`
-- Репозиторий публичный: секреты и персональные учетные данные в Git не добавлять.
-- Для бинарных товарных данных и изображений используется Git LFS.
+```text
+2aaa1aa feat: refine homepage discovery experience
+3c01f8c feat: add secure bulk parts request
+4e3b5bb feat: strengthen homepage catalog proof
+7e19922 feat: add factual trust and conversion layer
+84d5d43 fix: contain homepage hero on narrow phones
+66aa944 style: normalize schema source formatting
+7f763c2 fix: harden homepage lead workflows
+eccc156 fix: reset lead verification after failures
+```
 
-Владелец проекта просил все изменения выгружать в этот репозиторий. Перед отправкой всегда проверять `git status`, diff и отсутствие секретов.
+Продолжать пользовательские правки нужно именно здесь:
 
-## 4. Товарные данные
+```powershell
+Set-Location D:\codex\JD_landing\.worktrees\codex-plan1-homepage
+git status --short --branch
+```
 
-Исходники:
+Не разрабатывать новый интерфейс в корневой ветке и не смешивать изменения двух worktree.
 
-`D:\codex\JD_landing\data\price`
+## 3. Незакоммиченные файлы
 
-В исходниках было 26 XLSX-файлов и 26 ZIP-архивов с JPG.
+В корневом рабочем дереве изменён этот `HANDOFF.md`, а также есть локальные непубликуемые материалы:
 
-Готовый результат:
+- `.agents/`
+- `data/deere-shop-codex-hero/`
+- `docs/plans/`
+- `docs/superpowers/plans/`
+- `plan1.md`
+- `scripts/upload-deere-shop-logo.mjs`
+- `skills-lock.json`
 
-- папка: `D:\codex\JD_landing\outputs\jd-product-import-2026-07-28`
-- архив: `D:\codex\JD_landing\outputs\jd-product-import-2026-07-28.zip`
-- товаров: 299;
-- изображений: 1251;
-- товаров без изображений: 16;
-- отсутствующих упомянутых изображений: 0;
-- дубликатов SKU: 0;
-- товаров без описания или цены: 0.
+В feature-worktree есть изменённый `frontend/next-env.d.ts` и незатреканные PNG-скриншоты в `outputs/`. Это диагностические артефакты; не добавлять их автоматически.
 
-Эти данные нужно использовать для последующего импорта товаров, описаний, цен и изображений в Directus. Не выдумывать цены, SKU и характеристики, которых нет в исходных данных.
+Нельзя использовать `git add -A`. Добавлять только явно проверенные файлы. Не удалять и не перезаписывать перечисленные материалы без отдельного решения владельца.
 
-## 5. VPS
+## 4. Что уже реализовано в feature-ветке
 
-- Публичный IP: `91.227.68.176`
-- ОС: Ubuntu 22.04
-- Конфигурация: 2 CPU, 4 GB RAM, 40 GB SSD
-- Установлены Docker и Portainer.
-- Пользователь деплоя: `codex-deploy`
-- Локальный приватный ключ: `C:\Users\Elena\.ssh\jd_landing_deploy`
-- SSH-доступ настроен по ключу.
-- Вход root и вход по паролю через SSH отключены.
-- Firewall разрешает TCP 22, TCP 80, TCP/UDP 443.
-- Включен Fail2ban.
-- Добавлен swap 2 GB.
-- Часовой пояс сервера: Europe/Moscow.
-- Автоматические обновления безопасности включены.
-- Старый проект с VPS удален.
+- Новый CMS-driven вариант главной страницы по заданию `plan1.md`.
+- Hero с поиском по артикулам и новым изображением.
+- Защищённая форма массового запроса запчастей с Excel/CSV и фотографиями.
+- Серверная валидация файлов, honeypot, ограничение частоты, сохранение черновика и сброс проверки после ошибок.
+- Дополнительные блоки доверия и сценарии подбора.
+- Адаптация узких экранов.
+- CMS-схема и seed/sync-логика для новых секций.
+- Тесты lead workflow и формы.
 
-Пример безопасного подключения:
+Последняя известная полная проверка feature-ветки была успешной:
+
+- frontend: 128 тестов;
+- Directus/scripts: 39 тестов;
+- `npm run typecheck`;
+- `npm run lint`;
+- `npm run build`.
+
+Перед любым утверждением о готовности проверки необходимо запустить заново после следующих правок.
+
+## 5. Последняя обратная связь владельца — главный приоритет
+
+Текущий редизайн **не принят**. Владелец считает его ещё более крупным, чем production. Не продолжать наращивать секции.
+
+Нужно сделать следующее:
+
+1. Взять текущий production <https://deere-shop.ru/> как основной эталон плотности.
+2. Существенно уменьшить вертикальные отступы, типографику, категории и карточки.
+3. Вернуть на главную видимый блок «Избранные товары» / «Популярные позиции каталога».
+4. Убрать большой блок «Проверьте список запчастей» с главной.
+5. Сделать для массового запроса отдельную страницу, рекомендуемый маршрут — `/parts-request`.
+6. Ссылка «Вставить список» в hero должна вести на `/parts-request`.
+7. «Загрузить Excel» и «Отправить фото» под hero должны вести на эту же страницу к соответствующему контролу загрузки и визуально активировать/фокусировать его.
+8. Не пытаться автоматически открыть системный file picker после перехода между страницами: браузеры не гарантируют это без прямого пользовательского действия. Надёжный вариант — `/parts-request?mode=excel#attachments` и `/parts-request?mode=photo#attachments`.
+
+Пользовательская иллюстрация проблемы:
+
+```text
+C:\Users\Elena\AppData\Local\Temp\codex-clipboard-9a708afb-1e70-4e22-a51c-ff84b3bd8232.png
+```
+
+## 6. Результат сравнения production и feature-версии
+
+Сравнение выполнено на ширине 1440 px.
+
+Production:
+
+- hero вместе с header/преимуществами примерно 715 px;
+- короткий заголовок занимает меньше строк;
+- категории — компактные карточки примерно 78 px высотой, сетка 6 + 5;
+- заголовок избранных товаров уже виден в пределах первых 1200 px страницы.
+
+Текущая feature-версия:
+
+- hero примерно 675 px, но заголовок занимает четыре строки и визуально тяжелее;
+- категории около 120 px высотой и выглядят существенно крупнее production;
+- при mock-данных выводится только восемь категорий;
+- после категорий стоит огромная форма массового запроса;
+- товары находятся слишком далеко вниз либо полностью исчезают.
+
+Временные сравнительные скриншоты:
+
+```text
+C:\Users\Elena\AppData\Local\Temp\deere-live-1440.png
+C:\Users\Elena\AppData\Local\Temp\deere-local-1440.png
+```
+
+Ориентир первой итерации: на desktop в первых 1200 px должны помещаться hero, компактные категории и начало блока товаров, как минимум не хуже production.
+
+## 7. Найденные причины текущих проблем
+
+### Массовая форма на главной
+
+`frontend/src/app/HomePageView.tsx` сейчас рендерит `HomePartsRequest` между категориями и товарами. Именно это отодвигает каталог вниз. Отдельного маршрута `/parts-request` пока нет.
+
+### Неработающие hero-ссылки
+
+В `frontend/src/components/sections/HeroPartSearch.tsx` все три действия сейчас имеют одинаковый `href="#parts-request"`:
+
+- «Вставить список»;
+- «Загрузить Excel»;
+- «Отправить фото».
+
+Они только прокручивают к форме и не выбирают нужный режим загрузки.
+
+### Исчезновение избранных товаров
+
+`frontend/src/components/sections/HomeFeatured.tsx` скрывает карточки, если отсутствует хотя бы одно из полей:
+
+- изображение;
+- title/SKU;
+- фиксированная цена;
+- числовое значение цены;
+- `deliveryStatus`.
+
+А `getFeaturedProducts` применяет похожую строгую фильтрацию на уровне Directus. Поэтому весь блок возвращает `null`, когда у товаров не заполнены коммерческие поля.
+
+Рекомендуемое исправление: показывать до пяти CMS-выбранных товаров при наличии изображения, названия и SKU; неизвестные цену/доставку не выдумывать. Для цены использовать существующий статус «по запросу», неизвестную доставку не выводить. Не скрывать весь раздел из-за необязательных коммерческих полей.
+
+### Гигантские категории и отступы
+
+В `frontend/src/app/globals.css` накопились поздние дублирующие overrides для категорий, product grid и responsive-режимов, особенно в областях около строк 4721, 4921–5005 и 5470–5550. Их нужно консолидировать, иначе более ранние компактные значения перекрываются поздними правилами.
+
+Цель для карточки категории:
+
+- desktop/tablet: 72–80 px;
+- иконка: 36–40 px;
+- название максимум две строки;
+- без описания;
+- touch-target не меньше 44×44 px.
+
+## 8. Рекомендуемый следующий порядок работы
+
+1. В feature-worktree добавить тесты, фиксирующие новый маршрут, отсутствие `HomePartsRequest` на главной, рабочие ссылки hero и наличие featured-блока при неполных коммерческих данных.
+2. Создать `/parts-request` с metadata, breadcrumb и CMS-driven содержимым существующей секции `parts_request`.
+3. Переместить форму и outcomes-панель с главной на новый маршрут, не дублировать секцию.
+4. Добавить параметр начального режима формы: `list | excel | photo`. На целевой странице прокручивать и фокусировать нужный видимый контрол.
+5. Исправить фильтрацию featured-продуктов без выдумывания фактов.
+6. Консолидировать финальные CSS-правила плотности. Категории сначала привести к высоте 72–80 px, затем уменьшить product cards и межсекционные отступы.
+7. Проверить главную и новую страницу на 320, 390, 768, 1024 и 1440 px.
+8. Сравнить новый 1440-скриншот бок о бок с production; не принимать изменение, если товары снова не видны в верхней части страницы.
+9. Запустить полный набор тестов, typecheck, lint и build.
+10. Только после проверки решить вопрос commit/push/deploy.
+
+## 9. Локально запущенные сервисы на момент handoff
+
+На момент обновления документа отвечали:
+
+```text
+http://127.0.0.1:3100/             -> 200, feature frontend
+http://127.0.0.1:4010/server/ping  -> 200, mock CMS
+http://127.0.0.1:8055/server/ping  -> 200, локальный Directus
+```
+
+Важно: frontend на порту `3100` сейчас использует mock CMS на `4010`, а не Directus на `8055`. Это удобно для UI QA, но не подтверждает интеграцию с реальным CMS.
+
+Если процессы остановлены, запускать из feature-worktree с его env-настройками. Перед запуском проверить существующие порты, чтобы не создавать дубликаты процессов.
+
+## 10. Локальный Directus и учётные данные
+
+Локальная CMS:
+
+```text
+http://localhost:8055/admin
+```
+
+Локальные значения администратора и секреты находятся в:
+
+```text
+D:\codex\JD_landing\directus\.env
+```
+
+Production-учётные данные хранятся только на VPS:
+
+```text
+/opt/jd-landing/admin-credentials.txt
+```
+
+Не копировать содержимое этих файлов в handoff, Git, сообщения или диагностический вывод. На VPS файл должен оставаться с правами `600`.
+
+## 11. Hero-изображение
+
+Пользователь передал исходник:
+
+```text
+D:\codex\JD_landing\data\deere-shop-codex-hero\deere_shop_hero_assetpack\images\hero.webp
+```
+
+Публичная версия сайта должна использовать его через CMS/синхронизацию, а не зависеть от локального пути. Проверить назначение hero asset в Directus и production после следующего deploy. Дополнительный CSS-градиент поверх изображения не добавлять: левая часть исходника уже затемнена, а лишний veil ухудшает читаемость изображения/логотипа.
+
+## 12. Проверки
+
+Frontend:
+
+```powershell
+Set-Location D:\codex\JD_landing\.worktrees\codex-plan1-homepage\frontend
+npm test
+npm run typecheck
+npm run lint
+npm run build
+```
+
+Перед commit:
+
+```powershell
+Set-Location D:\codex\JD_landing\.worktrees\codex-plan1-homepage
+git status --short --branch
+git diff --check
+git diff --stat
+git diff --cached --stat
+```
+
+Проверить, что в staged diff нет `.env`, credentials, SSH-ключей, backup-файлов, локальных планов и QA-скриншотов.
+
+## 13. Production и безопасность
+
+- VPS: `91.227.68.176`, Ubuntu 22.04.
+- Пользователь deploy: `codex-deploy`.
+- SSH-ключ: `C:\Users\Elena\.ssh\jd_landing_deploy`.
+- Production-папка: `/opt/jd-landing`.
+- Compose: `/opt/jd-landing/compose.production.yml`.
+- Caddy обслуживает frontend и CMS.
+- PostgreSQL, Directus и Portainer не открывать напрямую в интернет без необходимости.
+- Не публиковать содержимое `/opt/jd-landing/.env`, `/opt/jd-landing/admin-credentials.txt`, локальных `.env` и приватного SSH-ключа.
+- Не использовать destructive git-команды и не затирать пользовательские изменения.
+- Не выполнять deploy до локальной проверки новой компактной версии.
+
+Безопасное подключение:
 
 ```powershell
 ssh -i C:\Users\Elena\.ssh\jd_landing_deploy codex-deploy@91.227.68.176
 ```
 
-Не выводить в терминал содержимое приватного ключа, `.env` и файла с учетными данными.
-
-## 6. Production-инфраструктура
-
-Файлы инфраструктуры в репозитории:
-
-- `deploy/compose.production.yml`
-- `deploy/Caddyfile`
-- `deploy/.env.production.example`
-- `deploy/backup.sh`
-- `deploy/README.md`
-
-Папка развертывания на VPS:
-
-`/opt/jd-landing`
-
-Запущенные сервисы:
-
-- `jd-landing-database-1` — PostgreSQL 17 Alpine, доступен только внутри Docker-сети;
-- `jd-landing-directus-1` — Directus 12.1.1;
-- `jd-landing-caddy-1` — Caddy 2 Alpine;
-- `portainer` — существующий Portainer, сохранен отдельно.
-
-Portainer привязан только к `127.0.0.1:9000`; публичный порт 9000 недоступен.
-
-Секретные файлы на VPS:
-
-- `/opt/jd-landing/.env`, права `600`;
-- `/opt/jd-landing/admin-credentials.txt`, права `600`.
-
-Второй файл содержит адрес, email и текущий пароль администратора Directus. Его значения нельзя копировать в Git, этот документ, чат или вывод диагностики.
-
-Во время прежней диагностики старые секреты однажды попали в технический вывод. После этого пароль PostgreSQL, секрет Directus и пароль администратора Directus были заменены. Текущие значения на VPS уже новые и действующие.
-
-Резервные копии:
-
-- каталог: `/opt/jd-landing/backups`;
-- cron: `/etc/cron.d/jd-landing-backup`;
-- запуск ежедневно в 02:30;
-- локальное хранение: 14 дней;
-- тестовые резервные копии создавались успешно.
-
-Обязательно остается настроить внешнюю копию резервных данных за пределами VPS.
-
-## 7. Домен и DNS
-
-Основной домен: `deere-shop.ru`
-
-Регистратор и DNS-панель: REG.RU
-
-Добавлены записи:
-
-- `A @` → `91.227.68.176`
-- `A cms` → `91.227.68.176`
-- `CNAME www` → `deere-shop.ru.`
-
-На момент создания документа записи еще распространялись неравномерно между авторитетными серверами REG.RU:
-
-- корневой домен уже отвечал;
-- `cms` и `www` могли временно возвращать NXDOMAIN на одном из серверов;
-- `https://deere-shop.ru` уже открывался с сертификатом Let’s Encrypt;
-- `https://cms.deere-shop.ru` и `https://www.deere-shop.ru` еще ожидали полной DNS-пропагации и выдачи сертификатов.
-
-Caddy самостоятельно повторяет попытки выпуска сертификатов. После полной DNS-пропагации нужно проверить все три адреса и при необходимости перезапустить Caddy.
-
-## 8. Временный доступ без домена
-
-Сайт уже доступен напрямую:
-
-`http://91.227.68.176`
-
-Сейчас там техническая заглушка, а не готовый frontend.
-
-Directus не выставлен открытым по IP. В production compose добавлена безопасная локальная привязка:
-
-`127.0.0.1:8055:8055`
-
-Для доступа к админке без ожидания DNS нужно создать SSH-туннель с компьютера пользователя:
-
-```powershell
-ssh -i C:\Users\Elena\.ssh\jd_landing_deploy `
-  -o BatchMode=yes `
-  -o ExitOnForwardFailure=yes `
-  -o ServerAliveInterval=30 `
-  -N `
-  -L 127.0.0.1:8055:127.0.0.1:8055 `
-  codex-deploy@91.227.68.176
-```
-
-Пока эта команда работает, админка доступна по адресу:
-
-`http://localhost:8055/admin`
-
-Для фонового запуска через PowerShell использовать `Start-Process` с `-WindowStyle Hidden`. На момент передачи проекта локальный SSH-туннель еще не был успешно запущен.
-
-## 9. Статус Directus
-
-- Directus развернут и контейнер проходит healthcheck.
-- Вход администратора проверялся успешно.
-- Email администратора: `info@cmteh.ru`
-- Текущий пароль хранится только в `/opt/jd-landing/admin-credentials.txt`.
-- Коллекции, роли, права и импорт 299 товаров еще не выполнены.
-
-Нужно создать коллекции и роли строго по `AGENTS.md`, включая:
-
-- `site_settings`
-- `navigation_items`
-- `hero_blocks`
-- `categories`
-- `products`
-- `product_images`
-- `product_specifications`
-- `product_documents`
-- `advantages`
-- `cta_blocks`
-- `faq_items`
-- `contact_channels`
-- `lead_forms`
-- `leads`
-- `seo_pages`
-- `seo_text_blocks`
-- `pages`
-- `testimonials`
-- `banners`
-
-## 10. Статус frontend
-
-Готовый Next.js frontend еще не реализован. По IP и основному домену показывается техническая заглушка.
-
-Шаблон Vibe был изучен из локальной копии:
-
-`D:\codex\JD_landing\.codex-tmp\vibe-upstream`
-
-Текущий upstream Vibe — Bun-монорепозиторий:
-
-- публичный сайт на Astro;
-- webapp на Vite + React;
-- backend на Hono;
-- PostgreSQL.
-
-Требования проекта прямо требуют Next.js. Принято решение не переносить стек Vibe целиком, а сохранить и адаптировать его полезные визуальные, компонентные и анимационные паттерны в Next.js App Router.
-
-Основные маршруты из `AGENTS.md`:
-
-- `/`
-- `/catalog`
-- `/catalog/[categorySlug]`
-- `/catalog/[categorySlug]/[productSlug]`
-- `/about`
-- `/delivery`
-- `/contacts`
-- `/privacy-policy`
-- `/thank-you`
-
-## 11. Что делать дальше
-
-Приоритетный порядок:
-
-1. Прочитать `AGENTS.md` полностью и проверить `git status`.
-2. Запустить локальный SSH-туннель и убедиться, что открывается `http://localhost:8055/admin`.
-3. Проверить распространение DNS и HTTPS:
-   - `https://deere-shop.ru`
-   - `https://www.deere-shop.ru`
-   - `https://cms.deere-shop.ru`
-4. Создать в Directus коллекции, связи, роли и права из `AGENTS.md`.
-5. Подготовить и выполнить импорт 299 товаров, цен, описаний и изображений.
-6. Создать Next.js App Router frontend с адаптацией визуальных паттернов Vibe.
-7. Подключить frontend к Directus только через серверный слой.
-8. Реализовать каталог, карточки, фильтры, поиск, формы заявок, SEO, sitemap, robots и JSON-LD.
-9. Заменить техническую заглушку в production на собранный frontend.
-10. Настроить внешний backup, уведомления, Яндекс Метрику и контроль ошибок.
-11. Проверить мобильную версию, формы, SEO, производительность и безопасность.
-
-## 12. Быстрые проверки
-
-Локальный Git:
-
-```powershell
-Set-Location D:\codex\JD_landing
-git status --short --branch
-git log -5 --oneline
-git remote -v
-```
-
-Состояние контейнеров:
-
-```powershell
-ssh -i C:\Users\Elena\.ssh\jd_landing_deploy codex-deploy@91.227.68.176 `
-  "cd /opt/jd-landing && sudo docker compose -f compose.production.yml ps"
-```
-
-Проверка сайта по IP:
-
-```powershell
-curl.exe -I http://91.227.68.176
-```
-
-Проверка Directus после запуска туннеля:
-
-```powershell
-curl.exe http://127.0.0.1:8055/server/ping
-```
-
-Проверка доменов:
-
-```powershell
-Resolve-DnsName deere-shop.ru
-Resolve-DnsName www.deere-shop.ru
-Resolve-DnsName cms.deere-shop.ru
-curl.exe -I https://deere-shop.ru
-curl.exe -I https://www.deere-shop.ru
-curl.exe -I https://cms.deere-shop.ru
-```
-
-## 13. Правила безопасности для следующего агента
-
-- Никогда не публиковать содержимое `/opt/jd-landing/.env`.
-- Никогда не публиковать содержимое `/opt/jd-landing/admin-credentials.txt`.
-- Никогда не публиковать содержимое приватного SSH-ключа.
-- Не открывать PostgreSQL, Directus или Portainer напрямую в интернет без необходимости.
-- Не удалять Portainer.
-- Перед удалением или очисткой проверять точный абсолютный путь.
-- Не перезаписывать пользовательские изменения в рабочем дереве.
-- Не добавлять в Git реальные пароли, токены, ключи или резервные копии.
-- Перед каждым push проверять staged diff и выполнять поиск потенциальных секретов.
-- Не заявлять официальный статус по отношению к John Deere без подтверждения владельца.
-
-## 14. Критерий ближайшего успешного этапа
-
-Ближайший этап можно считать завершенным, когда:
-
-- DNS и SSL работают для корня, `www` и `cms`;
-- Directus доступен через `https://cms.deere-shop.ru`;
-- коллекции и роли Directus созданы;
-- товарные данные импортированы и проверены;
-- базовый Next.js frontend получает контент из Directus;
-- production-сайт открывается на `https://deere-shop.ru`;
-- все изменения находятся в GitHub PR №1 без секретов.
+## 14. Критерии готовности ближайшей итерации
+
+- Большая форма массового запроса отсутствует на главной и доступна на `/parts-request`.
+- Все три hero-действия ведут в правильный сценарий новой страницы.
+- Excel/CSV и фото действительно выбираются и отправляются через существующий защищённый lead API.
+- Категории имеют целевую компактную высоту и не создают пустот.
+- Блок из пяти популярных/избранных товаров видим и не исчезает из-за незаполненных необязательных полей.
+- На 1440 px начало блока товаров видно не ниже, чем на production.
+- Нет горизонтального overflow на 320–1440 px.
+- Действия имеют touch-зоны от 44×44 px, видимый focus и корректный reduced motion.
+- Тесты, typecheck, lint и production build проходят.
+- Только после этого изменения можно коммитить, отправлять в GitHub и разворачивать на VPS.
+
+## 15. Аудит готовности к запуску (4 августа 2026)
+
+Комплексный UI/UX и CMS-аудит выявил блокеры запуска, хардкод-фолбэки и дубли данных. Все найденные проблемы исправлены в этой итерации на ветке `agent/production-infrastructure`.
+
+### 15.1 Что исправлено
+
+**Блокеры запуска (Фаза 1):**
+- `LeadForm` теперь показывает серверные ошибки (`LeadForm.tsx`): парсит `body.error` из ответа `/api/leads`, fallback на единый текст только при network-ошибке. Добавлены 2 теста.
+- Open Graph / title metadata переведены с хардкода `BRAND_*` на `site_settings` (`layout.tsx` → `generateMetadata()`): `seo_title`, `seo_description`, `og_title`, `og_description`, `default_og_image`.
+- Аналитика: создан клиентский компонент `Analytics.tsx`, инжектирующий Yandex Metrica и/или GTM по ID из `site_settings` (`yandex_metrica_id`, `gtm_id`). Без ID скрипты не рендерятся.
+
+**CMS-редактируемость (Фаза 3):**
+- Шаги процесса (`HomeSelection`): убрана хрупкая проверка `=== 4`; рендерит столько шагов, сколько задано в CMS; «Что поможет подбору» стало редактируемым через `settings.help_inputs`.
+- Навигация: убран fallback-пункт `/documents` (вёл на 404 — нет в whitelist).
+- Тексты каталога: eyebrow и описание под h1 берутся из новых полей `pages.eyebrow` / `pages.intro`.
+- Дисклеймер футера вынесен в `site_settings.footer_disclaimer`.
+- Удалён мёртвый код: `getHeroBlock()`, `getSeoTextBlock()`, типы `HeroBlock`/`SeoTextBlock` (не вызывались). Поля `Article.author/reviewer/sources` теперь маппятся из CMS.
+
+**UI/UX (Фаза 4):**
+- Локальные `loading.tsx` для `/catalog/[categorySlug]` и `/articles`.
+- Корневой `error.tsx` стал универсальным (был «Не удалось загрузить данные каталога» для всех роутов).
+- Главная переведена с `force-dynamic` на ISR `revalidate=300` (свежесть поддерживается Directus webhook). Каждый запрос главной перестал быть «дорогим».
+- Добавлен динамический фильтр каталога «Тип детали» (original/oem/analog) в UI, search-params и Directus-запрос.
+
+**Дубли категорий (Фаза 2):**
+- Создан idempotent скрипт `directus/scripts/merge-categories.mjs` (dry-run по умолчанию, `--apply` для записи) для объединения дубля «Крепёж и крепления» → «Крепёж».
+- В `catalog/[categorySlug]/page.tsx` добавлен `permanentRedirect()` для архивированных категорий с `redirect_target` через новый метод `getCategoryRedirect()`.
+- Команда: `npm run categories:merge -- --apply`.
+
+**Схема и переводы:**
+- В `site_settings` добавлены: `seo_title`, `seo_description`, `og_title`, `og_description`, `footer_disclaimer`, `gtm_id`.
+- В `pages` добавлены: `eyebrow`, `intro`.
+- В `ui-translations` добавлены переводы для всех ранее непокрытых полей и коллекций (`orders`, `order_items`, `selection_guide`, `redirect_target`, `author`, `reviewer`, `sources`, `brand`, `mpn`, `gtin`, `delivery_status` и др.).
+
+### 15.2 Чеклист перед запуском (требует действий на проде)
+
+После деплоя этих изменений необходимо выполнить на production:
+
+1. **Применить схему Directus**: `npm run schema:apply` + `npm run schema:translations` (добавит новые поля и переводы).
+2. **Заполнить новые поля в `site_settings`**: `yandex_metrica_id` (или `gtm_id`), OG-поля, `footer_disclaimer`. Без ID аналитика остаётся выключенной.
+3. **Проверить env**: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` и `TURNSTILE_SECRET_KEY` — без них капча в LeadForm полностью отключена (`api/leads/route.ts`: `if (!secret) return true`). Без `REVALIDATE_SECRET` webhook открыт.
+4. **Объединить дубль категории**: `npm run categories:merge -- --apply` (после проверки dry-run).
+5. **Дополнить навигацию в админке**: сейчас на live показывается «Каталог, Статьи, Подбор» — добавить пункты «Доставка», «Компания» в `navigation_items`, если они нужны в меню.
+6. **Проверить revalidation webhook** настроен в Directus (POST на `/api/revalidate` с заголовком `x-revalidate-secret` и телом `{"collection": "..."}`).
+
+### 15.3 Что НЕ сделано (отложено по решению владельца)
+
+- Уведомления менеджеру (email/Telegram) о новом лиде — менеджер проверяет админку вручную.
+- Tailwind v4 миграция (установлен, но весь UI на самописном CSS в `globals.css` — 6166 строк).
+- Нативная мультиязычность (поле `translations` есть как JSON-заглушка).
+- Field-level permissions для SEO Manager (невозможно в Directus 12 Core).
+
+### 15.4 Состояние проверок
+
+- Frontend: 138 тестов ✅, `tsc --noEmit` ✅.
+- Directus tooling: 44 теста ✅.
+- Все изменения на ветке `agent/production-infrastructure`, не закоммичены (ждут решения владельца о commit).

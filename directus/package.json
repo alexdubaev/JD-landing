@@ -6,10 +6,14 @@
     "test": "node --test",
     "schema:check": "node --test schema/blueprint.test.mjs schema/platform-compatibility.test.mjs",
     "schema:apply": "node schema/apply-schema.mjs",
+    "schema:translations": "node schema/apply-ui-translations.mjs",
     "schema:snapshot": "node schema/snapshot-schema.mjs",
     "access:apply": "node access/apply-access.mjs",
     "products:import": "node import/products.mjs",
-    "assets:sync": "node import/sync-editorial-assets.mjs"
+    "seo:generate": "node import/generate-seo.mjs",
+    "seo:generate:apply": "node import/generate-seo.mjs --apply",
+    "assets:sync": "node import/sync-editorial-assets.mjs",
+    "categories:merge": "node scripts/merge-categories.mjs"
   },
   "engines": {
     "node": ">=20"

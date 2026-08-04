@@ -4,13 +4,11 @@ import type {
   ContentPage,
   ContactChannel,
   FaqItem,
-  HeroBlock,
   NavigationItem,
   PageSection,
   RecentSupply,
   SectionType,
   SiteSettings,
-  SeoTextBlock,
 } from "@/types/content";
 import { BRAND_NAME } from "@/lib/brand";
 
@@ -22,6 +20,7 @@ type RawSiteSettings = {
   city: string | null;
   company_image: FileRelation;
   company_name: string | null;
+  default_og_image: FileRelation;
   documents_url: string | null;
   phone: string | null;
   email: string | null;
@@ -33,6 +32,11 @@ type RawSiteSettings = {
   primary_cta_text: string | null;
   primary_cta_url: string | null;
   footer_text: string | null;
+  footer_disclaimer: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_title: string | null;
+  og_description: string | null;
   inn: string | null;
   kpp: string | null;
   legal_address: string | null;
@@ -41,6 +45,8 @@ type RawSiteSettings = {
   ogrn: string | null;
   requisites_url: string | null;
   vat_info: string | null;
+  yandex_metrica_id: string | null;
+  gtm_id: string | null;
 };
 
 type RawPage = {
@@ -105,7 +111,7 @@ const queryString = (parameters: Record<string, string | undefined>) => {
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   const raw = await directusRequest<RawSiteSettings>(
-    "/items/site_settings?fields=company_name,phone,email,address,working_hours,logo,primary_color,accent_color,primary_cta_text,primary_cta_url,footer_text,messengers,legal_name,vat_info,requisites_url,documents_url,company_image,city,inn,kpp,ogrn,legal_address",
+    "/items/site_settings?fields=company_name,phone,email,address,working_hours,logo,primary_color,accent_color,primary_cta_text,primary_cta_url,footer_text,footer_disclaimer,messengers,legal_name,vat_info,requisites_url,documents_url,company_image,city,inn,kpp,ogrn,legal_address,default_og_image,seo_title,seo_description,og_title,og_description,yandex_metrica_id,gtm_id",
     { next: { revalidate: 300, tags: ["site-settings"] } },
   );
 
@@ -113,6 +119,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     city: raw.city,
     companyImageId: fileId(raw.company_image),
     companyName: raw.company_name?.trim() || BRAND_NAME,
+    defaultOgImageId: fileId(raw.default_og_image),
     documentsUrl: raw.documents_url,
     phone: raw.phone,
     email: raw.email,
@@ -124,6 +131,11 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     primaryCtaText: raw.primary_cta_text,
     primaryCtaUrl: raw.primary_cta_url,
     footerText: raw.footer_text,
+    footerDisclaimer: raw.footer_disclaimer,
+    seoTitle: raw.seo_title,
+    seoDescription: raw.seo_description,
+    ogTitle: raw.og_title,
+    ogDescription: raw.og_description,
     inn: raw.inn,
     kpp: raw.kpp,
     legalAddress: raw.legal_address,
@@ -132,6 +144,8 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     ogrn: raw.ogrn,
     requisitesUrl: raw.requisites_url,
     vatInfo: raw.vat_info,
+    yandexMetricaId: raw.yandex_metrica_id,
+    gtmId: raw.gtm_id,
   };
 }
 
@@ -239,53 +253,6 @@ export async function getFaqItems({
   });
 }
 
-export async function getHeroBlock(
-  pageSectionId: string,
-): Promise<HeroBlock | null> {
-  const query = queryString({
-    "filter[status][_eq]": "published",
-    "filter[page_section][_eq]": pageSectionId,
-    fields:
-      "id,eyebrow,title,text,image,image_alt,primary_cta_text,primary_cta_url,secondary_cta_text,secondary_cta_url,disclaimer",
-    limit: "1",
-  });
-  const items = await directusRequest<
-    Array<{
-      id: string;
-      eyebrow: string | null;
-      title: string;
-      text: string | null;
-      image: FileRelation;
-      image_alt: string | null;
-      primary_cta_text: string | null;
-  primary_cta_url: string | null;
-  requisites_url: string | null;
-  vat_info: string | null;
-      secondary_cta_text: string | null;
-      secondary_cta_url: string | null;
-      disclaimer: string | null;
-    }>
-  >(`/items/hero_blocks?${query}`, {
-    next: { revalidate: 300, tags: ["hero-blocks"] },
-  });
-  const item = items?.[0];
-  return item
-    ? {
-        id: item.id,
-        eyebrow: item.eyebrow,
-        title: item.title,
-        text: item.text,
-        imageId: fileId(item.image),
-        imageAlt: item.image_alt,
-        primaryCtaText: item.primary_cta_text,
-        primaryCtaUrl: item.primary_cta_url,
-        secondaryCtaText: item.secondary_cta_text,
-        secondaryCtaUrl: item.secondary_cta_url,
-        disclaimer: item.disclaimer,
-      }
-    : null;
-}
-
 export async function getContacts(): Promise<ContactChannel[]> {
   const query = queryString({
     "filter[status][_eq]": "published",
@@ -356,54 +323,4 @@ export async function getRecentSupplies(): Promise<RecentSupply[]> {
       supply.deliveryTerm ||
       supply.supplyFormat,
   ));
-}
-
-export async function getSeoTextBlock({
-  categoryId,
-  pageId,
-  productId,
-}: {
-  categoryId?: string;
-  pageId?: string;
-  productId?: string;
-}): Promise<SeoTextBlock | null> {
-  const query = queryString({
-    "filter[status][_eq]": "published",
-    "filter[related_page][_eq]": pageId,
-    "filter[related_category][_eq]": categoryId,
-    "filter[related_product][_eq]": productId,
-    fields:
-      "id,h1,intro_text,content_blocks,conclusion_text,cta_text,seo_title,seo_description,canonical_url",
-    sort: "sort_order",
-    limit: "1",
-  });
-  const items = await directusRequest<
-    Array<{
-      id: string;
-      h1: string | null;
-      intro_text: string | null;
-      content_blocks: unknown;
-      conclusion_text: string | null;
-      cta_text: string | null;
-      seo_title: string | null;
-      seo_description: string | null;
-      canonical_url: string | null;
-    }>
-  >(`/items/seo_text_blocks?${query}`, {
-    next: { revalidate: 300, tags: ["seo-text-blocks"] },
-  });
-  const item = items[0];
-  return item
-    ? {
-        id: item.id,
-        h1: item.h1,
-        introText: item.intro_text,
-        contentBlocks: toItems(item.content_blocks),
-        conclusionText: item.conclusion_text,
-        ctaText: item.cta_text,
-        seoTitle: item.seo_title,
-        seoDescription: item.seo_description,
-        canonicalUrl: item.canonical_url,
-      }
-    : null;
 }

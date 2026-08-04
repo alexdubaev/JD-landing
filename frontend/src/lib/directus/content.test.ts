@@ -4,12 +4,10 @@ import { directusRequest } from "./client";
 import {
   getFaqItems,
   getContacts,
-  getHeroBlock,
   getHomePage,
   getNavigation,
   getPageBySlug,
   getRecentSupplies,
-  getSeoTextBlock,
   getSiteSettings,
 } from "./content";
 
@@ -221,53 +219,18 @@ describe("content queries", () => {
     );
   });
 
-  it("loads normalized hero, contact and SEO records", async () => {
-    requestMock
-      .mockResolvedValueOnce([
-        {
-          id: "hero-1",
-          eyebrow: "Каталог",
-          title: "Подбор комплектующих",
-          text: "Поможем найти решение",
-          image: "hero-image",
-          image_alt: "Техника",
-          primary_cta_text: "В каталог",
-          primary_cta_url: "/catalog",
-          secondary_cta_text: null,
-          secondary_cta_url: null,
-          disclaimer: null,
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: "phone",
-          channel_type: "phone",
-          label: "Телефон",
-          value: "+7 900 000-00-00",
-          url: "tel:+79000000000",
-          icon: "phone",
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: "seo",
-          h1: "Каталог",
-          intro_text: "Вводный текст",
-          content_blocks: [],
-          conclusion_text: null,
-          cta_text: null,
-          seo_title: "SEO title",
-          seo_description: "SEO description",
-          canonical_url: "/catalog",
-        },
-      ]);
+  it("loads normalized contact records", async () => {
+    requestMock.mockResolvedValueOnce([
+      {
+        id: "phone",
+        channel_type: "phone",
+        label: "Телефон",
+        value: "+7 900 000-00-00",
+        url: "tel:+79000000000",
+        icon: "phone",
+      },
+    ]);
 
-    await expect(getHeroBlock("hero-section")).resolves.toEqual(
-      expect.objectContaining({ title: "Подбор комплектующих" }),
-    );
     await expect(getContacts()).resolves.toHaveLength(1);
-    await expect(getSeoTextBlock({ pageId: "catalog" })).resolves.toEqual(
-      expect.objectContaining({ seoTitle: "SEO title" }),
-    );
   });
 });

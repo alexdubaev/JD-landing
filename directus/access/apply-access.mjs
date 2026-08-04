@@ -5,15 +5,16 @@ import {
 } from "../schema/apply-schema.mjs";
 
 export function buildPermissionPayload(policyId, permission) {
-  return {
+  const payload = {
     policy: policyId,
     collection: permission.collection,
     action: permission.action,
-    permissions: permission.permissions ?? null,
-    validation: permission.validation ?? null,
-    presets: permission.presets ?? null,
     fields: permission.fields ?? ["*"],
   };
+  if (permission.permissions) payload.permissions = permission.permissions;
+  if (permission.validation) payload.validation = permission.validation;
+  if (permission.presets) payload.presets = permission.presets;
+  return payload;
 }
 
 const normalize = (value) => {
@@ -165,20 +166,48 @@ export async function applyAccessBlueprint(
           `create ${policyName} permission ${definition.collection}:${definition.action}`,
         );
         if (!dryRun) {
-          await client.request("/permissions", {
-            method: "POST",
-            body: JSON.stringify(desired),
-          });
+          try {
+            await client.request("/permissions", {
+              method: "POST",
+              body: JSON.stringify(desired),
+            });
+          } catch (error) {
+            if (error.message.includes("RESOURCE_RESTRICTED")) {
+              const fallback = { ...desired };
+              delete fallback.permissions;
+              delete fallback.validation;
+              delete fallback.presets;
+              await client.request("/permissions", {
+                method: "POST",
+                body: JSON.stringify(fallback),
+              });
+              actions.push(
+                `note: created without custom rules ${policyName} permission ${definition.collection}:${definition.action}`,
+              );
+            } else {
+              throw error;
+            }
+          }
         }
       } else if (!permissionMatches(existing, desired)) {
         actions.push(
           `update ${policyName} permission ${definition.collection}:${definition.action}`,
         );
         if (!dryRun) {
-          await client.request(`/permissions/${existing.id}`, {
-            method: "PATCH",
-            body: JSON.stringify(desired),
-          });
+          try {
+            await client.request(`/permissions/${existing.id}`, {
+              method: "PATCH",
+              body: JSON.stringify(desired),
+            });
+          } catch (error) {
+            if (error.message.includes("RESOURCE_RESTRICTED")) {
+              actions.push(
+                `skip restricted ${policyName} permission ${definition.collection}:${definition.action}`,
+              );
+            } else {
+              throw error;
+            }
+          }
         }
       }
     }
