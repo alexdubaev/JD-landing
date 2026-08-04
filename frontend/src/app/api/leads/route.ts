@@ -14,6 +14,7 @@ import {
   type AttachmentKind,
 } from "@/lib/leads/attachments";
 import { leadSchema } from "@/lib/leads/schema";
+import { notifyNewLead } from "@/lib/notifications/notify";
 
 const MAX_LEAD_REQUEST_BYTES = 20 * 1024 * 1024;
 
@@ -144,6 +145,29 @@ export async function POST(request: Request) {
       requestItems: parsed.data.request_items
         ? normalizePartsRequestItems(parsed.data.request_items)
         : undefined,
+    });
+    // Best-effort manager notification: a mail outage must never affect the
+    // visitor's lead, so the result is ignored here. Notifications are silent
+    // when SMTP env vars are not configured (see lib/notifications/env.ts).
+    await notifyNewLead({
+      name: parsed.data.name,
+      phone: parsed.data.phone,
+      email: parsed.data.email,
+      message: parsed.data.message,
+      product: parsed.data.product,
+      category: parsed.data.category,
+      pageUrl: parsed.data.page_url,
+      utm: {
+        source: parsed.data.utm_source,
+        medium: parsed.data.utm_medium,
+        campaign: parsed.data.utm_campaign,
+        content: parsed.data.utm_content,
+        term: parsed.data.utm_term,
+      },
+      requestItems: parsed.data.request_items
+        ? normalizePartsRequestItems(parsed.data.request_items)
+        : undefined,
+      attachments: uploadedIds.length ? uploadedIds : undefined,
     });
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (error) {

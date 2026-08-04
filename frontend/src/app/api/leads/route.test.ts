@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Hoisted once for the whole file. `notifyNewLead` is a no-op by default so
+// the core validation/storage tests run exactly as before; notification tests
+// override the implementation in their own beforeEach.
+const notifyNewLead = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/notifications/notify", () => ({ notifyNewLead }));
+
 import { POST } from "./route";
 
 const multipartRequest = (form: FormData, headers: HeadersInit = {}) => {
@@ -8,22 +14,27 @@ const multipartRequest = (form: FormData, headers: HeadersInit = {}) => {
   return ({ headers: mergedHeaders, formData: async () => form }) as unknown as Request;
 };
 
+const stubServerEnv = () => {
+  vi.stubEnv("DIRECTUS_URL", "https://cms.example.test");
+  vi.stubEnv("DIRECTUS_TOKEN", "server-token-for-tests-only");
+  vi.stubEnv(
+    "DIRECTUS_PUBLIC_FOLDER_ID",
+    "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a",
+  );
+  vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.test");
+};
+
+beforeEach(() => {
+  stubServerEnv();
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+  notifyNewLead.mockReset();
+});
+
 describe("POST /api/leads", () => {
-  beforeEach(() => {
-    vi.stubEnv("DIRECTUS_URL", "https://cms.example.test");
-    vi.stubEnv("DIRECTUS_TOKEN", "server-token-for-tests-only");
-    vi.stubEnv(
-      "DIRECTUS_PUBLIC_FOLDER_ID",
-      "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a",
-    );
-    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.test");
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.restoreAllMocks();
-  });
-
   it("validates and stores a lead without exposing the Directus response", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ data: { id: "lead-1" } }), {
@@ -319,5 +330,61 @@ describe("POST /api/leads", () => {
 
     expect(response.status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/leads manager notifications", () => {
+  it("notifies the manager after a successful lead and returns 201", async () => {
+    notifyNewLead.mockResolvedValue("manager@example.test");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { id: "lead-1" } }), { status: 200 }),
+    );
+
+    const response = await POST(
+      new Request("https://example.test/api/leads", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "Иван",
+          phone: "+7 900 000-00-00",
+          email: "ivan@example.test",
+          message: "Нужен подбор",
+          page_url: "https://example.test/catalog",
+          website: "",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(notifyNewLead).toHaveBeenCalledTimes(1);
+    const payload = notifyNewLead.mock.calls[0][0];
+    expect(payload.name).toBe("Иван");
+    expect(payload.phone).toBe("+7 900 000-00-00");
+    expect(payload.email).toBe("ivan@example.test");
+  });
+
+  it("does not block the response when the notification fails", async () => {
+    notifyNewLead.mockResolvedValue(null);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { id: "lead-1" } }), { status: 200 }),
+    );
+
+    const response = await POST(
+      new Request("https://example.test/api/leads", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "Иван",
+          phone: "+7 900 000-00-00",
+          email: "ivan@example.test",
+          message: "Нужен подбор",
+          page_url: "https://example.test/catalog",
+          website: "",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(notifyNewLead).toHaveBeenCalledTimes(1);
   });
 });
