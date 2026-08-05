@@ -82,11 +82,11 @@ export function Header({
                 Консультация
               </Link>
             )}
-            <CartBadge />
             <Link className="site-header__request" href="/parts-request">
               Отправить запрос
             </Link>
           </div>
+          <CartBadge />
           <MobileNavigation navigation={headerNavigation} phone={phone} />
         </Container>
       </div>
