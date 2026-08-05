@@ -65,6 +65,13 @@ for i in $(seq 1 20); do
   directus_ok=$(sudo docker exec "$FRONTEND_CONTAINER" \
     sh -c "wget -qO- --timeout=5 http://directus:8055/server/ping 2>/dev/null || true")
   if [[ "$directus_ok" == "pong" ]]; then
+    # During `next build` inside Docker, Directus is unreachable, so the
+    # build-time prerender of "/" freezes the "Каталог временно обновляется"
+    # stub into .next/server/app/index.html. That static file shadows the
+    # ISR regeneration at runtime. Remove it so the first live request
+    # regenerates the page from real CMS data.
+    sudo docker exec "$FRONTEND_CONTAINER" \
+      sh -c "rm -f ./.next/server/app/index.html ./.next/server/app/index.segments/*.rsc 2>/dev/null; true"
     # Prime the page so it renders with real data, then purge via the API.
     sudo docker exec "$FRONTEND_CONTAINER" \
       sh -c "wget -qO- --timeout=10 http://127.0.0.1:3000/ >/dev/null 2>&1 || true"
