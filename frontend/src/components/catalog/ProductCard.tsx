@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Copy, ImageOff, ListPlus, ShoppingCart } from "lucide-react";
+import { ArrowRight, ImageOff, ListPlus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -98,10 +98,6 @@ export function ProductCard({
     trackEvent("product_add_to_cart", { product_id: product.id });
   };
 
-  const copySku = async () => {
-    await navigator.clipboard?.writeText(product.sku).catch(() => undefined);
-  };
-
   return (
     <InteractiveCard className="product-card-motion">
       <article className={`product-card product-card--${variant}`}>
@@ -191,14 +187,6 @@ export function ProductCard({
           >
             <ListPlus aria-hidden="true" />
             {inRequest ? "В запросе" : "В запрос"}
-          </button>
-          <button
-            aria-label="Копировать артикул"
-            className="product-card__copy"
-            onClick={copySku}
-            type="button"
-          >
-            <Copy aria-hidden="true" />
           </button>
           {requestCount ? (
             <Link

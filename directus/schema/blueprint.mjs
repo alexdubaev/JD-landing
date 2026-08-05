@@ -60,8 +60,14 @@ export const schemaBlueprint = {
         field("city", "string"),
         field("working_hours", "string"),
         field("delivery_region", "string"),
-        field("logo", "uuid", { relatedCollection: "directus_files" }),
-        field("favicon", "uuid", { relatedCollection: "directus_files" }),
+        field("logo", "uuid", {
+          relatedCollection: "directus_files",
+          interface: "file-image",
+        }),
+        field("favicon", "uuid", {
+          relatedCollection: "directus_files",
+          interface: "file-image",
+        }),
         field("default_og_image", "uuid", {
           relatedCollection: "directus_files",
         }),
@@ -158,7 +164,10 @@ export const schemaBlueprint = {
         field("title", "string"),
         field("subtitle", "string"),
         field("text", "text"),
-        field("image", "uuid", { relatedCollection: "directus_files" }),
+        field("image", "uuid", {
+          relatedCollection: "directus_files",
+          interface: "file-image",
+        }),
         field("button_text", "string"),
         field("button_url", "string"),
         field("items", "json"),

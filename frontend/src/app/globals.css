@@ -221,23 +221,24 @@ a {
 
 .site-header__brand {
   display: grid;
-  min-width: 12.5rem;
-  min-height: 4rem;
+  min-width: 0;
+  min-height: 3rem;
   place-items: center;
-  padding: 0.25rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
   background: var(--header);
   transition:
     min-height 180ms ease,
-    min-width 180ms ease,
     padding 180ms ease;
 }
 
 .site-header__logo {
   display: block;
-  width: 11.5rem;
-  height: auto;
-  transition: width 180ms ease;
+  width: auto;
+  max-width: 100%;
+  height: 2.5rem;
+  object-fit: contain;
+  transition: height 180ms ease;
 }
 
 .site-header[data-scrolled="true"] .site-header__utility {
@@ -249,12 +250,12 @@ a {
 }
 
 .site-header[data-scrolled="true"] .site-header__brand {
-  min-width: 10rem;
-  min-height: 3.25rem;
+  min-width: 0;
+  min-height: 2.5rem;
 }
 
 .site-header[data-scrolled="true"] .site-header__logo {
-  width: 9rem;
+  height: 2rem;
 }
 
 .site-header__navigation {
@@ -1717,8 +1718,8 @@ a.product-card__category:hover {
 }
 
 .product-card__actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
   gap: 0.4rem;
   width: 100%;
@@ -1726,12 +1727,19 @@ a.product-card__category:hover {
 }
 
 .product-card__actions .product-card__action {
+  flex: 1 1 auto;
+  min-width: 0;
   width: auto;
   margin-top: 0;
 }
 
+.product-card__cart,
+.product-card__request {
+  flex: 0 0 auto;
+}
+
 .product-card__request-summary {
-  grid-column: 1 / -1;
+  flex-basis: 100%;
   min-height: 2.625rem;
   display: inline-flex;
   align-items: center;
@@ -1751,8 +1759,7 @@ a.product-card__category:hover {
   color: #ffffff;
 }
 
-.product-card__request,
-.product-card__copy {
+.product-card__request {
   min-width: 2.625rem;
   min-height: 2.625rem;
   display: inline-flex;
@@ -1770,16 +1777,13 @@ a.product-card__category:hover {
   cursor: pointer;
 }
 
-.product-card__request svg,
-.product-card__copy svg {
+.product-card__request svg {
   width: 1rem;
   height: 1rem;
 }
 
 .product-card__request:hover,
-.product-card__request:focus-visible,
-.product-card__copy:hover,
-.product-card__copy:focus-visible {
+.product-card__request:focus-visible {
   border-color: var(--primary);
   color: var(--primary);
 }
@@ -2333,13 +2337,13 @@ a.product-card__category:hover {
   }
 
   .site-header__logo {
-    width: 10.5rem;
+    height: 2rem;
   }
 
   .site-header__brand {
     min-width: 0;
-    min-height: 3.5rem;
-    padding-inline: 0.625rem;
+    min-height: 2.75rem;
+    padding-inline: 0.5rem;
   }
 
   .site-header__inner {
@@ -2352,7 +2356,7 @@ a.product-card__category:hover {
   }
 
   .site-header[data-scrolled="true"] .site-header__logo {
-    width: 8.5rem;
+    height: 1.625rem;
   }
 
   .commerce-hero {
@@ -2872,7 +2876,7 @@ a.product-card__category:hover {
 
 .hero-part-search__form input {
   min-width: 0;
-  min-height: 4rem;
+  min-height: 3.25rem;
   padding: 0 1rem;
   border: 0;
   outline: 0;
@@ -2883,7 +2887,7 @@ a.product-card__category:hover {
 
 .hero-part-search__form button {
   align-self: stretch;
-  min-width: 7.75rem;
+  min-width: 6.5rem;
   border: 0;
   background: var(--accent);
   color: #111111;
@@ -3360,7 +3364,7 @@ p {
 }
 
 .hero-part-search__form {
-  min-height: 4.5rem;
+  min-height: 3.5rem;
   border: 1px solid var(--accent);
   border-radius: 0;
   background: var(--accent);
@@ -3378,7 +3382,7 @@ p {
 }
 
 .hero-part-search__form input {
-  min-height: 4.5rem;
+  min-height: 3.5rem;
   background: transparent;
   color: #111713;
   font-size: 1rem;
@@ -3389,7 +3393,7 @@ p {
 }
 
 .hero-part-search__form button {
-  min-width: 9rem;
+  min-width: 7rem;
   background: var(--header);
   color: #ffffff;
   font-size: 0.6875rem;
@@ -4565,7 +4569,7 @@ p {
   }
 
   .hero-part-search__form button {
-    min-height: 3.5rem;
+    min-height: 3rem;
     grid-column: 1 / -1;
   }
 
@@ -4654,7 +4658,8 @@ p {
 
 .commerce-hero__description {
   max-width: 640px;
-  margin-top: 1rem;
+  margin-top: 0.625rem;
+  line-height: 1.35;
 }
 
 .commerce-hero__contacts {
@@ -4662,7 +4667,7 @@ p {
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
   align-items: center;
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .commerce-hero__contacts a {
