@@ -79,6 +79,25 @@ export type Product = ProductCardData & {
   ctaText: string | null;
 };
 
+/**
+ * A product selected for purchase. Only products with `priceStatus === "fixed"`
+ * and a numeric `price` can be added to the cart; everything else stays on the
+ * existing parts-request (lead) flow.
+ */
+export type CartLine = {
+  id: string;
+  slug: string;
+  /** Full path to the product page, e.g. /catalog/<categorySlug>/<productSlug>. */
+  href: string;
+  title: string;
+  sku: string;
+  unitPrice: number;
+  currency: string;
+  quantity: number;
+  mainImageId: string | null;
+  imageAlt: string | null;
+};
+
 export type PublicFile = {
   id: string;
   filename: string;

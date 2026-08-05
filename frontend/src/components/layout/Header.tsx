@@ -6,6 +6,7 @@ import { Container } from "@/components/ui/Container";
 import { BRAND_LOGO_PATH, BRAND_NAME } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
 
+import { CartBadge } from "./CartBadge";
 import { HeaderChrome } from "./HeaderChrome";
 import { HeaderNavigation } from "./HeaderNavigation";
 import { MobileNavigation } from "./MobileNavigation";
@@ -81,6 +82,7 @@ export function Header({
                 Консультация
               </Link>
             )}
+            <CartBadge />
             <Link className="site-header__request" href="/parts-request">
               Отправить запрос
             </Link>

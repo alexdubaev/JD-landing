@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import type { Product, PublicFile } from "@/types/catalog";
 
+import { AddToCartButton } from "./AddToCartButton";
 import { ProductGallery } from "./ProductGallery";
 
 const availabilityLabels: Record<Product["availabilityStatus"], string> = {
@@ -65,8 +66,9 @@ export function ProductDetail({
             <strong>{productPrice(product)}</strong>
             <span>{availabilityLabels[product.availabilityStatus]}</span>
           </div>
+          <AddToCartButton product={product} />
           <Link
-            className="button button--primary product-detail__cta"
+            className="button button--secondary product-detail__cta"
             href={`/contacts?${consultationUrl.toString()}#consultation`}
           >
             {product.ctaText || "Запросить консультацию"}

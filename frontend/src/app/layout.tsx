@@ -4,6 +4,7 @@ import { Analytics } from "@/components/layout/Analytics";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { RouteTransition } from "@/components/motion/RouteTransition";
+import { CartProvider } from "@/lib/cart/context";
 import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import { getContacts, getNavigation, getSiteSettings } from "@/lib/directus/content";
@@ -96,25 +97,27 @@ export default async function RootLayout({
         <a className="skip-link" href="#main-content">
           Перейти к содержанию
         </a>
-        <div className="site-page">
-          <Header
-            companyName={settings?.companyName}
-            email={settings?.email}
-            logoId={settings?.logoId}
-            navigation={navigation}
-            phone={phone}
-          />
-          <RouteTransition>{children}</RouteTransition>
-          <Footer
-            companyName={settings?.companyName}
-            email={settings?.email}
-            footerText={settings?.footerText}
-            footerDisclaimer={settings?.footerDisclaimer}
-            logoId={settings?.logoId}
-            navigation={navigation}
-            phone={settings?.phone}
-          />
-        </div>
+        <CartProvider>
+          <div className="site-page">
+            <Header
+              companyName={settings?.companyName}
+              email={settings?.email}
+              logoId={settings?.logoId}
+              navigation={navigation}
+              phone={phone}
+            />
+            <RouteTransition>{children}</RouteTransition>
+            <Footer
+              companyName={settings?.companyName}
+              email={settings?.email}
+              footerText={settings?.footerText}
+              footerDisclaimer={settings?.footerDisclaimer}
+              logoId={settings?.logoId}
+              navigation={navigation}
+              phone={settings?.phone}
+            />
+          </div>
+        </CartProvider>
       </body>
     </html>
   );

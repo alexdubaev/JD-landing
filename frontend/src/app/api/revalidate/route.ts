@@ -15,6 +15,7 @@ const collectionTags = {
   site_settings: ["site-settings", "homepage"],
   "recent-supplies": ["recent-supplies", "homepage"],
   recent_supplies: ["recent-supplies", "homepage"],
+  orders: ["orders"],
   homepage: ["homepage"],
   sitemap: ["sitemap"],
 } as const;
@@ -35,6 +36,7 @@ const collectionIndexNowPaths = {
   site_settings: ["/"],
   "recent-supplies": ["/"],
   recent_supplies: ["/"],
+  orders: [],
   homepage: ["/"],
   sitemap: ["/"],
 } as const;

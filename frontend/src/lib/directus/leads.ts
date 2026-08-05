@@ -29,6 +29,23 @@ export async function uploadLeadAttachment(file: File): Promise<string> {
     body: form,
     cache: "no-store",
   });
+
+  // Directus 12 Core ignores the multipart `folder` field when the role has no
+  // folder preset (the preset is stripped by the RESOURCE_RESTRICTED fallback),
+  // so the file lands in the storage root. Move it into the Lead attachments
+  // folder explicitly. See access/blueprint.mjs for the matching update grant.
+  await directusRequest<{ id: string }>(
+    `/files/${encodeURIComponent(uploaded.id)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ folder: leadAttachmentFolderId }),
+      cache: "no-store",
+    },
+  ).catch(() => {
+    // Non-fatal: the lead is still created with the attachment id; the file is
+    // just harder to locate in the admin.
+  });
+
   return uploaded.id;
 }
 

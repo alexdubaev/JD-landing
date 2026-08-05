@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowRight, Copy, ImageOff, ListPlus } from "lucide-react";
+import { ArrowRight, Copy, ImageOff, ListPlus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { InteractiveCard } from "@/components/motion/InteractiveCard";
+import { useCart } from "@/lib/cart/context";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import { trackEvent } from "@/lib/analytics";
 import {
@@ -54,7 +55,11 @@ export function ProductCard({
 }) {
   const [inRequest, setInRequest] = useState(false);
   const [requestCount, setRequestCount] = useState(0);
+  const { addToCart, has: hasInCart, quantityOf } = useCart();
   const Heading = headingLevel === 3 ? "h3" : "h2";
+  const purchasable = product.priceStatus === "fixed" && product.price != null;
+  const inCart = hasInCart(product.id);
+  const cartQty = quantityOf(product.id);
   const imageUrl = directusAssetUrl(product.mainImageId, {
     width: 720,
     height: 450,
@@ -86,6 +91,11 @@ export function ProductCard({
     setInRequest(next);
     setRequestCount(getProductRequestList().length);
     if (next) trackEvent("product_add_to_request", { product_id: product.id });
+  };
+
+  const handleAddToCart = () => {
+    addToCart(product, 1);
+    trackEvent("product_add_to_cart", { product_id: product.id });
   };
 
   const copySku = async () => {
@@ -162,6 +172,17 @@ export function ProductCard({
               data-testid="product-card-action-arrow"
             />
           </Link>
+          {purchasable ? (
+            <button
+              aria-label={inCart ? `В корзине: ${cartQty} шт.` : "В корзину"}
+              className={`product-card__cart${inCart ? " product-card__cart--active" : ""}`}
+              onClick={handleAddToCart}
+              type="button"
+            >
+              <ShoppingCart aria-hidden="true" />
+              {inCart ? `В корзине: ${cartQty}` : "В корзину"}
+            </button>
+          ) : null}
           <button
             aria-label={inRequest ? "Убрать из запроса" : "В запрос"}
             className="product-card__request"

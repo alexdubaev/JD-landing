@@ -90,6 +90,16 @@ describe("POST /api/leads", () => {
         }),
       )
       .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { id: "file-sheet" } }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { id: "file-photo" } }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { id: "file-photo" } }), {
           status: 200,
         }),
@@ -121,15 +131,15 @@ describe("POST /api/leads", () => {
 
     const response = await POST(multipartRequest(form));
     expect(response.status).toBe(201);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
     expect(String(fetchMock.mock.calls[0][0])).toContain("/files");
     const uploadBody = fetchMock.mock.calls[0][1]?.body as FormData;
     expect(uploadBody.get("folder")).toBe("20fe4272-2f18-4ec8-a52a-f0efce9bcef8");
-    expect(String(fetchMock.mock.calls[2][0])).toContain("/items/leads");
-    expect(String(fetchMock.mock.calls[2][1]?.body)).toContain(
+    expect(String(fetchMock.mock.calls[4][0])).toContain("/items/leads");
+    expect(String(fetchMock.mock.calls[4][1]?.body)).toContain(
       '"request_items":[{"article":"RE504836","quantity":2}]',
     );
-    expect(String(fetchMock.mock.calls[2][1]?.body)).toContain(
+    expect(String(fetchMock.mock.calls[4][1]?.body)).toContain(
       '"attachments":["file-sheet","file-photo"]',
     );
   });
@@ -276,6 +286,9 @@ describe("POST /api/leads", () => {
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { id: "file-sheet" } }), { status: 200 }),
       )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { id: "file-sheet" } }), { status: 200 }),
+      )
       .mockResolvedValueOnce(new Response("upload failed", { status: 500 }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }));
     const form = new FormData();
@@ -290,14 +303,16 @@ describe("POST /api/leads", () => {
     const response = await POST(multipartRequest(form));
 
     expect(response.status).toBe(503);
-    expect(String(fetchMock.mock.calls[2][0])).toContain("/files/file-sheet");
-    expect(fetchMock.mock.calls[2][1]?.method).toBe("DELETE");
+    expect(String(fetchMock.mock.calls[3][0])).toContain("/files/file-sheet");
+    expect(fetchMock.mock.calls[3][1]?.method).toBe("DELETE");
   });
 
   it("cleans up uploaded files when creating the lead fails", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: "file-sheet" } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: "file-sheet" } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: "file-photo" } }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: "file-photo" } }), { status: 200 }))
       .mockResolvedValueOnce(new Response("lead failed", { status: 500 }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
@@ -314,8 +329,8 @@ describe("POST /api/leads", () => {
     const response = await POST(multipartRequest(form));
 
     expect(response.status).toBe(503);
-    expect(String(fetchMock.mock.calls[3][0])).toContain("/files/file-sheet");
-    expect(String(fetchMock.mock.calls[4][0])).toContain("/files/file-photo");
+    expect(String(fetchMock.mock.calls[5][0])).toContain("/files/file-sheet");
+    expect(String(fetchMock.mock.calls[6][0])).toContain("/files/file-photo");
   });
 
   it("returns a validation response for malformed JSON", async () => {
