@@ -62,16 +62,24 @@ export default async function HomePage() {
 }
 
 async function loadHomePageData() {
+  // Critical sources (page + settings) must succeed; the rest degrade
+  // gracefully to empty lists so a transient Directus hiccup on a single
+  // collection never serves the "Каталог временно обновляется" stub.
   try {
-    const [page, settings, categories, products, articles, contacts, supplies] = await Promise.all([
+    const [page, settings] = await Promise.all([
       getHomePage(),
       getSiteSettings(),
-      getHomepageCategories(),
-      getFeaturedProducts(5),
-      getFeaturedArticles(3),
-      getContacts(),
-      getRecentSupplies().catch(() => []),
     ]);
+    if (!page) return null;
+
+    const [categories, products, articles, contacts, supplies] =
+      await Promise.all([
+        getHomepageCategories().catch(() => []),
+        getFeaturedProducts(5).catch(() => []),
+        getFeaturedArticles(3).catch(() => []),
+        getContacts().catch(() => []),
+        getRecentSupplies().catch(() => []),
+      ]);
     return { page, settings, categories, products, articles, contacts, supplies };
   } catch (error) {
     console.error("Failed to load homepage CMS data", error);
