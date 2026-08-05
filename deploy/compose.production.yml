@@ -77,6 +77,15 @@ services:
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      # Manager lead notifications (SMTP). All optional; when unset,
+      # notifications are silently disabled and leads are still stored.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_SECURE: ${SMTP_SECURE:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      NOTIFY_EMAIL_TO: ${NOTIFY_EMAIL_TO:-}
     healthcheck:
       test:
         - CMD
