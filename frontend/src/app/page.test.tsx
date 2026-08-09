@@ -5,11 +5,11 @@ import type { Category, ProductCardData } from "@/types/catalog";
 import type { ContentPage, FaqItem, SiteSettings } from "@/types/content";
 
 import { HomePageView } from "./HomePageView";
-import { revalidate as homePageRevalidate } from "./page";
+import { dynamic as homePageDynamic } from "./page";
 
 describe("HomePage runtime rendering", () => {
-  it("uses ISR with short revalidation kept fresh by the Directus webhook", () => {
-    expect(homePageRevalidate).toBe(300);
+  it("does not prerender a CMS-unavailable fallback during the Docker build", () => {
+    expect(homePageDynamic).toBe("force-dynamic");
   });
 });
 

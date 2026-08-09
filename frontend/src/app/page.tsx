@@ -19,7 +19,11 @@ import {
 
 import { HomePageView } from "./HomePageView";
 
-export const revalidate = 300;
+// Directus is intentionally unavailable while Docker builds the frontend.
+// Rendering this route at build time would persist the CMS fallback as the
+// homepage, so it must first render only after the running container can
+// reach Directus over the private network.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
