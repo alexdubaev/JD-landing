@@ -44,6 +44,9 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s — ${companyName}`,
     },
     description,
+    verification: {
+      yandex: "b1a68d9bdd8d4bbb",
+    },
     icons: {
       icon: [
         { url: "/favicon.ico", sizes: "any" },
