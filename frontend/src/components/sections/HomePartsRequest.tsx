@@ -9,9 +9,11 @@ import { Container } from "@/components/ui/Container";
 import type { PageSection } from "@/types/content";
 
 export function HomePartsRequest({
+  compact = false,
   initialMode,
   section,
 }: {
+  compact?: boolean;
   initialMode?: PartsRequestMode;
   section: PageSection;
 }) {
@@ -21,13 +23,22 @@ export function HomePartsRequest({
     return [];
   });
   return (
-    <section className="home-parts-request" id="parts-request">
+    <section
+      className={`home-parts-request${compact ? " home-parts-request--compact" : ""}`}
+      id="parts-request"
+    >
       <Container>
-        <Reveal className="home-parts-request__heading">
-          {section.subtitle ? <p>{section.subtitle}</p> : null}
-          <h2>{section.title}</h2>
-          {section.text ? <p>{section.text}</p> : null}
-        </Reveal>
+        {compact ? (
+          section.text ? (
+            <p className="home-parts-request__intro">{section.text}</p>
+          ) : null
+        ) : (
+          <Reveal className="home-parts-request__heading">
+            {section.subtitle ? <p>{section.subtitle}</p> : null}
+            <h2>{section.title}</h2>
+            {section.text ? <p>{section.text}</p> : null}
+          </Reveal>
+        )}
         <div className="home-parts-request__grid">
           <Reveal className="home-parts-request__form" direction="left">
             <BulkPartsRequest initialMode={initialMode} />

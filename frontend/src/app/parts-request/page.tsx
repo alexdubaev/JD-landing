@@ -50,7 +50,7 @@ export default async function PartsRequestPage({ searchParams }: Props) {
           { name: page.h1, url },
         ])}
       />
-      <div className="parts-request-page__heading">
+      <div className="parts-request-page__surface">
         <Container>
           <Breadcrumbs
             items={[{ label: "Главная", href: "/" }, { label: page.h1 }]}
@@ -58,8 +58,8 @@ export default async function PartsRequestPage({ searchParams }: Props) {
           <h1>{page.h1}</h1>
           {page.seoDescription ? <p>{page.seoDescription}</p> : null}
         </Container>
+        <HomePartsRequest compact initialMode={mode} section={section} />
       </div>
-      <HomePartsRequest initialMode={mode} section={section} />
     </main>
   );
 }

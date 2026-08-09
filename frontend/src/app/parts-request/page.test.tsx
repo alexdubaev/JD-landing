@@ -62,6 +62,20 @@ describe("parts request page", () => {
     expect(schemas.map((schema) => schema["@type"])).toContain("BreadcrumbList");
   });
 
+  it("keeps breadcrumbs and the request form in one first-screen surface", async () => {
+    const { container } = render(await PartsRequestPage({
+      searchParams: Promise.resolve({}),
+    }));
+
+    const surface = container.querySelector(".parts-request-page__surface");
+    expect(surface).toContainElement(
+      screen.getByRole("heading", { level: 1, name: page.h1 }),
+    );
+    expect(surface?.querySelector('a[href="/"]')).toBeInTheDocument();
+    expect(container.querySelector(".parts-request-page__heading")).toBeNull();
+    expect(container.querySelector(".home-parts-request--compact")).toBeInTheDocument();
+  });
+
   it("returns canonical CMS metadata", async () => {
     const metadata = await generateMetadata();
     expect(metadata).toMatchObject({

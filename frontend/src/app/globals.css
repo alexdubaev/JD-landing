@@ -5742,6 +5742,17 @@ p {
   color: #ffffff;
 }
 
+.home-parts-request--compact {
+  padding-block: 0 2rem;
+  background: transparent;
+}
+
+.home-parts-request__intro {
+  max-width: 40rem;
+  margin: 0 0 1.25rem;
+  color: rgb(255 255 255 / 76%);
+}
+
 .home-parts-request__heading {
   max-width: 46rem;
   margin-bottom: 1.5rem;
@@ -6131,22 +6142,32 @@ p {
   font-size: clamp(2rem, 3vw, 2.5rem);
 }
 
-.parts-request-page__heading {
-  padding-block: 1.25rem 1.75rem;
-  background: #f4f5f0;
+.parts-request-page__surface {
+  padding-top: 0.5rem;
+  background: #123b26;
+  color: #ffffff;
 }
 
-.parts-request-page__heading h1 {
+.parts-request-page__surface h1 {
   max-width: 18ch;
-  margin: 1rem 0 0;
+  margin: 0.35rem 0 0;
   font-size: clamp(2.25rem, 4vw, 3.5rem);
   line-height: 0.98;
 }
 
-.parts-request-page__heading p {
+.parts-request-page__surface > .site-container > p {
   max-width: 48rem;
-  margin: 0.8rem 0 0;
-  color: var(--muted-foreground);
+  margin: 0.7rem 0 1.25rem;
+  color: rgb(255 255 255 / 76%);
+}
+
+.parts-request-page__surface .breadcrumbs li:not(:last-child)::after {
+  color: rgb(255 255 255 / 45%);
+}
+
+.parts-request-page__surface .breadcrumbs a {
+  color: rgb(255 255 255 / 82%);
+  text-decoration-color: rgb(255 255 255 / 45%);
 }
 
 #attachments {
@@ -6189,8 +6210,8 @@ p {
     height: 36px;
   }
 
-  .parts-request-page__heading {
-    padding-block: 1rem 1.4rem;
+  .parts-request-page__surface {
+    padding-top: 0.25rem;
   }
 }
 
