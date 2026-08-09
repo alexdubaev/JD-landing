@@ -43,8 +43,11 @@ echo "==> 1/4 Rebuilding frontend image..."
 sudo docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build frontend
 
 echo "==> 2/4 Recreating frontend container..."
-sudo docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d frontend caddy
-sudo docker exec jd-landing-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+sudo docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d frontend
+# The production Caddyfile deliberately has `admin off`, so it cannot receive
+# a hot reload through port 2019. Recreate only Caddy to pick up its bind-mounted
+# configuration after the frontend becomes healthy.
+sudo docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate caddy
 
 echo "==> 3/4 Waiting for frontend health..."
 for i in $(seq 1 40); do

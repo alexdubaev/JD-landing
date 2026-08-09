@@ -13,5 +13,7 @@ test("Caddy redirects www and legacy index paths to the canonical homepage", () 
 });
 
 test("deploy refreshes Caddy after the release checkout changes", () => {
-  assert.match(deployScript, /up -d frontend caddy/u);
+  assert.match(deployScript, /up -d frontend/u);
+  assert.match(deployScript, /up -d --force-recreate caddy/u);
+  assert.doesNotMatch(deployScript, /caddy reload/u);
 });
