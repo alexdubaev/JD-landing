@@ -1,52 +1,52 @@
-# Frontend SEO Recovery Design
+# План восстановления SEO на фронтенде
 
-## Purpose
+## Цель
 
-Correct the high-impact SEO issues found on `deere-shop.ru` without changing the Directus schema or inventing product facts. This is an interim frontend-only implementation; CMS editing support will be added in a later project phase.
+Исправить наиболее важные SEO-проблемы `deere-shop.ru`, не меняя схему Directus и не выдумывая данные о товарах. Это промежуточная реализация на фронтенде; редактирование контента через CMS будет добавлено на следующем этапе.
 
-## Scope
+## Что входит в работу
 
-- Restore the public trust pages (`about`, `delivery`, `contacts`, `privacy-policy`) as indexable pages with unique title, meta description, H1 and self-canonical URLs.
-- Include only indexable canonical pages in `sitemap.ts`.
-- Add a reusable category SEO block with a manually maintained per-category copy map, unique metadata, selection guidance and internal links. The map must not assert unverified fitment, dimensions, inventory, price or official-dealer status.
-- Extend product page copy with only data already supplied by the product record: title, SKU, category, optional weight, images and available documents. Make the fitment verification requirement explicit.
-- Correct structured-data URLs: use absolute URLs for images; only emit images, authors and publishers when their source data is available. Remove the obsolete WebSite search action.
-- Add regression tests for metadata, sitemap eligibility, SEO copy fallback and schema URL behaviour.
+- Восстановить публичные страницы доверия (`about`, `delivery`, `contacts`, `privacy-policy`) как индексируемые: с уникальными title, meta description, H1 и self-canonical URL.
+- Оставить в `sitemap.ts` только индексируемые канонические страницы.
+- Добавить переиспользуемый SEO-блок категорий с поддерживаемой вручную картой текстов: уникальные метаданные, рекомендации по подбору и внутренние ссылки. В текстах нельзя утверждать непроверенную применимость, размеры, наличие, цену или статус официального дилера.
+- Расширить описания товаров только данными, уже имеющимися в записи: названием, артикулом, категорией, опциональным весом, изображениями и документами. Явно напомнить о необходимости проверить совместимость.
+- Исправить URL в структурированных данных: использовать абсолютные ссылки на изображения; выводить изображения, автора и издателя только при наличии исходных данных. Удалить устаревший WebSite SearchAction.
+- Добавить регрессионные тесты для метаданных, состава sitemap, fallback-поведения SEO-копирайта и URL в schema.
 
-## Non-goals
+## Что не входит в работу
 
-- No Directus collection, field, permissions or content migration changes.
-- No fabricated compatibility lists, technical specifications, prices or stock claims.
-- No automatic generation of 19 category texts from a generic template.
-- No changes to the production Directus content.
+- Изменение коллекций, полей, прав доступа или миграция контента Directus.
+- Выдуманные списки совместимости, характеристики, цены или заявления о наличии.
+- Автоматическое создание текстов для 19 категорий из одного общего шаблона.
+- Изменение контента в production Directus.
 
-## Architecture
+## Архитектура
 
-SEO copy and trust-page documents live in focused frontend data modules. Route components consume those modules in server-rendered metadata and visible content, ensuring search crawlers receive the same content as users. Existing Directus product and category records remain the factual source for dynamic product attributes.
+SEO-тексты и документы trust-страниц находятся в небольших фронтенд-модулях. Компоненты маршрутов используют их в серверном рендеринге метаданных и видимого контента, поэтому поисковые роботы получают тот же материал, что и посетители. Динамические атрибуты товаров по-прежнему берутся из существующих записей Directus.
 
-## Data flow
+## Потоки данных
 
-`category slug` -> `frontend SEO content map` -> category page metadata + visible SEO section + internal links.
+`slug категории` → `фронтенд-карта SEO-контента` → метаданные страницы категории + видимый SEO-блок + внутренние ссылки.
 
-`info-page slug` -> `frontend trust-page document map` -> generic info route metadata + visible page content + indexability.
+`slug информационной страницы` → `фронтенд-карта trust-страниц` → метаданные + видимый контент + индексация.
 
-`Directus product` -> existing product page -> verified detail/selection block + JSON-LD with normalized absolute asset URLs.
+`товар Directus` → существующая страница товара → блок подтверждённых деталей/подбора + JSON-LD с нормализованными абсолютными URL ассетов.
 
-`sitemap.ts` -> fixed public routes + Directus catalog/articles -> excludes any route deliberately marked `noindex`.
+`sitemap.ts` → постоянные публичные маршруты + каталог/статьи Directus → исключение URL, для которых сознательно установлен `noindex`.
 
-## Error handling
+## Обработка неполных данных
 
-- An unknown category gets existing factual catalog metadata and no fabricated editorial copy.
-- Missing product image means the Product/Article JSON-LD omits `image` rather than emitting an invalid URL.
-- A missing optional product field is not rendered as a claim or placeholder.
-- Unknown information slugs keep the current 404 behaviour.
+- Неизвестная категория получает текущие фактические метаданные каталога, но не получает выдуманный редакционный текст.
+- Если у товара нет изображения, Product/Article JSON-LD не выводит поле `image`, а не формирует некорректный URL.
+- Необязательное пустое поле товара не отображается как утверждение или заглушка.
+- Неизвестный slug информационной страницы сохраняет текущий ответ 404.
 
-## Verification
+## Проверка
 
-- Unit tests must demonstrate the red-green cycle for each new data helper.
-- Run the frontend test suite, lint and production build.
-- Inspect sitemap output and rendered metadata for one trust page, one mapped category, one unmapped category and one product with no image.
+- Юнит-тесты должны пройти цикл «красный → зелёный» для каждого нового helper-а данных.
+- Запустить тесты фронтенда, линтер и production-сборку.
+- Проверить sitemap и отрендеренные метаданные для одной trust-страницы, одной категории с SEO-контентом, одной категории без него и товара без изображения.
 
-## Deferred CMS phase
+## Отложенный этап CMS
 
-Move the content maps into Directus fields/collections, expose them to content and SEO managers, and remove the frontend maps once the CMS migration is verified.
+Перенести карты контента в поля/коллекции Directus, предоставить доступ контент- и SEO-менеджерам и удалить фронтенд-карты после проверенной миграции CMS.
