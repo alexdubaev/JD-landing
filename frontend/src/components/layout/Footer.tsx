@@ -14,7 +14,6 @@ import type { NavigationItem } from "./types";
 export function Footer({
   navigation,
   phone,
-  email,
   companyName = BRAND_NAME,
   footerText,
   footerDisclaimer,
@@ -23,7 +22,6 @@ export function Footer({
   companyName?: string;
   navigation: NavigationItem[];
   phone?: string | null;
-  email?: string | null;
   footerText?: string | null;
   footerDisclaimer?: string | null;
   logoId?: string | null;
@@ -64,7 +62,7 @@ export function Footer({
           {phone ? (
             <a href={`tel:${phone.replace(/[^\d+]/gu, "")}`}>{phone}</a>
           ) : null}
-          {email ? <a href={`mailto:${email}`}>{email}</a> : null}
+          <Link href="/parts-request">Написать нам</Link>
           <Link href="/privacy-policy">Политика конфиденциальности</Link>
         </div>
       </Container>

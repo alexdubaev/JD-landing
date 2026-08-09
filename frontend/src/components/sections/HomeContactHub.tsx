@@ -1,4 +1,4 @@
-import { Clock3, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Clock3, MapPin, MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 
 import { LeadForm } from "@/components/forms/LeadForm";
@@ -27,7 +27,7 @@ export function HomeContactHub({
   formSection?: PageSection;
   settings: SiteSettings;
 }) {
-  const communicationTypes = new Set(["phone", "email", "messenger", "telegram", "whatsapp"]);
+  const communicationTypes = new Set(["phone", "messenger", "telegram", "whatsapp"]);
   const publishedChannels = contacts.filter((item) => communicationTypes.has(item.type));
   const publishedPhones = publishedChannels.filter((item) => item.type === "phone");
   const phoneFallback =
@@ -70,9 +70,7 @@ export function HomeContactHub({
               const Icon =
                 channel.type === "phone"
                   ? Phone
-                  : channel.type === "email"
-                    ? Mail
-                    : MessageCircle;
+                  : MessageCircle;
               return (
                 <span key={channel.id}>
                   <Icon aria-hidden="true" />

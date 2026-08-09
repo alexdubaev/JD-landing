@@ -54,7 +54,7 @@ export function HomeCompanyTrust({ section, settings }: { section: PageSection; 
           {settings.phone || settings.email || settings.workingHours ? (
             <div className="home-company-trust__contacts">
               {settings.phone ? <ContactChannelLink channel={{ id: "company-phone", type: "phone", label: "Телефон", value: settings.phone, url: null, icon: null }} /> : null}
-              {settings.email ? <ContactChannelLink channel={{ id: "company-email", type: "email", label: "Email", value: settings.email, url: null, icon: null }} /> : null}
+              {settings.email ? <Link href="/parts-request">Написать нам</Link> : null}
               {settings.workingHours ? <span>{settings.workingHours}</span> : null}
             </div>
           ) : null}

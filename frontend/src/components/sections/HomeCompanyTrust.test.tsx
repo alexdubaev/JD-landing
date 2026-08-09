@@ -95,7 +95,11 @@ describe("HomeCompanyTrust", () => {
     );
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByText("+7 900 000-00-00")).toBeInTheDocument();
-    expect(screen.getByText("info@example.test")).toBeInTheDocument();
+    expect(screen.queryByText("info@example.test")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Написать нам" })).toHaveAttribute(
+      "href",
+      "/parts-request",
+    );
     expect(screen.getByText("Пн–Пт 09:00–18:00")).toBeInTheDocument();
     const phone = screen.getByRole("link", { name: "+7 900 000-00-00" });
     phone.addEventListener("click", (event) => event.preventDefault());

@@ -8,6 +8,7 @@ import { CartProvider } from "@/lib/cart/context";
 import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import { getContacts, getNavigation, getSiteSettings } from "@/lib/directus/content";
+import { buildRootTitle } from "@/lib/seo/site-title";
 import type { NavigationItem, SiteSettings } from "@/types/content";
 
 import "./globals.css";
@@ -25,9 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   const companyName = settings?.companyName ?? BRAND_NAME;
-  const title = settings?.seoTitle?.trim()
-    ? `${settings.seoTitle} — ${companyName}`
-    : `${companyName} — каталог комплектующих John Deere`;
+  const title = buildRootTitle(settings?.seoTitle, companyName);
   const description = settings?.seoDescription?.trim() || BRAND_DESCRIPTION;
   const ogTitle = settings?.ogTitle?.trim() || title;
   const ogDescription = settings?.ogDescription?.trim() || description;
@@ -109,7 +108,6 @@ export default async function RootLayout({
           <div className="site-page">
             <Header
               companyName={settings?.companyName}
-              email={settings?.email}
               logoId={settings?.logoId}
               navigation={navigation}
               phone={phone}
@@ -117,7 +115,6 @@ export default async function RootLayout({
             <RouteTransition>{children}</RouteTransition>
             <Footer
               companyName={settings?.companyName}
-              email={settings?.email}
               footerText={settings?.footerText}
               footerDisclaimer={settings?.footerDisclaimer}
               logoId={settings?.logoId}

@@ -6224,6 +6224,41 @@ p {
   line-height: 1;
 }
 
+/* Keep the homepage category index as compact as the catalog preview on wide
+   screens. Six cards at the global 90rem content width become visually heavy. */
+@media (min-width: 72.0625rem) {
+  .home-categories .site-container {
+    width: min(calc(100% - (var(--technical-gutter) * 2)), 80rem);
+  }
+
+  .home-categories .home-category,
+  .home-categories .home-category > a {
+    height: 70px;
+    min-height: 70px;
+  }
+
+  .home-categories .home-category > a {
+    grid-template-columns: 34px minmax(0, 1fr) 18px;
+    gap: 0.55rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .home-categories .home-category__media,
+  .home-categories .home-category--text-only .home-category__media {
+    width: 34px;
+    height: 34px;
+  }
+
+  .home-categories .home-category .home-category__media > svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .home-categories .home-category h3 {
+    font-size: 0.84rem;
+  }
+}
+
 /* Desktop homepage: reserve the header clearance and centre the request
    block in the unobstructed part of the hero image. */
 @media (min-width: 48.0625rem) {

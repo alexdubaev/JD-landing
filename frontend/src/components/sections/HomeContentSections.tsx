@@ -101,10 +101,10 @@ export function HomeContacts({
               </a>
             ) : null}
             {settings.email ? (
-              <a href={`mailto:${settings.email}`}>
+              <Link href="/parts-request">
                 <Mail aria-hidden="true" />
-                {settings.email}
-              </a>
+                Написать нам
+              </Link>
             ) : null}
             {settings.address ? (
               <span>

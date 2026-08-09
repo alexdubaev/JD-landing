@@ -40,6 +40,9 @@ deere-shop.ru {
 	request_body {
 		max_size 20MB
 	}
+	redir /index.html / permanent
+	redir /index.php / permanent
+	redir /index / permanent
 
 	reverse_proxy frontend:3000
 }

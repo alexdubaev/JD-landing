@@ -43,7 +43,7 @@ describe("MobileContactBar", () => {
     });
   });
 
-  it("tracks email separately and recognizes published Telegram and WhatsApp channels", () => {
+  it("routes an email contact to the protected request form", () => {
     window.dataLayer = [];
     render(
       <>
@@ -55,10 +55,12 @@ describe("MobileContactBar", () => {
       </>,
     );
 
-    const email = screen.getByRole("link", { name: "info@example.test" });
+    const email = screen.getByRole("link", { name: "Написать нам" });
+    expect(email).toHaveAttribute("href", "/parts-request");
+    expect(screen.queryByText("info@example.test")).not.toBeInTheDocument();
     email.addEventListener("click", (event) => event.preventDefault());
     fireEvent.click(email);
-    expect(window.dataLayer).toContainEqual({ event: "email_click", label: "Email" });
+    expect(window.dataLayer).toContainEqual({ event: "lead_form_open", label: "Email" });
     expect(screen.getByRole("link", { name: "Написать" })).toHaveAttribute("href", "https://wa.me/79000000000");
   });
 

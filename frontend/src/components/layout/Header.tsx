@@ -35,7 +35,6 @@ export function Header({
   phone,
 }: {
   companyName?: string;
-  email?: string | null;
   logoId?: string | null;
   navigation: NavigationItem[];
   phone?: string | null;

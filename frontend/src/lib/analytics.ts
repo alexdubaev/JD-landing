@@ -4,6 +4,7 @@ export type AnalyticsEventName =
   | "email_click"
   | "excel_upload"
   | "faq_open"
+  | "lead_form_open"
   | "lead_submit"
   | "messenger_click"
   | "order_submit"
