@@ -12,9 +12,28 @@ coverage/
 
 # Local tooling and temporary files
 .codex-tmp/
+.seo-cache/
+.worktrees/
 tmp/
 *.inspect.ndjson
 *.log
+
+# Agent/tooling working dirs (local only — never push)
+.zcode/
+.agents/
+skills-lock.json
+
+# Local working notes (drafts, audits, scratch)
+SEO-AUDIT-DEERE-SHOP.md
+SEO-CONTENT-TASKS.md
+SEO-FIX-PROMPT.md
+SEO-HANDOFF.md
+plan1.md
+outputs/
+docs/superpowers/
+docs/plans/
+data/deere-shop-codex-hero/
+frontend/public/images/home/*.backup.*
 
 # Directus runtime data
 directus/uploads/*

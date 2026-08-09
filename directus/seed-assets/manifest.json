@@ -1,0 +1,32 @@
+{
+  "categoryIcons": [
+    { "slug": "gidravlika", "file": "category-icons/gidravlika.webp", "alt": "Техническая иллюстрация гидравлического насоса" },
+    { "slug": "dvigatel", "file": "category-icons/dvigatel.webp", "alt": "Техническая иллюстрация поршня и коленчатого вала" },
+    { "slug": "detali-uborochnoy-tehniki", "file": "category-icons/detali-uborochnoy-tehniki.webp", "alt": "Техническая иллюстрация режущего узла уборочной техники" },
+    { "slug": "zapchasti-john-deere", "file": "category-icons/zapchasti-john-deere.webp", "alt": "Техническая иллюстрация комплекта деталей" },
+    { "slug": "krepezh", "file": "category-icons/krepezh.webp", "alt": "Техническая иллюстрация болта, гайки и шайбы" },
+    { "slug": "krepezh-i-krepleniya", "file": "category-icons/krepezh-i-krepleniya.webp", "alt": "Техническая иллюстрация крепёжной скобы" },
+    { "slug": "naveska-i-tyagi", "file": "category-icons/naveska-i-tyagi.webp", "alt": "Техническая иллюстрация тяги навески" },
+    { "slug": "nasosy-i-kompressory", "file": "category-icons/nasosy-i-kompressory.webp", "alt": "Техническая иллюстрация компрессорного насоса" },
+    { "slug": "podveska-i-stabilizatory", "file": "category-icons/podveska-i-stabilizatory.webp", "alt": "Техническая иллюстрация амортизатора и стойки стабилизатора" },
+    { "slug": "podshipniki-i-vtulki", "file": "category-icons/podshipniki-i-vtulki.webp", "alt": "Техническая иллюстрация подшипника и втулки" },
+    { "slug": "prochie-detali-john-deere", "file": "category-icons/prochie-detali-john-deere.webp", "alt": "Техническая иллюстрация лотка с деталями" },
+    { "slug": "rezhuschiy-apparat", "file": "category-icons/rezhuschiy-apparat.webp", "alt": "Техническая иллюстрация сегмента ножа" },
+    { "slug": "remni-tsepi-i-shkivy", "file": "category-icons/remni-tsepi-i-shkivy.webp", "alt": "Техническая иллюстрация ремня, цепи и шкива" },
+    { "slug": "rulevoe-upravlenie", "file": "category-icons/rulevoe-upravlenie.webp", "alt": "Техническая иллюстрация рулевого цилиндра" },
+    { "slug": "sistema-ohlazhdeniya-i-vpusk", "file": "category-icons/sistema-ohlazhdeniya-i-vpusk.webp", "alt": "Техническая иллюстрация радиатора и впускного патрубка" },
+    { "slug": "tormoznaya-sistema", "file": "category-icons/tormoznaya-sistema.webp", "alt": "Техническая иллюстрация тормозного диска" },
+    { "slug": "transmissiya-i-mosty", "file": "category-icons/transmissiya-i-mosty.webp", "alt": "Техническая иллюстрация шестерён и полуоси" },
+    { "slug": "uplotneniya-i-prokladki", "file": "category-icons/uplotneniya-i-prokladki.webp", "alt": "Техническая иллюстрация уплотнения и прокладки" },
+    { "slug": "elektrika", "file": "category-icons/elektrika.webp", "alt": "Техническая иллюстрация генератора и электрического разъёма" }
+  ],
+  "homeHero": {
+    "file": "home-hero.webp",
+    "alt": "Техника John Deere в поле"
+  },
+  "articleCovers": [
+    { "slug": "kak-podgotovit-dannye-dlya-podbora-zapchasti-john-deere", "file": "article-covers/prepare-data.webp", "alt": "Подготовка данных и фото маркировки для подбора запчасти" },
+    { "slug": "gde-iskat-artikul-i-markirovku-na-detali", "file": "article-covers/find-part-number.webp", "alt": "Поиск маркировочной таблички на корпусе детали" },
+    { "slug": "chto-proverit-pered-zakazom-komplektuyuschih", "file": "article-covers/preorder-check.webp", "alt": "Проверка комплектующей перед оформлением заказа" }
+  ]
+}

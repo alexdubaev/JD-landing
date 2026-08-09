@@ -1,0 +1,55 @@
+{
+  "name": "jd-landing-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:ci": "node --max-old-space-size=4096 node_modules/vitest/dist/cli.js run"
+  },
+  "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "gsap": "^3.15.0",
+    "lucide-react": "1.27.0",
+    "motion": "^12.43.0",
+    "next": "16.2.12",
+    "nodemailer": "^9.0.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sanitize-html": "^2.17.5",
+    "server-only": "0.0.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "26.1.2",
+    "@types/nodemailer": "^8.0.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@types/sanitize-html": "^2.16.1",
+    "@vitejs/plugin-react": "4.7.0",
+    "eslint": "9.39.2",
+    "eslint-config-next": "16.2.12",
+    "jsdom": "26.1.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vite": "6.4.3",
+    "vitest": "3.2.7"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "overrides": {
+    "minimatch": "10.2.6",
+    "postcss": "8.5.24",
+    "sharp": "0.35.3",
+    "typescript-eslint": "8.46.0"
+  }
+}

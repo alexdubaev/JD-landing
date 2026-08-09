@@ -1,0 +1,59 @@
+{
+	email {$ACME_EMAIL}
+	admin off
+}
+
+(security_headers) {
+	header {
+		-Server
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+}
+
+# HTTP→HTTPS redirect for apex and www (preserves path + query)
+http://deere-shop.ru, http://www.deere-shop.ru {
+	redir https://deere-shop.ru{uri} permanent
+}
+
+# www→apex redirect (preserves path + query)
+www.deere-shop.ru {
+	redir https://deere-shop.ru{uri} permanent
+}
+
+# Plain IP access (health checks, internal) — no redirect
+http://91.227.68.176 {
+	import security_headers
+	encode zstd gzip
+	request_body {
+		max_size 20MB
+	}
+
+	reverse_proxy frontend:3000
+}
+
+deere-shop.ru {
+	import security_headers
+	encode zstd gzip
+	request_body {
+		max_size 20MB
+	}
+	redir /index.html / permanent
+	redir /index.php / permanent
+	redir /index / permanent
+
+	reverse_proxy frontend:3000
+}
+
+cms.deere-shop.ru {
+	import security_headers
+	encode zstd gzip
+
+	request_body {
+		max_size 50MB
+	}
+
+	reverse_proxy directus:8055
+}
