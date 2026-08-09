@@ -23,11 +23,13 @@ import {
   buildCatalogMetadata,
   isPageOutOfRange,
 } from "@/lib/seo/catalog-metadata";
+import { getCategorySeoContent } from "@/lib/seo/category-content";
 import { absoluteUrl } from "@/lib/seo/url";
 import {
   buildBreadcrumbSchema,
   buildCollectionPageSchema,
 } from "@/lib/seo/schema";
+import { CategorySeoContent } from "@/components/catalog/CategorySeoContent";
 
 export const revalidate = 300;
 
@@ -52,12 +54,16 @@ export async function generateMetadata({
     height: 630,
     fit: "contain",
   });
+  const fallbackContent = getCategorySeoContent(category.slug);
 
   return buildCatalogMetadata({
     query: parseCatalogSearchParams(rawSearchParams),
     basePath: `/catalog/${category.slug}`,
-    title: category.seoTitle || category.title,
-    description: category.seoDescription || category.description,
+    title: category.seoTitle || fallbackContent?.metaTitle || category.title,
+    description:
+      category.seoDescription ||
+      category.description ||
+      fallbackContent?.metaDescription,
     image,
     indexable: category.isIndexable,
   });
@@ -82,6 +88,7 @@ export default async function CategoryPage({
     categorySlug,
   };
   const catalog = await getCatalogPage(query);
+  const fallbackContent = getCategorySeoContent(category.slug);
 
   // 404 for out-of-range page numbers
   if (isPageOutOfRange(query, catalog.total)) notFound();
@@ -135,6 +142,9 @@ export default async function CategoryPage({
           searchParams={rawSearchParams}
           total={catalog.total}
         />
+        {!category.seoText && fallbackContent ? (
+          <CategorySeoContent content={fallbackContent} />
+        ) : null}
       </Container>
     </main>
   );

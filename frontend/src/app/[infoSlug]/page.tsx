@@ -10,6 +10,10 @@ import {
 } from "@/lib/directus/content";
 import { absoluteUrl } from "@/lib/seo/url";
 import { buildBreadcrumbSchema } from "@/lib/seo/schema";
+import {
+  getTrustPageFallback,
+  getTrustPageMetadata,
+} from "@/lib/seo/trust-pages";
 
 const informationSlugs = new Set([
   "about",
@@ -25,7 +29,9 @@ type Props = { params: Promise<{ infoSlug: string }> };
 
 async function loadPage(slug: string) {
   if (!informationSlugs.has(slug)) return null;
-  const page = await getPageBySlug(slug);
+  const page =
+    (await getPageBySlug(slug).catch(() => null)) ??
+    getTrustPageFallback(slug);
   if (!page) return null;
   const [faq, settings] = await Promise.all([
     getFaqItems({ pageId: page.id }),
@@ -36,12 +42,14 @@ async function loadPage(slug: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { infoSlug } = await params;
+  if (!informationSlugs.has(infoSlug)) return {};
   const page = await getPageBySlug(infoSlug).catch(() => null);
-  if (!page) return {};
+  const fallbackMetadata = getTrustPageMetadata(infoSlug);
+  if (!page && !fallbackMetadata) return {};
   const isNoindex = noindexSlugs.has(infoSlug);
   return {
-    title: page.seoTitle ?? page.title,
-    description: page.seoDescription,
+    title: page?.seoTitle ?? fallbackMetadata?.title ?? page?.title,
+    description: page?.seoDescription ?? fallbackMetadata?.description,
     alternates: { canonical: `/${infoSlug}` },
     ...(isNoindex ? { robots: { index: false, follow: true } } : {}),
   };

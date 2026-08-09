@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildHomepageStructuredData } from "./home";
 
 describe("buildHomepageStructuredData", () => {
-  it("builds factual organization, website search and FAQ schemas", () => {
+  it("builds factual organization, website and FAQ schemas", () => {
     const schemas = buildHomepageStructuredData({
       faq: [{ id: "faq", question: "Как отправить список?", answer: "Через форму." }],
       settings: {
@@ -17,9 +17,10 @@ describe("buildHomepageStructuredData", () => {
 
     expect(schemas).toEqual(expect.arrayContaining([
       expect.objectContaining({ "@type": "Organization", name: "ООО «СМ ТЕХНО»" }),
-      expect.objectContaining({ "@type": "WebSite", potentialAction: expect.objectContaining({ "@type": "SearchAction" }) }),
+      expect.objectContaining({ "@type": "WebSite" }),
       expect.objectContaining({ "@type": "FAQPage" }),
     ]));
     expect(JSON.stringify(schemas)).not.toContain("offers");
+    expect(JSON.stringify(schemas)).not.toContain("SearchAction");
   });
 });
