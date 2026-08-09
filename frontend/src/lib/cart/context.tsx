@@ -16,6 +16,7 @@ const EVENT_NAME = "deere-shop:cart-change";
 const QUANTITY_MAX = 10_000;
 
 type CartState = CartLine[];
+const EMPTY_CART: CartState = [];
 
 type CartAction =
   | { type: "add"; product: CartLine; quantity: number }
@@ -88,14 +89,14 @@ function toCartLine(product: ProductCardData): CartLine {
  * by the real persisted contents once the client reads localStorage.
  */
 function readStore(): CartState {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY_CART;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) return EMPTY_CART;
     const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as CartLine[]) : [];
+    return Array.isArray(parsed) ? (parsed as CartLine[]) : EMPTY_CART;
   } catch {
-    return [];
+    return EMPTY_CART;
   }
 }
 
@@ -122,10 +123,16 @@ function subscribe(callback: () => void): () => void {
 
 // Module-level mutable state: the live cart. Mutated only through dispatch,
 // which writes through to localStorage and broadcasts the change event.
-let currentState: CartState = [];
+let currentState: CartState = EMPTY_CART;
 
 function getState(): CartState {
   return currentState;
+}
+
+// React calls this during SSR and hydration. It must return a stable reference
+// rather than creating a new empty array for every call.
+export function getServerSnapshot(): CartState {
+  return EMPTY_CART;
 }
 
 function dispatch(action: CartAction): void {
@@ -164,8 +171,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const isClient = typeof window !== "undefined";
   const lines = useSyncExternalStore(
     subscribe,
-    isClient ? getState : () => [],
-    () => [],
+    getState,
+    getServerSnapshot,
   );
 
   const addToCart = useCallback(

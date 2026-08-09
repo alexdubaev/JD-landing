@@ -35,7 +35,7 @@ describe("POST /api/revalidate", () => {
     expect(response.status).toBe(400);
   });
 
-  it("revalidates mapped tags using the max profile", async () => {
+  it("expires mapped tags immediately for an external CMS webhook", async () => {
     const { POST } = await import("./route");
     const response = await POST(
       new Request("https://site.test/api/revalidate", {
@@ -45,9 +45,9 @@ describe("POST /api/revalidate", () => {
       }),
     );
     expect(response.status).toBe(200);
-    expect(revalidateTag).toHaveBeenCalledWith("articles", "max");
-    expect(revalidateTag).toHaveBeenCalledWith("homepage", "max");
-    expect(revalidateTag).toHaveBeenCalledWith("sitemap", "max");
+    expect(revalidateTag).toHaveBeenCalledWith("articles", { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith("homepage", { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith("sitemap", { expire: 0 });
   });
 
   it("accepts direct homepage and sitemap invalidation tags", async () => {
@@ -62,8 +62,8 @@ describe("POST /api/revalidate", () => {
       );
       expect(response.status).toBe(200);
     }
-    expect(revalidateTag).toHaveBeenCalledWith("homepage", "max");
-    expect(revalidateTag).toHaveBeenCalledWith("sitemap", "max");
+    expect(revalidateTag).toHaveBeenCalledWith("homepage", { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith("sitemap", { expire: 0 });
   });
 
   it("revalidates the shared header after a navigation change", async () => {
@@ -77,8 +77,8 @@ describe("POST /api/revalidate", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(revalidateTag).toHaveBeenCalledWith("navigation", "max");
-    expect(revalidateTag).toHaveBeenCalledWith("homepage", "max");
+    expect(revalidateTag).toHaveBeenCalledWith("navigation", { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith("homepage", { expire: 0 });
   });
 
   it("allows company settings and recent supplies invalidation", async () => {
@@ -93,7 +93,7 @@ describe("POST /api/revalidate", () => {
       );
       expect(response.status).toBe(200);
     }
-    expect(revalidateTag).toHaveBeenCalledWith("site-settings", "max");
-    expect(revalidateTag).toHaveBeenCalledWith("recent-supplies", "max");
+    expect(revalidateTag).toHaveBeenCalledWith("site-settings", { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith("recent-supplies", { expire: 0 });
   });
 });

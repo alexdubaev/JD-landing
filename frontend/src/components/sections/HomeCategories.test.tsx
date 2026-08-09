@@ -78,4 +78,19 @@ describe("HomeCategories", () => {
       screen.getByRole("link", { name: "Смотреть все категории" }),
     ).toHaveAttribute("href", "/catalog");
   });
+
+  it("fills the final desktop grid cell with an all-categories card", () => {
+    const categories = Array.from({ length: 11 }, (_, index) => ({
+      ...category,
+      id: `category-${index + 1}`,
+      title: `Категория ${index + 1}`,
+      slug: `category-${index + 1}`,
+    }));
+
+    render(<HomeCategories categories={categories} section={section} />);
+
+    expect(
+      screen.getByRole("link", { name: "Все категории — перейти в каталог" }),
+    ).toHaveAttribute("href", "/catalog");
+  });
 });

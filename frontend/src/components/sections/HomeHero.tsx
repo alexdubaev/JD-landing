@@ -57,24 +57,24 @@ const HERO_SUBTITLE =
 
 const DEFAULT_BENEFITS: BenefitItem[] = [
   {
-    icon: "clipboard",
-    title: "Проверяем применимость",
-    text: "Сверяем артикул, модификацию техники и возможные замены.",
+    icon: "shield",
+    title: "Гарантия качества",
+    text: "Проверяем товары и согласовываем условия поставки.",
   },
   {
     icon: "package",
-    title: "Предлагаем варианты",
-    text: "Оригинал, OEM или проверенный аналог — при наличии выбора.",
-  },
-  {
-    icon: "headset",
-    title: "Работаем с организациями",
-    text: "Счёт, договор и закрывающие документы.",
+    title: "Собственные склады",
+    text: "Уточняем наличие на собственных и партнёрских складах.",
   },
   {
     icon: "truck",
-    title: "Доставляем по России",
-    text: "Согласовываем склад, срок и способ отправки до оплаты.",
+    title: "Быстрая доставка",
+    text: "Подбираем удобный способ отправки по России.",
+  },
+  {
+    icon: "headset",
+    title: "Поддержка 24/7",
+    text: "Поможем с подбором и ответим на вопросы.",
   },
 ];
 
@@ -116,7 +116,7 @@ export function HomeHero({
       }) ?? "/images/home/deere-shop-hero.webp")
     : "/images/home/deere-shop-hero.webp";
   const configuredBenefits = (benefitsSection?.items ?? []).filter(isBenefit);
-  const benefits = configuredBenefits.length
+  const benefits = configuredBenefits.length >= DEFAULT_BENEFITS.length
     ? configuredBenefits.slice(0, 4)
     : DEFAULT_BENEFITS;
   const title = section.title?.trim() || HERO_TITLE;

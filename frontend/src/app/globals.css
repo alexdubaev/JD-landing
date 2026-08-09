@@ -2379,7 +2379,7 @@ a.product-card__category:hover {
   }
 
   .commerce-hero__content {
-    padding-block: 3.5rem 2rem;
+    padding-block: 6rem 2rem;
   }
 
   .commerce-hero h1 {
@@ -2789,6 +2789,12 @@ a.product-card__category:hover {
 
 .commerce-hero__media {
   inset: 0;
+}
+
+/* На главной хедер абсолютно позиционирован поверх hero (overlay, ~132px высотой),
+   поэтому верхний отступ контента должен компенсировать хедер и совпадать с padding-bottom: 9rem */
+.commerce-hero__content {
+  padding-top: clamp(9rem, 13vw, 11rem);
 }
 
 .commerce-hero__image {
@@ -6216,6 +6222,30 @@ p {
   font-size: 0.6rem;
   font-weight: 800;
   line-height: 1;
+}
+
+/* Desktop homepage: reserve the header clearance and centre the request
+   block in the unobstructed part of the hero image. */
+@media (min-width: 48.0625rem) {
+  .commerce-hero__content {
+    display: flex;
+    min-height: 520px;
+    align-items: center;
+    padding-block: 7.5rem 1.25rem;
+  }
+
+  .site-header[data-header-variant="overlay"] .site-header__cart {
+    border-color: transparent;
+    color: rgb(255 255 255 / 64%);
+    background: transparent;
+  }
+
+  .site-header[data-header-variant="overlay"] .site-header__cart:hover,
+  .site-header[data-header-variant="overlay"] .site-header__cart:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: transparent;
+  }
 }
 
 /* --- Product card add-to-cart button ------------------------------------ */

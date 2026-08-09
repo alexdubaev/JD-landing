@@ -72,7 +72,9 @@ export async function POST(request: Request) {
 
   const collection = body.collection as Collection;
   const tags = collectionTags[collection];
-  tags.forEach((tag) => revalidateTag(tag, "max"));
+  // CMS webhooks must expire the cache before deploy warm-up. The "max"
+  // profile serves stale content first, so it cannot guarantee fresh pages.
+  tags.forEach((tag) => revalidateTag(tag, { expire: 0 }));
 
   // Notify Yandex/Bing via IndexNow. Fire-and-forget after revalidation; any
   // error is swallowed inside notifyIndexNow so the webhook stays reliable.

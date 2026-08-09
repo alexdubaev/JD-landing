@@ -86,6 +86,10 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
       NOTIFY_EMAIL_TO: ${NOTIFY_EMAIL_TO:-}
+      # IndexNow: accelerates Yandex/Bing re-crawl after CMS edits. Optional;
+      # when unset, IndexNow pings are skipped. The key must also be served at
+      # https://deere-shop.ru/<INDEXNOW_KEY>.txt (place the file in frontend/public/).
+      INDEXNOW_KEY: ${INDEXNOW_KEY:-}
     healthcheck:
       test:
         - CMD

@@ -12,6 +12,11 @@ const internalPathname = (url: string) => {
 };
 
 const isActive = (pathname: string, url: string) => {
+  // An anchor such as "/#consultation" points to a section on the current
+  // page, not to the page represented by a navigation item. Marking it active
+  // on the homepage makes the link look permanently selected.
+  if (url.includes("#")) return false;
+
   const target = internalPathname(url);
   if (!target) return false;
   const current = pathname.length > 1 ? pathname.replace(/\/+$/u, "") : pathname;

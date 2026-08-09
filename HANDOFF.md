@@ -1,6 +1,6 @@
 # DEERE-SHOP — HANDOFF
 
-Актуально на: 4 августа 2026 года
+Актуально на: 9 августа 2026 года
 Корень репозитория: `D:\codex\JD_landing`
 
 ## 1. Что это за проект
@@ -20,50 +20,41 @@
 
 ## 2. Где находится актуальная работа
 
-В корне сейчас открыта инфраструктурная ветка:
+Основная и наиболее полная ветка сейчас открыта в корневом worktree:
 
 ```text
 ветка: agent/production-infrastructure
-HEAD: 6f78ddb fix: production readiness audit and test stability
-состояние относительно origin: ahead 2 (не отправлены в GitHub)
+HEAD: 12ad83a fix(deploy): purge build-time homepage prerender stub
+состояние относительно origin: совпадает; локально есть незакоммиченные, ещё не проверенные изменения
 ```
 
-Коммит `6f78ddb` фиксирует всю работу аудита готовности к запуску (секция 15) плюс стабилизацию тестов.
-Push в GitHub не выполнен — ждать явного решения владельца.
+В корневой ветке уже есть production-аудит, уведомления менеджеру, корзина/оформление заказа,
+UI-полировка и исправления ISR/deploy. Не выполнять push или deploy без явного решения владельца.
 
-Актуальная реализация нового интерфейса находится в отдельном worktree:
+Отдельный worktree сохранён как диагностический снимок прежнего этапа:
 
 ```text
 папка: D:\codex\JD_landing\.worktrees\codex-plan1-homepage
 ветка: codex/plan1-homepage
-HEAD: eccc156 fix: reset lead verification after failures
+HEAD: 7c80c45 feat: compact homepage and parts request flow
 ```
 
-Ветка `codex/plan1-homepage` содержит восемь коммитов поверх `agent/production-infrastructure`:
+`codex/plan1-homepage` является предком корневой ветки: после неё в `agent/production-infrastructure`
+добавлены 12 коммитов. В ней лежит незакоммиченная копия реализации корзины; её новые исходники
+сверены с корнем и совпадают байт-в-байт. PNG в `outputs/` — диагностические скриншоты.
 
-```text
-2aaa1aa feat: refine homepage discovery experience
-3c01f8c feat: add secure bulk parts request
-4e3b5bb feat: strengthen homepage catalog proof
-7e19922 feat: add factual trust and conversion layer
-84d5d43 fix: contain homepage hero on narrow phones
-66aa944 style: normalize schema source formatting
-7f763c2 fix: harden homepage lead workflows
-eccc156 fix: reset lead verification after failures
-```
-
-Продолжать пользовательские правки нужно именно здесь:
+Не делать новые пользовательские правки в старом worktree. Для диагностики его можно открыть так:
 
 ```powershell
 Set-Location D:\codex\JD_landing\.worktrees\codex-plan1-homepage
 git status --short --branch
 ```
 
-Не разрабатывать новый интерфейс в корневой ветке и не смешивать изменения двух worktree.
+Не удалять worktree и не сбрасывать его изменения без отдельного решения владельца.
 
 ## 3. Незакоммиченные файлы
 
-В корневом рабочем дереве изменён этот `HANDOFF.md`, а также есть локальные непубликуемые материалы:
+В корневом рабочем дереве есть локальные непубликуемые материалы:
 
 - `.agents/`
 - `data/deere-shop-codex-hero/`
@@ -73,7 +64,8 @@ git status --short --branch
 - `scripts/upload-deere-shop-logo.mjs`
 - `skills-lock.json`
 
-В feature-worktree есть изменённый `frontend/next-env.d.ts` и незатреканные PNG-скриншоты в `outputs/`. Это диагностические артефакты; не добавлять их автоматически.
+В старом feature-worktree лежат изменённые файлы корзины и незатреканные PNG-скриншоты в `outputs/`.
+Исходники корзины уже присутствуют в корневой ветке; скриншоты — диагностические артефакты.
 
 Нельзя использовать `git add -A`. Добавлять только явно проверенные файлы. Не удалять и не перезаписывать перечисленные материалы без отдельного решения владельца.
 
