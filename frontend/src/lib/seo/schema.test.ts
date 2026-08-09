@@ -6,6 +6,7 @@ import {
   buildCollectionPageSchema,
   buildFaqSchema,
   buildProductSchema,
+  buildWebSiteSchema,
 } from "./schema";
 
 const baseProduct: Product = {
@@ -93,6 +94,54 @@ describe("buildProductSchema", () => {
     expect(offers.availability).toBe("https://schema.org/InStock");
     // Seller must reference the Organization @id defined on the site.
     expect(offers.seller).toEqual({ "@id": expect.stringMatching(/#organization$/) });
+  });
+
+  it("uses an absolute URL for a product image", () => {
+    const schema = buildProductSchema({
+      product: baseProduct,
+      categorySlug: "filters",
+    });
+
+    expect(schema.image).toMatch(/^https:\/\/deere-shop\.ru\/media\//);
+  });
+});
+
+describe("buildWebSiteSchema", () => {
+  it("does not include obsolete SearchAction markup", () => {
+    const schema = buildWebSiteSchema({
+      city: null,
+      companyImageId: null,
+      companyName: "DEERE-SHOP",
+      defaultOgImageId: null,
+      documentsUrl: null,
+      phone: null,
+      email: null,
+      address: null,
+      workingHours: null,
+      logoId: null,
+      primaryColor: null,
+      accentColor: null,
+      primaryCtaText: null,
+      primaryCtaUrl: null,
+      footerText: null,
+      footerDisclaimer: null,
+      seoTitle: null,
+      seoDescription: null,
+      ogTitle: null,
+      ogDescription: null,
+      inn: null,
+      kpp: null,
+      legalAddress: null,
+      legalName: null,
+      messengers: [],
+      ogrn: null,
+      requisitesUrl: null,
+      vatInfo: null,
+      yandexMetricaId: null,
+      gtmId: null,
+    });
+
+    expect(schema.potentialAction).toBeUndefined();
   });
 });
 
