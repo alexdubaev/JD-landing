@@ -4,13 +4,20 @@ import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import {
+  assetMimeType,
+  HOME_HERO_ASSET_TITLE,
+} from "./sync-editorial-assets.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../seed-assets");
 const manifest = JSON.parse(
   await readFile(resolve(root, "manifest.json"), "utf8"),
 );
 
-test("home hero manifest points to a local WebP asset", async () => {
+test("home hero manifest points to the supplied original WebP asset", async () => {
   assert.equal(manifest.homeHero.file, "home-hero.webp");
+  assert.equal(assetMimeType(manifest.homeHero.file), "image/webp");
+  assert.equal(HOME_HERO_ASSET_TITLE, "home-hero:deere-shop-v4");
   assert.ok(manifest.homeHero.alt.length > 10);
   await access(resolve(root, manifest.homeHero.file));
 });

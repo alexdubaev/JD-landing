@@ -7,6 +7,7 @@ import { DirectusAdminClient } from "../schema/apply-schema.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const assetRoot = resolve(here, "../seed-assets");
+export const HOME_HERO_ASSET_TITLE = "home-hero:deere-shop-v4";
 const manifest = JSON.parse(
   await readFile(resolve(assetRoot, "manifest.json"), "utf8"),
 );
@@ -201,6 +202,10 @@ const homeSections = [
 
 const encode = (value) => encodeURIComponent(String(value));
 
+export function assetMimeType(relativePath) {
+  return /\.jpe?g$/iu.test(relativePath) ? "image/jpeg" : "image/webp";
+}
+
 async function findOne(client, collection, field, value, fields = "id") {
   const items = await client.request(
     `/items/${collection}?filter[${field}][_eq]=${encode(value)}&fields=${encode(fields)}&limit=1`,
@@ -220,7 +225,7 @@ async function uploadAsset(client, relativePath, title) {
   form.append("folder", accessBlueprint.publicAssetFolder.id);
   form.append(
     "file",
-    new Blob([bytes], { type: "image/webp" }),
+    new Blob([bytes], { type: assetMimeType(relativePath) }),
     relativePath.split("/").at(-1),
   );
   const response = await fetch(`${client.baseUrl}/files`, {
@@ -427,7 +432,7 @@ export async function syncEditorialAssets(client) {
   const heroAssetId = await uploadAsset(
     client,
     manifest.homeHero.file,
-    "home-hero:deere-shop-v2",
+    HOME_HERO_ASSET_TITLE,
   );
 
   const partsRequestSection = homeSections.find(

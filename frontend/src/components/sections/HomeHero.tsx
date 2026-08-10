@@ -107,14 +107,8 @@ export function HomeHero({
   settings: SiteSettings;
 }) {
   const imageUrl = section.imageId
-    ? (directusAssetUrl(section.imageId, {
-        width: 1920,
-        height: 1280,
-        fit: "cover",
-        quality: 88,
-        format: "webp",
-      }) ?? "/images/home/deere-shop-hero.webp")
-    : "/images/home/deere-shop-hero.webp";
+    ? (directusAssetUrl(section.imageId) ?? "/images/home/home-hero.webp")
+    : "/images/home/home-hero.webp";
   const configuredBenefits = (benefitsSection?.items ?? []).filter(isBenefit);
   const benefits = configuredBenefits.length >= DEFAULT_BENEFITS.length
     ? configuredBenefits.slice(0, 4)
