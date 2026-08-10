@@ -17,7 +17,7 @@ const manifest = JSON.parse(
 test("home hero manifest points to the supplied JPEG asset", async () => {
   assert.equal(manifest.homeHero.file, "home-hero.jpg");
   assert.equal(assetMimeType(manifest.homeHero.file), "image/jpeg");
-  assert.equal(HOME_HERO_ASSET_TITLE, "home-hero:deere-shop-v4");
+  assert.equal(HOME_HERO_ASSET_TITLE, "home-hero:deere-shop-v5");
   assert.ok(manifest.homeHero.alt.length > 10);
   await access(resolve(root, manifest.homeHero.file));
 });

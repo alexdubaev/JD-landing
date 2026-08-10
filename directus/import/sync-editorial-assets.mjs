@@ -7,7 +7,7 @@ import { DirectusAdminClient } from "../schema/apply-schema.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const assetRoot = resolve(here, "../seed-assets");
-export const HOME_HERO_ASSET_TITLE = "home-hero:deere-shop-v4";
+export const HOME_HERO_ASSET_TITLE = "home-hero:deere-shop-v5";
 const manifest = JSON.parse(
   await readFile(resolve(assetRoot, "manifest.json"), "utf8"),
 );
