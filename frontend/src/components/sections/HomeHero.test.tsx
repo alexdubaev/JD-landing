@@ -20,7 +20,7 @@ const heroSection: PageSection = {
 };
 
 describe("HomeHero", () => {
-  it("renders the local WebP hero illustration as decorative media", () => {
+  it("does not render hero media", () => {
     const { container } = render(
       <HomeHero
         contacts={[]}
@@ -30,11 +30,7 @@ describe("HomeHero", () => {
       />,
     );
 
-    const image = container.querySelector(".commerce-hero__image");
-    expect(image).toHaveAttribute("alt", "");
-    expect(decodeURIComponent(image?.getAttribute("src") ?? "")).toContain(
-      "/images/home/deere-shop-hero-v2.webp",
-    );
+    expect(container.querySelector(".commerce-hero__image")).toBeNull();
   });
 
   it("keeps four benefit cards when CMS provides an incomplete set", () => {
