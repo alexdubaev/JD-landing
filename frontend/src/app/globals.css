@@ -4661,6 +4661,16 @@ p {
   min-height: 680px;
 }
 
+/* The homepage hero source is intentionally panoramic. Keep the entire scene
+   visible on desktop instead of enlarging it with `cover`; anchoring to the
+   right preserves the tractor as the visual focal point. */
+@media (min-width: 48rem) {
+  .commerce-hero__image {
+    object-fit: contain;
+    object-position: right center;
+  }
+}
+
 .commerce-hero__veil {
   display: none !important;
   background: none !important;
