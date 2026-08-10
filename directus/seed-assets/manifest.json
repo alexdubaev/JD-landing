@@ -22,7 +22,7 @@
   ],
   "homeHero": {
     "file": "home-hero.webp",
-    "alt": "Техника John Deere в поле"
+    "alt": "Трактор John Deere в поле на закате"
   },
   "articleCovers": [
     { "slug": "kak-podgotovit-dannye-dlya-podbora-zapchasti-john-deere", "file": "article-covers/prepare-data.webp", "alt": "Подготовка данных и фото маркировки для подбора запчасти" },
