@@ -120,7 +120,7 @@ export function HomeHero({
             fill
             priority
             sizes="(max-width: 68rem) 0px, 46vw"
-            src="/images/home/hero-assembly-transparent.webp"
+            src="/images/home/hero-assembly-drawing-v2.webp"
           />
         </div>
       }

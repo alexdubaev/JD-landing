@@ -33,7 +33,7 @@ describe("HomeHero", () => {
     const image = container.querySelector(".commerce-hero__assembly img");
     expect(image).toHaveAttribute("alt", "");
     expect(decodeURIComponent(image?.getAttribute("src") ?? "")).toContain(
-      "/images/home/hero-assembly-transparent.webp",
+      "/images/home/hero-assembly-drawing-v2.webp",
     );
   });
 
