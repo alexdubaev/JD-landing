@@ -6846,3 +6846,12 @@ p {
   }
 }
 
+/* Homepage hero intentionally has no background media. */
+.commerce-hero {
+  background: #173b25;
+}
+
+.commerce-hero__glow {
+  display: none;
+}
+

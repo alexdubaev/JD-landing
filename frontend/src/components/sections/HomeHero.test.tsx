@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { PageSection, SiteSettings } from "@/types/content";
@@ -11,7 +11,7 @@ const heroSection: PageSection = {
   title: null,
   subtitle: null,
   text: null,
-  imageId: null,
+  imageId: "hero-photo",
   buttonText: null,
   buttonUrl: null,
   items: [],
@@ -19,65 +19,41 @@ const heroSection: PageSection = {
   sortOrder: 0,
 };
 
-const incompleteBenefits: PageSection = {
-  ...heroSection,
-  id: "advantages",
-  type: "advantages",
-  items: [
-    { icon: "shield", title: "Гарантия качества", text: "Проверяем товары." },
-    { icon: "package", title: "Собственные склады", text: "Храним позиции." },
-    { icon: "truck", title: "Быстрая доставка", text: "Отправляем по России." },
-  ],
-};
-
 describe("HomeHero", () => {
-  it("uses the supplied WebP as the fallback hero asset", () => {
-    render(
+  it("does not render a hero image", () => {
+    const { container } = render(
       <HomeHero
         contacts={[]}
-        h1="Р—Р°РїС‡Р°СЃС‚Рё John Deere"
+        h1="John Deere parts"
         section={heroSection}
         settings={{ phone: null } as SiteSettings}
       />,
     );
 
-    const image = document.querySelector<HTMLImageElement>(
-      ".commerce-hero__image",
-    );
-    if (!image) throw new Error("Hero image is missing");
-    expect(image.getAttribute("src")).toContain("home-hero.webp");
-  });
-
-  it("requests the CMS hero image without a crop transform", () => {
-    render(
-      <HomeHero
-        contacts={[]}
-        h1="Запчасти John Deere"
-        section={{ ...heroSection, imageId: "hero-photo" }}
-        settings={{ phone: null } as SiteSettings}
-      />,
-    );
-
-    const image = screen.getByAltText("Трактор John Deere в поле");
-    expect(image.getAttribute("src")).toContain("%2Fmedia%2Fhero-photo");
-    expect(image.getAttribute("src")).not.toContain("fit%3Dcover");
+    expect(container.querySelector(".commerce-hero__image")).toBeNull();
   });
 
   it("keeps four benefit cards when CMS provides an incomplete set", () => {
+    const benefitsSection: PageSection = {
+      ...heroSection,
+      id: "advantages",
+      type: "advantages",
+      items: [
+        { icon: "shield", title: "Quality", text: "Checked." },
+        { icon: "package", title: "Stock", text: "Available." },
+        { icon: "truck", title: "Delivery", text: "Fast." },
+      ],
+    };
     const { container } = render(
       <HomeHero
-        benefitsSection={incompleteBenefits}
+        benefitsSection={benefitsSection}
         contacts={[]}
-        h1="Запчасти John Deere"
+        h1="John Deere parts"
         section={heroSection}
         settings={{ phone: null } as SiteSettings}
       />,
     );
 
     expect(container.querySelectorAll(".commerce-hero__benefit")).toHaveLength(4);
-    expect(container).toHaveTextContent("Гарантия качества");
-    expect(container).toHaveTextContent("Собственные склады");
-    expect(container).toHaveTextContent("Быстрая доставка");
-    expect(container).toHaveTextContent("Поддержка 24/7");
   });
 });

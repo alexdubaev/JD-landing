@@ -9,13 +9,11 @@ import {
   MessageCircle,
   Phone,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import { HeroMotion } from "@/components/motion/HeroMotion";
 import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
-import { directusAssetUrl } from "@/lib/directus/assets";
 import type { ContactChannel, PageSection, SiteSettings } from "@/types/content";
 
 import { HeroPartSearch } from "./HeroPartSearch";
@@ -35,14 +33,6 @@ type BenefitItem = {
   icon?: keyof typeof iconByName;
   text: string;
   title: string;
-};
-
-const settingString = (
-  settings: Record<string, unknown>,
-  key: string,
-): string | null => {
-  const value = settings[key];
-  return typeof value === "string" && value.trim() ? value : null;
 };
 
 const isBenefit = (value: unknown): value is BenefitItem => {
@@ -106,9 +96,6 @@ export function HomeHero({
   section: PageSection;
   settings: SiteSettings;
 }) {
-  const imageUrl = section.imageId
-    ? (directusAssetUrl(section.imageId) ?? "/images/home/home-hero.webp")
-    : "/images/home/home-hero.webp";
   const configuredBenefits = (benefitsSection?.items ?? []).filter(isBenefit);
   const benefits = configuredBenefits.length >= DEFAULT_BENEFITS.length
     ? configuredBenefits.slice(0, 4)
@@ -125,19 +112,7 @@ export function HomeHero({
   return (
     <HeroMotion
       labelledBy="home-title"
-      media={
-        <Image
-          alt={
-            settingString(section.settings, "image_alt") ??
-            "Трактор John Deere в поле"
-          }
-          className="commerce-hero__image"
-          fill
-          priority
-          sizes="100vw"
-          src={imageUrl}
-        />
-      }
+      media={null}
     >
       <Container className="commerce-hero__content">
         <Reveal className="commerce-hero__copy">

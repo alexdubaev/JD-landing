@@ -5,13 +5,10 @@ import { describe, expect, it } from "vitest";
 
 const styles = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 
-describe("homepage hero responsive media", () => {
-  it("keeps the CMS hero image visible on desktop and hides it on phones", () => {
+describe("homepage hero", () => {
+  it("uses a solid green background without hero media", () => {
     expect(styles).toMatch(
-      /\.commerce-hero__media\s*\{[\s\S]*?z-index:\s*0;/u,
-    );
-    expect(styles).toMatch(
-      /@media \(max-width: 48rem\)\s*\{[\s\S]*?\.commerce-hero__media\s*\{[\s\S]*?display:\s*none;/u,
+      /\.commerce-hero\s*\{[\s\S]*?background:\s*#173b25;/u,
     );
   });
 });
