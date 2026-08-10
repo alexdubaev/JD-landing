@@ -31,7 +31,7 @@ const incompleteBenefits: PageSection = {
 };
 
 describe("HomeHero", () => {
-  it("uses the supplied JPEG as the fallback hero asset", () => {
+  it("uses the supplied WebP as the fallback hero asset", () => {
     render(
       <HomeHero
         contacts={[]}
@@ -45,7 +45,7 @@ describe("HomeHero", () => {
       ".commerce-hero__image",
     );
     if (!image) throw new Error("Hero image is missing");
-    expect(image.getAttribute("src")).toContain("home-hero.jpg");
+    expect(image.getAttribute("src")).toContain("home-hero.webp");
   });
 
   it("requests the CMS hero image without a crop transform", () => {

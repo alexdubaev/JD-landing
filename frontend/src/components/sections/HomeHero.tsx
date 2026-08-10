@@ -107,8 +107,8 @@ export function HomeHero({
   settings: SiteSettings;
 }) {
   const imageUrl = section.imageId
-    ? (directusAssetUrl(section.imageId) ?? "/images/home/home-hero.jpg")
-    : "/images/home/home-hero.jpg";
+    ? (directusAssetUrl(section.imageId) ?? "/images/home/home-hero.webp")
+    : "/images/home/home-hero.webp";
   const configuredBenefits = (benefitsSection?.items ?? []).filter(isBenefit);
   const benefits = configuredBenefits.length >= DEFAULT_BENEFITS.length
     ? configuredBenefits.slice(0, 4)

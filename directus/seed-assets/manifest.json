@@ -21,7 +21,7 @@
     { "slug": "elektrika", "file": "category-icons/elektrika.webp", "alt": "Техническая иллюстрация генератора и электрического разъёма" }
   ],
   "homeHero": {
-    "file": "home-hero.jpg",
+    "file": "home-hero.webp",
     "alt": "Трактор John Deere в поле на закате"
   },
   "articleCovers": [
