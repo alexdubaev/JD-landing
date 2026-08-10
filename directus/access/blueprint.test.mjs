@@ -81,6 +81,20 @@ test("content managers cannot delete protected content", () => {
   assert.ok(!policy.permissions.some(({ collection }) => collection === "leads"));
 });
 
+test("content manager uploads are placed in the public assets folder", () => {
+  const policy = accessBlueprint.policies.find(
+    ({ key }) => key === "content_manager",
+  );
+  const upload = policy.permissions.find(
+    ({ collection, action }) =>
+      collection === "directus_files" && action === "create",
+  );
+
+  assert.deepEqual(upload.presets, {
+    folder: accessBlueprint.publicAssetFolder.id,
+  });
+});
+
 test("sales managers can read attachment files only from the private lead folder", () => {
   const policy = accessBlueprint.policies.find(
     ({ key }) => key === "sales_manager",

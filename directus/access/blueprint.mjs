@@ -77,7 +77,13 @@ const contentPermissions = [
     update(collection),
   ]),
   read("directus_files"),
-  create("directus_files"),
+  // Hero and editorial images uploaded from Directus Data Studio must be
+  // publicly readable by the server-side media route. Directus applies this
+  // preset during multipart uploads, so authors do not have to select a
+  // storage folder manually.
+  create("directus_files", {
+    presets: { folder: publicAssetFolderId },
+  }),
   update("directus_files"),
   read("directus_folders"),
   create("directus_folders"),
