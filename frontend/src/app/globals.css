@@ -567,7 +567,7 @@ a {
 
 .commerce-hero__media {
   position: absolute;
-  z-index: -3;
+  z-index: 0;
   inset: -5rem 0;
   overflow: hidden;
 }
@@ -604,8 +604,15 @@ a {
 }
 
 .commerce-hero__content {
+  position: relative;
+  z-index: 1;
   padding-top: clamp(4rem, 8vw, 7rem);
   color: #ffffff;
+}
+
+.commerce-hero__benefits {
+  position: relative;
+  z-index: 1;
 }
 
 .commerce-hero__copy {
@@ -3061,6 +3068,11 @@ a.product-card__category:hover {
 }
 
 @media (max-width: 48rem) {
+  /* Mobile uses the compact, image-free hero composition. */
+  .commerce-hero__media {
+    display: none;
+  }
+
   .site-header__inner {
     min-height: 5rem;
   }
