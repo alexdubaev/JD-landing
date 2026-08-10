@@ -20,7 +20,7 @@ const heroSection: PageSection = {
 };
 
 describe("HomeHero", () => {
-  it("does not render hero media", () => {
+  it("renders the transparent assembly illustration in hero media", () => {
     const { container } = render(
       <HomeHero
         contacts={[]}
@@ -30,7 +30,11 @@ describe("HomeHero", () => {
       />,
     );
 
-    expect(container.querySelector(".commerce-hero__image")).toBeNull();
+    const image = container.querySelector(".commerce-hero__assembly img");
+    expect(image).toHaveAttribute("alt", "");
+    expect(decodeURIComponent(image?.getAttribute("src") ?? "")).toContain(
+      "/images/home/hero-assembly-transparent.webp",
+    );
   });
 
   it("keeps four benefit cards when CMS provides an incomplete set", () => {

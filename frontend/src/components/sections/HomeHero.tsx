@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Phone,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { HeroMotion } from "@/components/motion/HeroMotion";
@@ -112,7 +113,17 @@ export function HomeHero({
   return (
     <HeroMotion
       labelledBy="home-title"
-      media={null}
+      media={
+        <div className="commerce-hero__assembly">
+          <Image
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 68rem) 0px, 46vw"
+            src="/images/home/hero-assembly-transparent.webp"
+          />
+        </div>
+      }
     >
       <Container className="commerce-hero__content">
         <Reveal className="commerce-hero__copy">
