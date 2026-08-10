@@ -11,4 +11,10 @@ describe("homepage hero", () => {
       /\.commerce-hero\s*\{[\s\S]*?background:\s*#173b25;/u,
     );
   });
+
+  it("offsets the assembly illustration 100px left and 70px down", () => {
+    expect(styles).toMatch(
+      /\.commerce-hero__assembly\s*\{[\s\S]*?top:\s*calc\(clamp\(3rem,\s*3\.3vw,\s*4\.75rem\)\s*\+\s*70px\);[\s\S]*?right:\s*calc\(clamp\(2rem,\s*4vw,\s*6rem\)\s*\+\s*100px\);/u,
+    );
+  });
 });

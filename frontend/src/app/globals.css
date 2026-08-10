@@ -2800,8 +2800,8 @@ a.product-card__category:hover {
 
 .commerce-hero__assembly {
   position: absolute;
-  top: clamp(3rem, 3.3vw, 4.75rem);
-  right: clamp(2rem, 4vw, 6rem);
+  top: calc(clamp(3rem, 3.3vw, 4.75rem) + 70px);
+  right: calc(clamp(2rem, 4vw, 6rem) + 100px);
   width: min(46vw, 52.5rem);
   height: min(25vw, 28rem);
   pointer-events: none;
