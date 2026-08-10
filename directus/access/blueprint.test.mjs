@@ -127,6 +127,7 @@ test("SEO managers can update SEO-bearing collections but not leads", () => {
   assert.ok(keys.has("categories:update"));
   assert.ok(keys.has("products:update"));
   assert.ok(keys.has("faq_items:update"));
+  assert.ok(keys.has("page_sections:update"));
   assert.ok(keys.has("seo_redirects:update"));
   assert.ok(!policy.permissions.some(({ collection }) => collection === "leads"));
 });

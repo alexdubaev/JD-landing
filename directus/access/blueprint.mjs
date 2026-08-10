@@ -91,6 +91,7 @@ const contentPermissions = [
 
 const seoCollections = [
   "pages",
+  "page_sections",
   "categories",
   "articles",
   "products",
