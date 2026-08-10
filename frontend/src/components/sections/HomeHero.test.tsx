@@ -31,6 +31,23 @@ const incompleteBenefits: PageSection = {
 };
 
 describe("HomeHero", () => {
+  it("uses the supplied JPEG as the fallback hero asset", () => {
+    render(
+      <HomeHero
+        contacts={[]}
+        h1="Р—Р°РїС‡Р°СЃС‚Рё John Deere"
+        section={heroSection}
+        settings={{ phone: null } as SiteSettings}
+      />,
+    );
+
+    const image = document.querySelector<HTMLImageElement>(
+      ".commerce-hero__image",
+    );
+    if (!image) throw new Error("Hero image is missing");
+    expect(image.getAttribute("src")).toContain("home-hero.jpg");
+  });
+
   it("requests the CMS hero image without a crop transform", () => {
     render(
       <HomeHero

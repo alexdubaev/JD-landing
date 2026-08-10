@@ -14,9 +14,9 @@ const manifest = JSON.parse(
   await readFile(resolve(root, "manifest.json"), "utf8"),
 );
 
-test("home hero manifest points to the supplied original WebP asset", async () => {
-  assert.equal(manifest.homeHero.file, "home-hero.webp");
-  assert.equal(assetMimeType(manifest.homeHero.file), "image/webp");
+test("home hero manifest points to the supplied JPEG asset", async () => {
+  assert.equal(manifest.homeHero.file, "home-hero.jpg");
+  assert.equal(assetMimeType(manifest.homeHero.file), "image/jpeg");
   assert.equal(HOME_HERO_ASSET_TITLE, "home-hero:deere-shop-v4");
   assert.ok(manifest.homeHero.alt.length > 10);
   await access(resolve(root, manifest.homeHero.file));
