@@ -58,18 +58,21 @@ describe("GET /media/[fileId]", () => {
   });
 
   it("returns not found for a file outside the public folder", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          data: {
-            id: fileId,
-            folder: "3df31a55-a903-42e7-b93e-c845763ca21f",
-            type: "image/png",
-            filename_download: "private.png",
-          },
-        }),
-      ),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: fileId,
+              folder: "3df31a55-a903-42e7-b93e-c845763ca21f",
+              type: "image/png",
+              filename_download: "private.png",
+            },
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] })));
 
     const response = await GET(
       new Request(`https://example.test/media/${fileId}`),
@@ -77,6 +80,41 @@ describe("GET /media/[fileId]", () => {
     );
 
     expect(response.status).toBe(404);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("proxies a root-level file when it is used by a published hero section", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: fileId,
+              folder: null,
+              type: "image/jpeg",
+              filename_download: "hero.jpg",
+            },
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: [{ id: "homepage-hero" }] })),
+      )
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([255, 216, 255]), {
+          headers: { "Content-Type": "image/jpeg" },
+        }),
+      );
+
+    const response = await GET(
+      new Request(`https://example.test/media/${fileId}`),
+      { params: Promise.resolve({ fileId }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(String(fetchMock.mock.calls[1][0])).toContain(
+      `/items/page_sections?filter[image][_eq]=${fileId}`,
+    );
   });
 });

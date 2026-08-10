@@ -30,6 +30,18 @@ const extensionContentTypes: Record<string, string> = {
 const fileFolderId = (folder: RawFile["folder"]) =>
   typeof folder === "string" ? folder : (folder?.id ?? null);
 
+const isPublishedSectionImage = async (fileId: string) => {
+  try {
+    const sections = await directusRequest<Array<{ id: string }>>(
+      `/items/page_sections?filter[image][_eq]=${encodeURIComponent(fileId)}&filter[status][_eq]=published&fields=id&limit=1`,
+      { next: { revalidate: 300, tags: [`section-image:${fileId}`] } },
+    );
+    return sections.length > 0;
+  } catch {
+    return false;
+  }
+};
+
 const safeTransforms = (url: URL) => {
   const output = new URLSearchParams();
   for (const name of ["width", "height", "quality"] as const) {
@@ -85,7 +97,9 @@ export async function GET(
   } catch {
     return new Response("Not found", { status: 404 });
   }
-  if (fileFolderId(file.folder) !== environment.DIRECTUS_PUBLIC_FOLDER_ID) {
+  const isInPublicFolder =
+    fileFolderId(file.folder) === environment.DIRECTUS_PUBLIC_FOLDER_ID;
+  if (!isInPublicFolder && !(await isPublishedSectionImage(fileId))) {
     return new Response("Not found", { status: 404 });
   }
 
