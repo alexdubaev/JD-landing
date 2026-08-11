@@ -5,6 +5,7 @@ import { LeadForm } from "@/components/forms/LeadForm";
 import { Reveal } from "@/components/motion/Reveal";
 import { AnimatedAccordion } from "@/components/ui/AnimatedAccordion";
 import { Container } from "@/components/ui/Container";
+import { safeUrl } from "@/lib/security/urls";
 import type { FaqItem, PageSection, SiteSettings } from "@/types/content";
 
 export function HomeCta({ section }: { section: PageSection }) {
@@ -19,7 +20,7 @@ export function HomeCta({ section }: { section: PageSection }) {
             {section.text ? <p>{section.text}</p> : null}
           </div>
           {section.buttonText && section.buttonUrl ? (
-            <Link className="button button--accent" href={section.buttonUrl}>
+            <Link className="button button--accent" href={safeUrl(section.buttonUrl, "/") ?? "/"}>
               {section.buttonText}
               <ArrowRight aria-hidden="true" />
             </Link>

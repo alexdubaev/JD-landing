@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
+import { safeUrl } from "@/lib/security/urls";
 import { ProductGrid } from "@/components/catalog/ProductGrid";
 import type { ProductCardData } from "@/types/catalog";
 import type { PageSection } from "@/types/content";
@@ -30,7 +31,7 @@ export function HomeFeatured({
             {section.subtitle ? <p>{section.subtitle}</p> : null}
             <h2>{section.title ?? "Позиции каталога"}</h2>
           </div>
-          <Link href={section.buttonUrl ?? "/catalog"}>
+          <Link href={safeUrl(section.buttonUrl, "/catalog") ?? "/catalog"}>
             {section.buttonText ?? "Весь каталог"}
             <ArrowRight aria-hidden="true" />
           </Link>

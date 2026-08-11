@@ -8,6 +8,7 @@ import {
   BRAND_NAME,
 } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
+import { safeUrl } from "@/lib/security/urls";
 
 import type { NavigationItem } from "./types";
 
@@ -52,7 +53,7 @@ export function Footer({
         </div>
         <nav aria-label="Навигация в подвале" className="site-footer__links">
           {navigation.map((item) => (
-            <Link href={item.url} key={`${item.url}:${item.label}`}>
+            <Link href={safeUrl(item.url, "/") ?? "/"} key={`${item.url}:${item.label}`}>
               {item.label}
             </Link>
           ))}

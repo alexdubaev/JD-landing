@@ -14,14 +14,16 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    const cspReportOnly = [
+    const csp = [
       "default-src 'self'",
-      "img-src 'self' data: blob: https://cms.deere-shop.ru",
+      "img-src 'self' data: blob: https://cms.deere-shop.ru https://mc.yandex.ru",
       "media-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' https://www.googletagmanager.com https://mc.yandex.ru",
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self' data:",
-      "connect-src 'self' https://cms.deere-shop.ru",
+      "connect-src 'self' https://cms.deere-shop.ru https://mc.yandex.ru",
+      "frame-src https://www.googletagmanager.com",
+      "object-src 'none'",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -43,7 +45,7 @@ const nextConfig: NextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains; preload",
           },
-          { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
+          { key: "Content-Security-Policy", value: csp },
         ],
       },
     ];

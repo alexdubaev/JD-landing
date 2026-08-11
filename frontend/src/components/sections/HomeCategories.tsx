@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import { trackEvent } from "@/lib/analytics";
+import { safeUrl } from "@/lib/security/urls";
 import type { Category } from "@/types/catalog";
 import type { PageSection } from "@/types/content";
 
@@ -40,7 +41,7 @@ export function HomeCategories({
             {section.subtitle ? <p>{section.subtitle}</p> : null}
             <h2>{section.title ?? "Категории продукции"}</h2>
           </div>
-          <Link href={section.buttonUrl ?? "/catalog"}>
+          <Link href={safeUrl(section.buttonUrl, "/catalog") ?? "/catalog"}>
             Смотреть все категории
             <ArrowRight aria-hidden="true" />
           </Link>
@@ -88,7 +89,7 @@ export function HomeCategories({
           <article className="home-category home-category--text-only home-category--all">
             <Link
               aria-label="Все категории — перейти в каталог"
-              href={section.buttonUrl ?? "/catalog"}
+              href={safeUrl(section.buttonUrl, "/catalog") ?? "/catalog"}
             >
               <span className="home-category__media">
                 <PackageSearch aria-hidden="true" />
