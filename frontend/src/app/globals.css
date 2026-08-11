@@ -2071,6 +2071,22 @@ a.product-card__category:hover {
   font-size: clamp(1.75rem, 4vw, 3rem);
 }
 
+.content-page__section p {
+  max-width: 48rem;
+  white-space: pre-line;
+}
+
+.content-page__list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.content-page__list li::marker {
+  color: var(--accent);
+}
+
 .page-state__skeleton {
   width: 45%;
   height: 1.5rem;
