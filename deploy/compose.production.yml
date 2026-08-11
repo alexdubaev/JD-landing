@@ -4,10 +4,8 @@ services:
   database:
     image: postgres:17-alpine
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    env_file:
+      - /opt/jd-landing/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,16 +25,12 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    env_file:
+      - /opt/jd-landing/.env
     environment:
-      SECRET: ${DIRECTUS_SECRET}
       DB_CLIENT: pg
       DB_HOST: database
       DB_PORT: 5432
-      DB_DATABASE: ${POSTGRES_DB}
-      DB_USER: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD}
       PUBLIC_URL: https://cms.deere-shop.ru
       WEBSOCKETS_ENABLED: "true"
       TELEMETRY: "false"
@@ -69,27 +63,16 @@ services:
     depends_on:
       directus:
         condition: service_healthy
+    env_file:
+      - /opt/jd-landing/.env
     environment:
       DIRECTUS_URL: http://directus:8055
-      DIRECTUS_TOKEN: ${DIRECTUS_TOKEN}
-      DIRECTUS_PUBLIC_FOLDER_ID: ${DIRECTUS_PUBLIC_FOLDER_ID}
       NEXT_PUBLIC_SITE_URL: https://deere-shop.ru
-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
-      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
-      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
       # Manager lead notifications (SMTP). All optional; when unset,
       # notifications are silently disabled and leads are still stored.
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-}
-      SMTP_SECURE: ${SMTP_SECURE:-}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-}
-      NOTIFY_EMAIL_TO: ${NOTIFY_EMAIL_TO:-}
       # IndexNow: accelerates Yandex/Bing re-crawl after CMS edits. Optional;
       # when unset, IndexNow pings are skipped. The key must also be served at
       # https://deere-shop.ru/<INDEXNOW_KEY>.txt (place the file in frontend/public/).
-      INDEXNOW_KEY: ${INDEXNOW_KEY:-}
     healthcheck:
       test:
         - CMD
@@ -111,8 +94,8 @@ services:
         condition: service_healthy
       frontend:
         condition: service_healthy
-    environment:
-      ACME_EMAIL: ${ACME_EMAIL}
+    env_file:
+      - /opt/jd-landing/.env
     ports:
       - "80:80"
       - "443:443"
