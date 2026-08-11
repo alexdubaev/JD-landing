@@ -37,6 +37,30 @@ describe("HomeHero", () => {
     );
   });
 
+  it("marks the hero contact group for mobile-only hiding", () => {
+    const { container } = render(
+      <HomeHero
+        contacts={[
+          {
+            id: "phone",
+            type: "phone",
+            label: "Телефон",
+            value: "+7 900 000-00-00",
+            url: null,
+            icon: null,
+          },
+        ]}
+        h1="John Deere parts"
+        section={heroSection}
+        settings={{ phone: null } as SiteSettings}
+      />,
+    );
+
+    expect(container.querySelector(".commerce-hero__contacts")).toHaveClass(
+      "commerce-hero__contacts--desktop-only",
+    );
+  });
+
   it("keeps four benefit cards when CMS provides an incomplete set", () => {
     const benefitsSection: PageSection = {
       ...heroSection,

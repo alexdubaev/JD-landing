@@ -6889,3 +6889,82 @@ p {
   display: none;
 }
 
+/* Mobile homepage hero: keep the first screen focused on part lookup. */
+@media (max-width: 48rem) {
+  .commerce-hero__content {
+    min-height: 0;
+    padding-block: 5.25rem 1.25rem;
+  }
+
+  .commerce-hero__copy {
+    max-width: 100%;
+  }
+
+  .commerce-hero__copy h1 {
+    max-width: 15ch;
+    font-size: clamp(2rem, 9.2vw, 2.5rem);
+    line-height: 1;
+    text-wrap: balance;
+  }
+
+  .commerce-hero__description {
+    margin-top: 0.75rem;
+    font-size: 1rem;
+    line-height: 1.4;
+    text-wrap: pretty;
+  }
+
+  .commerce-hero__contacts--desktop-only {
+    display: none;
+  }
+
+  .hero-part-search {
+    margin-top: 1.25rem;
+  }
+
+  .hero-part-search__form {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: 3.5rem;
+  }
+
+  .hero-part-search__form button {
+    min-height: 3.5rem;
+    padding-inline: 1rem;
+  }
+
+  .hero-part-search__scenarios {
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+  }
+
+  .hero-part-search__scenarios > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .hero-part-search__scenarios a {
+    min-height: 2.75rem;
+    justify-content: center;
+    padding-inline: 0.25rem;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    text-align: center;
+  }
+}
+
+@media (max-width: 32rem) {
+  .commerce-hero__content {
+    min-height: 0;
+  }
+
+  .hero-part-search__form {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .hero-part-search__form button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
