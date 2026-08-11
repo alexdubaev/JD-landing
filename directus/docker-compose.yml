@@ -20,7 +20,7 @@ services:
     image: directus/directus:${DIRECTUS_VERSION}
     restart: unless-stopped
     ports:
-      - "8055:8055"
+      - "127.0.0.1:8055:8055"
     depends_on:
       database:
         condition: service_healthy
@@ -35,7 +35,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       PUBLIC_URL: http://localhost:8055
-      WEBSOCKETS_ENABLED: "true"
+      WEBSOCKETS_ENABLED: "false"
     volumes:
       - ./uploads:/directus/uploads
       - ./extensions:/directus/extensions

@@ -414,7 +414,8 @@ export async function getCategoryRedirect(
   });
   const category = items?.[0];
   if (!category || category.status === "published") return null;
-  return category.redirect_target?.trim() || null;
+  const target = category.redirect_target?.trim();
+  return target && /^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(target) ? target : null;
 }
 
 export async function getPageSeoBySlug(slug: string): Promise<PageSeo | null> {
