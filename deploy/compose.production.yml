@@ -33,6 +33,12 @@ services:
       DB_PORT: 5432
       PUBLIC_URL: https://cms.deere-shop.ru
       WEBSOCKETS_ENABLED: "true"
+      ADMIN_RATE_LIMITER_ENABLED: "true"
+      RATE_LIMITER_ENABLED: "true"
+      PASSWORD_POLICY: "/.{12,}/"
+      REFRESH_TOKEN_TTL: "1d"
+      REFRESH_TOKEN_COOKIE_SECURE: "true"
+      REFRESH_TOKEN_COOKIE_SAME_SITE: "lax"
       TELEMETRY: "false"
       MAX_PAYLOAD_SIZE: 50mb
     volumes:
