@@ -22,6 +22,13 @@ describe("trust-page fallbacks", () => {
     expect(getTrustPageMetadata("unknown")).toBeNull();
   });
 
+  it("does not include official-status or trademark disclaimers in public fallback content", () => {
+    const aboutPage = getTrustPageFallback("about");
+    const aboutText = aboutPage?.sections.map((section) => section.text).join(" ") ?? "";
+
+    expect(aboutText).not.toMatch(/независим|официальн|товарн(?:ый|ого) знак|deere\s*&\s*company/iu);
+  });
+
   it("provides the visible delivery FAQ when Directus is unavailable", () => {
     const faq = getTrustPageFaq("delivery");
 

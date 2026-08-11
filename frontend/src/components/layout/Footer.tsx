@@ -17,14 +17,12 @@ export function Footer({
   phone,
   companyName = BRAND_NAME,
   footerText,
-  footerDisclaimer,
   logoId,
 }: {
   companyName?: string;
   navigation: NavigationItem[];
   phone?: string | null;
   footerText?: string | null;
-  footerDisclaimer?: string | null;
   logoId?: string | null;
 }) {
   const logoUrl =
@@ -69,7 +67,6 @@ export function Footer({
       </Container>
       <Container className="site-footer__bottom">
         <span>© {new Date().getFullYear()} {companyName}</span>
-        <span>{footerDisclaimer ?? "Не является заявлением об официальном представительстве."}</span>
       </Container>
     </footer>
   );

@@ -119,7 +119,6 @@ export default async function RootLayout({
             <Footer
               companyName={settings?.companyName}
               footerText={settings?.footerText}
-              footerDisclaimer={settings?.footerDisclaimer}
               logoId={settings?.logoId}
               navigation={navigation}
               phone={settings?.phone}
