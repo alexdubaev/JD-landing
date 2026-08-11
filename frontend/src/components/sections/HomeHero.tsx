@@ -131,7 +131,7 @@ export function HomeHero({
           </h1>
           <p className="commerce-hero__description">{description}</p>
           <HeroPartSearch />
-          <div className="commerce-hero__contacts">
+          <div className="commerce-hero__contacts commerce-hero__contacts--desktop-only">
             {phone ? (
               <a href={`tel:${phone.replace(/[^\d+]/gu, "")}`}>
                 <Phone aria-hidden="true" />
