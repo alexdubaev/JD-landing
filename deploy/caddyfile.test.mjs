@@ -12,6 +12,10 @@ test("Caddy redirects www and legacy index paths to the canonical homepage", () 
   assert.match(caddyfile, /redir \/index \/ permanent/u);
 });
 
+test("Caddy requires an extra authentication layer for the Directus host", () => {
+  assert.match(caddyfile, /cms\.deere-shop\.ru\s*\{[\s\S]*basic_auth\s*\{[\s\S]*\{\$DIRECTUS_CMS_AUTH_USER\}\s+\{\$DIRECTUS_CMS_AUTH_HASH\}/u);
+});
+
 test("deploy refreshes Caddy after the release checkout changes", () => {
   assert.match(deployScript, /up -d frontend/u);
   assert.match(deployScript, /up -d --force-recreate caddy/u);

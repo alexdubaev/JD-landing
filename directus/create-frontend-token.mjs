@@ -53,7 +53,11 @@ async function main() {
   if (!outputFile) {
     throw new Error("DIRECTUS_TOKEN_OUTPUT_FILE must point to a root-owned 0600 file");
   }
-  await (await import("node:fs/promises")).writeFile(outputFile, `DIRECTUS_TOKEN=${token}\n`, { mode: 0o600 });
+  const fs = await import("node:fs/promises");
+  await fs.writeFile(outputFile, `DIRECTUS_TOKEN=${token}\n`, { mode: 0o600 });
+  // `mode` only applies while creating a file; correct permissions on a
+  // pre-existing rotation target as well.
+  await fs.chmod(outputFile, 0o600);
   console.log("Frontend API token rotated and written to the configured secure file.");
 }
 

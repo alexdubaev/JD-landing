@@ -1,5 +1,22 @@
 import type { NextConfig } from "next";
 
+const remoteImagePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
+  {
+    protocol: "https",
+    hostname: "cms.deere-shop.ru",
+    pathname: "/assets/**",
+  },
+];
+
+if (process.env.NODE_ENV !== "production") {
+  remoteImagePatterns.push({
+    protocol: "http",
+    hostname: "127.0.0.1",
+    port: "8055",
+    pathname: "/assets/**",
+  });
+}
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   output: "standalone",
@@ -64,19 +81,7 @@ const nextConfig: NextConfig = {
         search: "",
       },
     ],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "cms.deere-shop.ru",
-        pathname: "/assets/**",
-      },
-      {
-        protocol: "http",
-        hostname: "127.0.0.1",
-        port: "8055",
-        pathname: "/assets/**",
-      },
-    ],
+    remotePatterns: remoteImagePatterns,
   },
 };
 

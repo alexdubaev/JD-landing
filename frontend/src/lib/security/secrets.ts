@@ -8,10 +8,15 @@ const PLACEHOLDER_PREFIX = "replace-with-";
  * before comparison; production secrets are opaque fixed-length values.
  */
 export function safeEqual(received: string | null, expected: string): boolean {
-  if (typeof received !== "string" || received.length === 0) return false;
-  if (received.length !== expected.length) return false;
+  const expectedBuffer = Buffer.from(expected);
+  const receivedBuffer = Buffer.from(typeof received === "string" ? received : "");
+  const sameLength = receivedBuffer.length === expectedBuffer.length;
+  // timingSafeEqual rejects buffers of different lengths. Compare a
+  // same-sized dummy value first so malformed secrets do not take an early
+  // return that can expose a matching-prefix timing signal.
+  const comparable = sameLength ? receivedBuffer : Buffer.alloc(expectedBuffer.length);
 
-  return timingSafeEqual(Buffer.from(received), Buffer.from(expected));
+  return sameLength && timingSafeEqual(comparable, expectedBuffer);
 }
 
 export function requireProductionSecret(
