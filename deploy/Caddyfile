@@ -10,6 +10,7 @@
 		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 	}
 }
 
@@ -24,16 +25,6 @@ www.deere-shop.ru {
 }
 
 # Plain IP access (health checks, internal) — no redirect
-http://91.227.68.176 {
-	import security_headers
-	encode zstd gzip
-	request_body {
-		max_size 20MB
-	}
-
-	reverse_proxy frontend:3000
-}
-
 deere-shop.ru {
 	import security_headers
 	encode zstd gzip
