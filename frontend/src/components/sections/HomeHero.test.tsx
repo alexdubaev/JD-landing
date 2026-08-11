@@ -47,7 +47,7 @@ describe("HomeHero", () => {
             label: "Телефон",
             value: "+7 900 000-00-00",
             url: null,
-            sortOrder: 0,
+            icon: null,
           },
         ]}
         h1="John Deere parts"
