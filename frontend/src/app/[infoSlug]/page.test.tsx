@@ -35,6 +35,7 @@ vi.mock("@/lib/seo/trust-pages", () => ({
           sections: [],
         } satisfies ContentPage)
       : null,
+  getTrustPageFaq: () => [],
   getTrustPageMetadata: () => null,
 }));
 

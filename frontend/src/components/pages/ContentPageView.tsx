@@ -16,12 +16,25 @@ import type {
 } from "@/types/content";
 
 function ContentSection({ section }: { section: PageSection }) {
+  const paragraphs = section.text
+    ?.split(/\n\s*\n/gu)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean) ?? [];
+  const items = section.items.filter(
+    (item): item is string => typeof item === "string" && item.trim().length > 0,
+  );
+
   return (
     <section className="content-page__section">
       <Reveal>
         {section.subtitle ? <p className="section-eyebrow">{section.subtitle}</p> : null}
         {section.title ? <h2>{section.title}</h2> : null}
-        {section.text ? <p>{section.text}</p> : null}
+        {paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        {items.length ? (
+          <ul className="content-page__list">
+            {items.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        ) : null}
       </Reveal>
     </section>
   );
