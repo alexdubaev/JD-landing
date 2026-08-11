@@ -20,7 +20,8 @@ const requestItemSchema = z.object({
   quantity: z.coerce.number().int().min(1).max(100_000),
 });
 
-export const leadSchema = z
+export const createLeadSchema = (nodeEnv = process.env.NODE_ENV) =>
+  z
   .object({
     name: z.string().trim().min(2).max(100),
     phone: z.string().trim().min(7).max(40),
@@ -36,7 +37,10 @@ export const leadSchema = z
     utm_campaign: optionalText(200),
     utm_content: optionalText(200),
     utm_term: optionalText(200),
-    turnstile_token: optionalText(2048),
+    turnstile_token:
+      nodeEnv === "production"
+        ? z.string().trim().min(1).max(2048)
+        : optionalText(2048),
     request_items: z
       .array(requestItemSchema)
       .min(1)
@@ -45,5 +49,7 @@ export const leadSchema = z
     website: z.string().max(0).optional().default(""),
   })
   .strict();
+
+export const leadSchema = createLeadSchema();
 
 export type LeadInput = z.infer<typeof leadSchema>;

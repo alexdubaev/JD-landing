@@ -81,6 +81,21 @@ describe("POST /api/leads", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("fails closed when Turnstile is unconfigured in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    const response = await POST(
+      new Request("https://example.test/api/leads", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "РРІР°РЅ", phone: "+7 900 000-00-00", website: "" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("uploads valid multipart attachments and stores normalized request items", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")

@@ -1,13 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const revalidateTag = vi.fn();
 vi.mock("next/cache", () => ({ revalidateTag }));
+
+const validSecret = "a".repeat(32);
 
 describe("POST /api/revalidate", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    process.env.REVALIDATE_SECRET = "test-secret";
+    process.env.REVALIDATE_SECRET = validSecret;
   });
 
   it("rejects an invalid secret", async () => {
@@ -23,12 +25,32 @@ describe("POST /api/revalidate", () => {
     expect(revalidateTag).not.toHaveBeenCalled();
   });
 
-  it("rejects collections outside the allowlist", async () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("rejects a configured secret shorter than 32 characters", async () => {
+    process.env.REVALIDATE_SECRET = "test-secret";
+    vi.stubEnv("NODE_ENV", "production");
     const { POST } = await import("./route");
     const response = await POST(
       new Request("https://site.test/api/revalidate", {
         method: "POST",
         headers: { "x-revalidate-secret": "test-secret" },
+        body: JSON.stringify({ collection: "articles" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(revalidateTag).not.toHaveBeenCalled();
+  });
+
+  it("rejects collections outside the allowlist", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("https://site.test/api/revalidate", {
+        method: "POST",
+        headers: { "x-revalidate-secret": validSecret },
         body: JSON.stringify({ collection: "directus_users" }),
       }),
     );
@@ -40,7 +62,7 @@ describe("POST /api/revalidate", () => {
     const response = await POST(
       new Request("https://site.test/api/revalidate", {
         method: "POST",
-        headers: { "x-revalidate-secret": "test-secret" },
+        headers: { "x-revalidate-secret": validSecret },
         body: JSON.stringify({ collection: "articles" }),
       }),
     );
@@ -56,7 +78,7 @@ describe("POST /api/revalidate", () => {
       const response = await POST(
         new Request("https://site.test/api/revalidate", {
           method: "POST",
-          headers: { "x-revalidate-secret": "test-secret" },
+          headers: { "x-revalidate-secret": validSecret },
           body: JSON.stringify({ collection }),
         }),
       );
@@ -71,7 +93,7 @@ describe("POST /api/revalidate", () => {
     const response = await POST(
       new Request("https://site.test/api/revalidate", {
         method: "POST",
-        headers: { "x-revalidate-secret": "test-secret" },
+        headers: { "x-revalidate-secret": validSecret },
         body: JSON.stringify({ collection: "navigation-items" }),
       }),
     );
@@ -87,7 +109,7 @@ describe("POST /api/revalidate", () => {
       const response = await POST(
         new Request("https://site.test/api/revalidate", {
           method: "POST",
-          headers: { "x-revalidate-secret": "test-secret" },
+          headers: { "x-revalidate-secret": validSecret },
           body: JSON.stringify({ collection }),
         }),
       );

@@ -1,29 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { createOrder, deleteOrder } from "@/lib/directus/orders";
-import { orderSchema } from "@/lib/orders/schema";
+import { createOrderSchema } from "@/lib/orders/schema";
+import { getTrustedClientIp } from "@/lib/security/request";
+import { verifyTurnstile } from "@/lib/security/turnstile";
 
 const MAX_ORDER_REQUEST_BYTES = 1 * 1024 * 1024; // 1 MB is plenty for JSON line items.
 
 class OrderValidationError extends Error {}
-
-async function isHuman(token: string | undefined, remoteIp: string | null) {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
-  if (!token) return false;
-
-  const form = new FormData();
-  form.set("secret", secret);
-  form.set("response", token);
-  if (remoteIp) form.set("remoteip", remoteIp);
-  const response = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    { method: "POST", body: form, cache: "no-store" },
-  );
-  if (!response.ok) return false;
-  const result = (await response.json()) as { success?: boolean };
-  return result.success === true;
-}
 
 export async function POST(request: Request) {
   let createdOrderId: string | null = null;
@@ -40,16 +24,16 @@ export async function POST(request: Request) {
     }
 
     const input: unknown = await request.json();
-    const parsed = orderSchema.safeParse(input);
+    const parsed = createOrderSchema(process.env.NODE_ENV).safeParse(input);
     if (!parsed.success) {
       throw new OrderValidationError();
     }
 
     if (
-      !(await isHuman(
-        parsed.data.turnstile_token,
-        request.headers.get("x-forwarded-for"),
-      ))
+      !(await verifyTurnstile({
+        token: parsed.data.turnstile_token,
+        remoteIp: getTrustedClientIp(request.headers),
+      }))
     ) {
       return NextResponse.json(
         { error: "Не удалось подтвердить отправку" },
@@ -60,7 +44,7 @@ export async function POST(request: Request) {
     const order = await createOrder(parsed.data);
     createdOrderId = order.id;
 
-    return NextResponse.json({ ok: true, order_id: order.id }, { status: 201 });
+    return NextResponse.json({ ok: true }, { status: 201 });
   } catch (error) {
     if (createdOrderId) {
       // Compensating delete: if line items failed mid-way, drop the order

@@ -1,6 +1,7 @@
 import { revalidateTag } from "next/cache";
 
 import { notifyIndexNow } from "@/lib/seo/indexnow";
+import { requireProductionSecret, safeEqual } from "@/lib/security/secrets";
 
 const collectionTags = {
   articles: ["articles", "homepage", "sitemap"],
@@ -48,8 +49,18 @@ const collectionIndexNowPaths = {
 type Collection = keyof typeof collectionTags;
 
 export async function POST(request: Request) {
-  const secret = process.env.REVALIDATE_SECRET;
-  if (!secret || request.headers.get("x-revalidate-secret") !== secret) {
+  let secret: string | undefined;
+  try {
+    secret = requireProductionSecret(
+      "REVALIDATE_SECRET",
+      process.env.REVALIDATE_SECRET,
+      32,
+    );
+  } catch {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!secret || !safeEqual(request.headers.get("x-revalidate-secret"), secret)) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

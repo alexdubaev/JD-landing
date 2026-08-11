@@ -23,7 +23,8 @@ export const orderItemSchema = z.object({
   quantity: z.coerce.number().int().min(1).max(10_000),
 });
 
-export const orderSchema = z
+export const createOrderSchema = (nodeEnv = process.env.NODE_ENV) =>
+  z
   .object({
     name: z.string().trim().min(2).max(100),
     phone: z.string().trim().min(7).max(40),
@@ -37,11 +38,16 @@ export const orderSchema = z
     utm_campaign: optionalText(200),
     utm_content: optionalText(200),
     utm_term: optionalText(200),
-    turnstile_token: optionalText(2048),
+    turnstile_token:
+      nodeEnv === "production"
+        ? z.string().trim().min(1).max(2048)
+        : optionalText(2048),
     items: z.array(orderItemSchema).min(1).max(MAX_ORDER_ITEMS),
     website: z.string().max(0).optional().default(""),
   })
   .strict();
+
+export const orderSchema = createOrderSchema();
 
 export type OrderItemInput = z.infer<typeof orderItemSchema>;
 export type OrderInput = z.infer<typeof orderSchema>;
