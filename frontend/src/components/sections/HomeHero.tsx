@@ -15,6 +15,7 @@ import Link from "next/link";
 import { HeroMotion } from "@/components/motion/HeroMotion";
 import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
+import { safeUrl } from "@/lib/security/urls";
 import type { ContactChannel, PageSection, SiteSettings } from "@/types/content";
 
 import { HeroPartSearch } from "./HeroPartSearch";
@@ -140,7 +141,7 @@ export function HomeHero({
               </a>
             ) : null}
             {messengers.map((channel) => (
-              <a href={channel.url!} key={channel.id}>
+              <a href={safeUrl(channel.url, "#consultation") ?? "#consultation"} key={channel.id}>
                 <MessageCircle aria-hidden="true" />
                 {channel.label}
               </a>

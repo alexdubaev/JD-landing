@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { trackEvent } from "@/lib/analytics";
+import { safeUrl } from "@/lib/security/urls";
 import type { ContactChannel } from "@/types/content";
 
 const phoneHref = (phone: string) => phone.replace(/[^\d+]/gu, "");
@@ -27,7 +28,7 @@ export function ContactChannelLink({ channel }: { channel: ContactChannel }) {
   }
 
   const href =
-    channel.url ??
+    safeUrl(channel.url) ??
     (channel.type === "phone"
       ? `tel:${phoneHref(channel.value)}`
       : null);
@@ -90,7 +91,7 @@ export function MobileContactBar({
       ) : null}
       {messenger ? (
         <a
-          href={messenger.url ?? "#consultation"}
+          href={safeUrl(messenger.url, "#consultation") ?? "#consultation"}
           onClick={() => trackEvent("messenger_click", { label: messenger.label })}
         >
           <MessageCircle aria-hidden="true" />
