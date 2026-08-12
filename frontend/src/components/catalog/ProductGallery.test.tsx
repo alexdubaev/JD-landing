@@ -4,6 +4,15 @@ import { describe, expect, it } from "vitest";
 import { ProductGallery } from "./ProductGallery";
 
 describe("ProductGallery", () => {
+  it("renders the branded placeholder when a product has no images", () => {
+    render(<ProductGallery imageAlt="Товар без фото" imageIds={[]} />);
+
+    const fallback = screen.getByRole("img", { name: "Товар без фото" });
+    expect(decodeURIComponent(fallback.getAttribute("src") ?? "")).toContain(
+      "/images/catalog/product-placeholder-industrial.webp",
+    );
+  });
+
   it("changes the selected image while retaining accessible controls", () => {
     render(
       <ProductGallery

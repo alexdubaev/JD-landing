@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ImageOff, ListPlus, ShoppingCart } from "lucide-react";
+import { ArrowRight, ListPlus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -110,14 +110,13 @@ export function ProductCard({
             src={imageUrl}
           />
         ) : (
-          <div
-            aria-label="Изображение товара пока не добавлено"
-            className="product-card__placeholder"
-            role="img"
-          >
-            <ImageOff aria-hidden="true" />
-            <span>Фото готовится</span>
-          </div>
+          <Image
+            alt={product.imageAlt || product.title}
+            className="product-card__fallback-image"
+            fill
+            sizes="(max-width: 40rem) 100vw, (max-width: 72rem) 50vw, 25vw"
+            src="/images/catalog/product-placeholder-industrial.webp"
+          />
         )}
       </div>
       <div className="product-card__body">

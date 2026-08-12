@@ -1568,6 +1568,11 @@ a {
   padding: 0.75rem;
 }
 
+.product-card__media img.product-card__fallback-image {
+  object-fit: cover;
+  padding: 0;
+}
+
 .product-card__placeholder {
   display: grid;
   height: 100%;
@@ -1894,6 +1899,11 @@ a.product-card__category:hover {
 .product-gallery__main img {
   object-fit: contain;
   padding: clamp(1rem, 3vw, 2rem);
+}
+
+.product-gallery__empty img.product-gallery__fallback-image {
+  object-fit: cover;
+  padding: 0;
 }
 
 .product-gallery__frame {

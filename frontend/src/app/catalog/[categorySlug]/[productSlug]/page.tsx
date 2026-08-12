@@ -41,10 +41,12 @@ export async function generateMetadata({
     return { robots: { index: false, follow: false } };
   }
   const canonical = `/catalog/${categorySlug}/${productSlug}`;
-  const image = directusAssetUrl(
-    product.ogImageId || product.mainImageId,
-    { width: 1200, height: 630, fit: "contain" },
-  );
+  const image =
+    directusAssetUrl(product.ogImageId || product.mainImageId, {
+      width: 1200,
+      height: 630,
+      fit: "contain",
+    }) ?? absoluteUrl("/images/catalog/product-placeholder-industrial.webp");
   const title = product.seoTitle || product.title;
   const description = product.seoDescription || product.shortDescription;
 

@@ -22,6 +22,17 @@ const baseArgs = {
 };
 
 describe("buildCatalogMetadata", () => {
+  it("uses a non-empty fallback description when the CMS description is absent", () => {
+    const meta = buildCatalogMetadata({
+      ...baseArgs,
+      description: null,
+    });
+
+    expect(meta.description).toBe(
+      "Каталог комплектующих John Deere: поиск по названию и артикулу, подбор по модели техники и заявка на консультацию.",
+    );
+  });
+
   it("indexes page 1 without params and self-canonicalizes to the base", () => {
     const meta = buildCatalogMetadata(baseArgs);
 
