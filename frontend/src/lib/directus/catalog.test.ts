@@ -90,6 +90,26 @@ describe("catalog queries", () => {
     expect(result.total).toBe(49);
   });
 
+  it("prioritizes manually curated products for the default catalog order", async () => {
+    envelopeRequestMock.mockResolvedValue({
+      data: [],
+      meta: { filter_count: 0 },
+    });
+
+    await getCatalogPage({
+      search: "",
+      page: 1,
+      pageSize: 24,
+      sort: "relevance",
+    });
+
+    const [path] = envelopeRequestMock.mock.calls[0];
+    const url = new URL(path, "https://cms.example.test");
+    expect(url.searchParams.get("sort")).toBe(
+      "sort_order,-popularity_score,title",
+    );
+  });
+
   it("matches SKUs with hyphens or spaces through a published-only SKU index", async () => {
     envelopeRequestMock.mockResolvedValue({ data: [], meta: { filter_count: 0 } });
     requestMock.mockResolvedValue([]);
