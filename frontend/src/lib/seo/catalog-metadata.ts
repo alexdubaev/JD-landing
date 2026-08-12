@@ -17,6 +17,9 @@ export type CatalogMetadataInput = {
   canonicalPathOverride?: string | null;
 };
 
+const CATALOG_FALLBACK_DESCRIPTION =
+  "Каталог комплектующих John Deere: поиск по названию и артикулу, подбор по модели техники и заявка на консультацию.";
+
 /**
  * Build metadata for catalog and category pages following the canonical/robots matrix:
  *
@@ -37,6 +40,7 @@ export function buildCatalogMetadata({
   indexable = true,
   canonicalPathOverride,
 }: Omit<CatalogMetadataInput, "total">): Metadata {
+  const resolvedDescription = description?.trim() || CATALOG_FALLBACK_DESCRIPTION;
   const hasSearch = query.search.trim().length > 0;
   const hasSortOrFilter =
     query.sort !== "relevance" ||
@@ -62,7 +66,7 @@ export function buildCatalogMetadata({
 
   const meta: Metadata = {
     title: pageTitle,
-    description: description ?? undefined,
+    description: resolvedDescription,
     alternates: { canonical: canonicalPath },
   };
 
@@ -73,7 +77,7 @@ export function buildCatalogMetadata({
   if (image) {
     meta.openGraph = {
       title: pageTitle,
-      description: description ?? undefined,
+      description: resolvedDescription,
       type: "website",
       url: canonicalPath,
       images: [image],

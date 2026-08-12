@@ -80,7 +80,7 @@ describe("ProductCard", () => {
     expect(window.dataLayer).toContainEqual({ event: "product_open", product_id: "product-1" });
   });
 
-  it("renders request pricing and a safe missing-image fallback", () => {
+  it("renders request pricing and the branded missing-image fallback", () => {
     render(
       <ProductCard
         product={{
@@ -94,9 +94,10 @@ describe("ProductCard", () => {
     );
 
     expect(screen.getByText("Цена по запросу")).toBeInTheDocument();
-    expect(
-      screen.getByRole("img", { name: "Изображение товара пока не добавлено" }),
-    ).toBeInTheDocument();
+    const fallback = screen.getByRole("img", { name: product.title });
+    expect(decodeURIComponent(fallback.getAttribute("src") ?? "")).toContain(
+      "/images/catalog/product-placeholder-industrial.webp",
+    );
   });
 
   it("does not invent a price when it is hidden", () => {

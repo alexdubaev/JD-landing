@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Product } from "@/types/catalog";
 
-import ProductPage from "./page";
+import ProductPage, { generateMetadata } from "./page";
 
 const {
   getFilesByIdsMock,
@@ -58,7 +58,7 @@ describe("product page", () => {
     getProductsByIdsMock.mockResolvedValue([]);
   });
 
-  it("renders one H1, SKU, request price, and a safe gallery fallback", async () => {
+  it("renders one H1, SKU, request price, and the branded gallery fallback", async () => {
     render(
       await ProductPage({
         params: Promise.resolve({
@@ -74,10 +74,24 @@ describe("product page", () => {
     );
     expect(screen.getByText(/RE654321/)).toBeInTheDocument();
     expect(screen.getByText("Цена по запросу")).toBeInTheDocument();
-    expect(
-      screen.getByRole("img", { name: "Изображение товара пока не добавлено" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: product.title })).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  it("uses the branded placeholder as an Open Graph image when a product image is absent", async () => {
+    const metadata = await generateMetadata({
+      params: Promise.resolve({
+        categorySlug: "hydraulics",
+        productSlug: "hydraulic-pump",
+      }),
+    });
+
+    expect(metadata.openGraph?.images).toEqual([
+      {
+        url: "https://deere-shop.ru/images/catalog/product-placeholder-industrial.webp",
+        alt: product.title,
+      },
+    ]);
   });
 
   it("renders only provided specifications and fixed price data", async () => {

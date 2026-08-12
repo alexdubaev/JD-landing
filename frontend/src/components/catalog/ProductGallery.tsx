@@ -1,6 +1,5 @@
 "use client";
 
-import { ImageOff } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import { useState } from "react";
@@ -20,13 +19,15 @@ export function ProductGallery({
 
   if (!activeId) {
     return (
-      <div
-        aria-label="Изображение товара пока не добавлено"
-        className="product-gallery__empty"
-        role="img"
-      >
-        <ImageOff aria-hidden="true" />
-        <span>Фото товара готовится</span>
+      <div className="product-gallery__empty">
+        <Image
+          alt={imageAlt}
+          className="product-gallery__fallback-image"
+          fill
+          priority
+          sizes="(max-width: 52rem) 100vw, 50vw"
+          src="/images/catalog/product-placeholder-industrial.webp"
+        />
       </div>
     );
   }
