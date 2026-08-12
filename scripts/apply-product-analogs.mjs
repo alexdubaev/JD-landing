@@ -11,12 +11,11 @@ const inputPath = argumentsByName.get("--input");
 const reportPath = argumentsByName.get("--report");
 const dryRun = process.argv.includes("--dry-run");
 const directusUrl = process.env.DIRECTUS_URL?.replace(/\/+$/u, "");
-const directusToken = process.env.DIRECTUS_TOKEN;
+let directusToken = process.env.DIRECTUS_TOKEN;
 
 if (!inputPath) throw new Error("Pass --input=/absolute/path/to/analogs.csv");
 if (!reportPath) throw new Error("Pass --report=/absolute/path/to/report.csv");
 if (!directusUrl) throw new Error("Set DIRECTUS_URL");
-if (!directusToken) throw new Error("Set DIRECTUS_TOKEN");
 
 function parseDelimited(input, delimiter = ";") {
   const rows = [];
@@ -105,6 +104,26 @@ function reportCsv(rows) {
     .join("\n");
 }
 
+async function authenticate() {
+  if (directusToken) return;
+  const email = process.env.DIRECTUS_ADMIN_EMAIL;
+  const password = process.env.DIRECTUS_ADMIN_PASSWORD;
+  if (!email || !password) {
+    throw new Error(
+      "Set DIRECTUS_TOKEN or DIRECTUS_ADMIN_EMAIL and DIRECTUS_ADMIN_PASSWORD",
+    );
+  }
+  const response = await fetch(`${directusUrl}/auth/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) {
+    throw new Error(`Directus login failed: ${response.status}`);
+  }
+  directusToken = (await response.json()).data.access_token;
+}
+
 async function request(path, options = {}) {
   const response = await fetch(`${directusUrl}${path}`, {
     ...options,
@@ -123,6 +142,7 @@ async function request(path, options = {}) {
 }
 
 async function main() {
+  await authenticate();
   const source = readRecords(await readFile(inputPath, "utf8"));
   const requiredColumns = ["Артикул", "Аналоги", "Товар"];
   const missingColumns = requiredColumns.filter(
