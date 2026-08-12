@@ -341,7 +341,7 @@ export async function getCatalogSuggestions(search: string, limit = 6) {
 }
 
 const sortByQuery: Record<CatalogQuery["sort"], string> = {
-  relevance: "-popularity_score,title",
+  relevance: "sort_order,-popularity_score,title",
   price_asc: "price,title",
   price_desc: "-price,title",
   title_asc: "title",
