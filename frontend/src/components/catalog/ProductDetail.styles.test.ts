@@ -15,4 +15,13 @@ describe("product detail compact layout", () => {
       /\.product-gallery__main img\s*\{[\s\S]*?padding:\s*0;/,
     );
   });
+
+  it("keeps the missing-image fallback fully visible", () => {
+    expect(styles).toMatch(
+      /\.product-card__media img\.product-card__fallback-image\s*\{[\s\S]*?object-fit:\s*contain;/,
+    );
+    expect(styles).toMatch(
+      /\.product-gallery__empty img\.product-gallery__fallback-image\s*\{[\s\S]*?object-fit:\s*contain;/,
+    );
+  });
 });
