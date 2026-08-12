@@ -113,6 +113,30 @@ describe("product page", () => {
     expect(screen.getByText("Замены: PGF7949, RE210102")).toBeInTheDocument();
   });
 
+  it("does not render technical source and verification copy", async () => {
+    getProductBySlugsMock.mockResolvedValue({
+      ...product,
+      verifiedAt: "2026-08-01",
+      reviewedBy: "Специалист по подбору",
+      sourceName: "Deere-shop",
+      sourceUrl: "https://example.com/product",
+    });
+
+    render(
+      await ProductPage({
+        params: Promise.resolve({
+          categorySlug: "hydraulics",
+          productSlug: "hydraulic-pump",
+        }),
+      }),
+    );
+
+    expect(
+      screen.queryByRole("heading", { name: "Проверка данных" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Источник:/i)).not.toBeInTheDocument();
+  });
+
   it("renders only provided specifications and fixed price data", async () => {
     getProductBySlugsMock.mockResolvedValue({
       ...product,

@@ -4,7 +4,6 @@ import type { Product, PublicFile } from "@/types/catalog";
 
 import { AddToCartButton } from "./AddToCartButton";
 import { ProductGallery } from "./ProductGallery";
-import { ProductVerification } from "./ProductVerification";
 
 const availabilityLabels: Record<Product["availabilityStatus"], string> = {
   in_stock: "В наличии",
@@ -86,7 +85,6 @@ export function ProductDetail({
           </p>
         </div>
       </div>
-      <ProductVerification product={product} />
       {product.fullDescription ? (
         <section className="product-section" aria-labelledby="description-title">
           <h2 id="description-title">Описание</h2>
