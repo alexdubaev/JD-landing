@@ -40,6 +40,7 @@ const requiredProductFields = [
   "short_description",
   "full_description",
   "seo_text",
+  "analog_skus",
   "main_image",
   "gallery",
   "price",

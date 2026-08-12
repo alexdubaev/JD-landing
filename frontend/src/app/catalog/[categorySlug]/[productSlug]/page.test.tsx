@@ -34,6 +34,7 @@ const product: Product = {
   shortDescription: "Компонент гидравлической системы.",
   fullDescription: "Описание назначения детали.",
   seoText: null,
+  analogSkus: [],
   mainImageId: null,
   imageAlt: null,
   galleryIds: [],
@@ -92,6 +93,24 @@ describe("product page", () => {
         alt: product.title,
       },
     ]);
+  });
+
+  it("shows supplied replacement SKUs next to the primary SKU", async () => {
+    getProductBySlugsMock.mockResolvedValue({
+      ...product,
+      analogSkus: ["PGF7949", "RE210102"],
+    });
+
+    render(
+      await ProductPage({
+        params: Promise.resolve({
+          categorySlug: "hydraulics",
+          productSlug: "hydraulic-pump",
+        }),
+      }),
+    );
+
+    expect(screen.getByText("Замены: PGF7949, RE210102")).toBeInTheDocument();
   });
 
   it("renders only provided specifications and fixed price data", async () => {

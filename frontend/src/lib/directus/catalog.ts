@@ -51,6 +51,7 @@ type RawProduct = {
   short_description: string | null;
   full_description?: string | null;
   seo_text?: string | null;
+  analog_skus?: unknown;
   main_image: FileRelation;
   gallery?: unknown;
   price: string | number | null;
@@ -172,6 +173,9 @@ const mapProduct = (raw: RawProduct): Product => ({
   ...mapProductCard(raw),
   fullDescription: raw.full_description ?? null,
   seoText: raw.seo_text ?? null,
+  analogSkus: asStringArray(raw.analog_skus)
+    .map((value) => value.trim())
+    .filter(Boolean),
   galleryIds: asStringArray(raw.gallery),
   specifications: asUnknownArray(raw.specifications),
   documentIds: asStringArray(raw.documents),
@@ -232,7 +236,7 @@ const cardFields = [
   "delivery_status",
 ].join(",");
 
-const detailFields = `${cardFields},full_description,seo_text,gallery,specifications,documents,source_name,source_url,verified_at,reviewed_by,seo_title,seo_description,og_image,seo_quality_status,is_indexable,related_products,cta_text`;
+const detailFields = `${cardFields},full_description,seo_text,analog_skus,gallery,specifications,documents,source_name,source_url,verified_at,reviewed_by,seo_title,seo_description,og_image,seo_quality_status,is_indexable,related_products,cta_text`;
 
 const queryString = (parameters: Record<string, string | undefined>) => {
   const search = new URLSearchParams();

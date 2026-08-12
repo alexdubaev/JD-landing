@@ -58,6 +58,11 @@ export function ProductDetail({
           ) : null}
           <h1>{product.title}</h1>
           <p className="product-detail__sku">Артикул: {product.sku}</p>
+          {product.analogSkus.length ? (
+            <p className="product-detail__analogs">
+              Замены: {product.analogSkus.join(", ")}
+            </p>
+          ) : null}
           {product.shortDescription ? (
             <p className="product-detail__summary">
               {product.shortDescription}

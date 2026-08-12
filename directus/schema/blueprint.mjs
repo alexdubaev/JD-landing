@@ -271,6 +271,7 @@ export const schemaBlueprint = {
         field("short_description", "text"),
         field("full_description", "text"),
         field("seo_text", "text"),
+        field("analog_skus", "json"),
         field("main_image", "uuid", { relatedCollection: "directus_files" }),
         field("gallery", "json"),
         field("price", "decimal", { precision: 12, scale: 2 }),

@@ -9,6 +9,7 @@ import {
   getCategories,
   getFeaturedProducts,
   getHomepageCategories,
+  getProductBySlugs,
 } from "./catalog";
 
 vi.mock("./client", () => ({
@@ -182,6 +183,39 @@ describe("catalog queries", () => {
     expect(url.searchParams.get("fields")).toContain("delivery_status");
     expect(url.searchParams.get("limit")).toBe("6");
     expect(products.map(({ id }) => id)).toEqual(["complete", "incomplete"]);
+  });
+
+  it("loads product replacement SKUs separately from the title", async () => {
+    requestMock.mockResolvedValue([
+      {
+        id: "filter",
+        title: "Фильтр топливный RE541925A",
+        slug: "fuel-filter-re541925a",
+        sku: "RE541925A",
+        category: { id: "filters", title: "Фильтры", slug: "filters" },
+        short_description: null,
+        full_description: null,
+        seo_text: null,
+        main_image: null,
+        gallery: [],
+        price: "2481",
+        currency: "RUB",
+        price_status: "fixed",
+        availability_status: "on_request",
+        image_alt: null,
+        analog_skus: ["PGF7949", " RE210102 ", 123, ""],
+        specifications: [],
+        documents: [],
+        related_products: [],
+        cta_text: null,
+      },
+    ]);
+
+    const product = await getProductBySlugs("filters", "fuel-filter-re541925a");
+
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("fields")).toContain("analog_skus");
+    expect(product?.analogSkus).toEqual(["PGF7949", "RE210102"]);
   });
 
 });

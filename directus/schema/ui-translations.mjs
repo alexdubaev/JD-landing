@@ -113,6 +113,7 @@ export const fieldTranslations = {
   category: "Категория",
   short_description: "Краткое описание товара",
   full_description: "Полное описание товара",
+  analog_skus: "Замены",
   main_image: "Основное изображение",
   gallery: "Галерея",
   price: "Цена",

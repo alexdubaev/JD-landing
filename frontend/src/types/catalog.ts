@@ -63,6 +63,7 @@ export type ProductCardData = {
 export type Product = ProductCardData & {
   fullDescription: string | null;
   seoText: string | null;
+  analogSkus: string[];
   galleryIds: string[];
   specifications: unknown[];
   documentIds: string[];
