@@ -1,0 +1,15 @@
+{
+  "name": "deere-shop-seo-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SEO content-factory worker for Deere-Shop. Control-plane only: creates draft seo_work_items and article drafts. Disabled/shadow by default. Draft-only. No publish method.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/*.mjs"
+  },
+  "dependencies": {}
+}
