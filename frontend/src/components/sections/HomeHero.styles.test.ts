@@ -11,4 +11,13 @@ describe("homepage hero", () => {
       /\.commerce-hero\s*\{[\s\S]*?background:\s*#173b25;/u,
     );
   });
+
+  it("keeps the transparent assembly separate from the hero background and hides it below 68rem", () => {
+    expect(styles).toMatch(
+      /\.commerce-hero__assembly\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?pointer-events:\s*none;/u,
+    );
+    expect(styles).toMatch(
+      /@media\s*\(max-width:\s*68rem\)\s*\{[\s\S]*?\.commerce-hero__assembly\s*\{[\s\S]*?display:\s*none;/u,
+    );
+  });
 });

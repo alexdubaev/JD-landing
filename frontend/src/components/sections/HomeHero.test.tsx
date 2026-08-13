@@ -42,6 +42,7 @@ describe("HomeHero", () => {
     );
 
     const image = container.querySelector(".commerce-hero__image");
+    expect(image?.parentElement).toHaveClass("commerce-hero__assembly");
     expect(image).toHaveAttribute("alt", "Запчасти для техники John Deere");
     expect(decodeURIComponent(image?.getAttribute("src") ?? "")).toContain(
       "/media/9af727df-c55a-48d9-bbd0-458a18237068?format=webp&quality=84&width=1920",

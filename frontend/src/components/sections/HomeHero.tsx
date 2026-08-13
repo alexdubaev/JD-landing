@@ -113,14 +113,16 @@ export function HomeHero({
     <HeroMotion
       labelledBy="home-title"
       media={(
-        <Image
-          alt={imageAlt}
-          className="commerce-hero__image"
-          fill
-          priority
-          sizes="100vw"
-          src={imageUrl}
-        />
+        <div className="commerce-hero__assembly">
+          <Image
+            alt={imageAlt}
+            className="commerce-hero__image"
+            fill
+            priority
+            sizes="(max-width: 68rem) 0px, 46vw"
+            src={imageUrl}
+          />
+        </div>
       )}
     >
       <Container className="commerce-hero__content">

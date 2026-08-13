@@ -2808,6 +2808,20 @@ a.product-card__category:hover {
   inset: 0;
 }
 
+.commerce-hero__assembly {
+  position: absolute;
+  top: calc(clamp(3rem, 3.3vw, 4.75rem) + 70px);
+  right: calc(clamp(2rem, 4vw, 6rem) + 100px);
+  width: min(46vw, 52.5rem);
+  height: min(25vw, 28rem);
+  pointer-events: none;
+}
+
+.commerce-hero__assembly img {
+  object-fit: contain;
+  object-position: right center;
+}
+
 /* На главной хедер абсолютно позиционирован поверх hero (overlay, ~132px высотой),
    поэтому верхний отступ контента должен компенсировать хедер и совпадать с padding-bottom: 9rem */
 .commerce-hero__content {
