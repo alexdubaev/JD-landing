@@ -54,7 +54,7 @@ describe("HomeCategories", () => {
     expect(window.dataLayer).toContainEqual({ event: "category_view", category_id: "engine" });
   });
 
-  it("keeps the CMS homepage order, excludes obvious misc categories and caps output", () => {
+  it("keeps the CMS homepage order, excludes obvious misc categories and shows twelve categories", () => {
     const categories = Array.from({ length: 12 }, (_, index) => ({
       ...category,
       id: `category-${index + 1}`,
@@ -65,9 +65,9 @@ describe("HomeCategories", () => {
       { ...category, id: "misc", title: "Прочее", slug: "misc" },
     );
 
-    expect(getHomepageCategories(categories)).toHaveLength(11);
+    expect(getHomepageCategories(categories)).toHaveLength(12);
     expect(getHomepageCategories(categories).map(({ title }) => title)).toEqual(
-      Array.from({ length: 11 }, (_, index) => `Категория ${index + 1}`),
+      Array.from({ length: 12 }, (_, index) => `Категория ${index + 1}`),
     );
   });
 
@@ -79,8 +79,8 @@ describe("HomeCategories", () => {
     ).toHaveAttribute("href", "/catalog");
   });
 
-  it("fills the final desktop grid cell with an all-categories card", () => {
-    const categories = Array.from({ length: 11 }, (_, index) => ({
+  it("does not add a duplicate all-categories card to the twelve-cell desktop grid", () => {
+    const categories = Array.from({ length: 12 }, (_, index) => ({
       ...category,
       id: `category-${index + 1}`,
       title: `Категория ${index + 1}`,
@@ -89,8 +89,9 @@ describe("HomeCategories", () => {
 
     render(<HomeCategories categories={categories} section={section} />);
 
+    expect(screen.getAllByRole("link")).toHaveLength(13);
     expect(
-      screen.getByRole("link", { name: "Все категории — перейти в каталог" }),
-    ).toHaveAttribute("href", "/catalog");
+      screen.queryByRole("link", { name: "Все категории — перейти в каталог" }),
+    ).not.toBeInTheDocument();
   });
 });

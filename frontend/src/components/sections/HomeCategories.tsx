@@ -18,7 +18,7 @@ export const getHomepageCategories = (categories: Category[]) =>
       (item) => item.id === category.id || item.slug === category.slug,
     );
 
-    if (result.length < 11 && !isMisc && !isDuplicate) result.push(category);
+    if (result.length < 12 && !isMisc && !isDuplicate) result.push(category);
     return result;
   }, []);
 
@@ -85,18 +85,6 @@ export function HomeCategories({
               </article>
             );
           })}
-          <article className="home-category home-category--text-only home-category--all">
-            <Link
-              aria-label="Все категории — перейти в каталог"
-              href={section.buttonUrl ?? "/catalog"}
-            >
-              <span className="home-category__media">
-                <PackageSearch aria-hidden="true" />
-              </span>
-              <h3>Все категории</h3>
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </article>
         </div>
       </Container>
     </section>
