@@ -1,6 +1,12 @@
 const ru = (translation) => ({ language: "ru-RU", translation });
 
 export const collectionTranslations = {
+  group_site: "Сайт",
+  group_catalog: "Каталог",
+  group_content: "Контент",
+  group_sales: "Продажи",
+  group_settings: "Настройки",
+  home_page: "Главная страница",
   site_settings: "Настройки сайта",
   pages: "Страницы",
   page_sections: "Секции страниц",
@@ -28,6 +34,26 @@ export const collectionTranslations = {
 };
 
 export const fieldTranslations = {
+  home_page: "Главная страница",
+  source_page: "Связанная системная страница",
+  hero_title: "Заголовок первого экрана",
+  hero_text: "Описание первого экрана",
+  hero_image: "Изображение первого экрана",
+  hero_image_alt: "Alt-текст изображения первого экрана",
+  hero_primary_button_text: "Текст основной кнопки",
+  hero_primary_button_url: "Ссылка основной кнопки",
+  hero_secondary_button_text: "Текст дополнительной кнопки",
+  hero_secondary_button_url: "Ссылка дополнительной кнопки",
+  hero_search_label: "Название поиска",
+  hero_search_placeholder: "Подсказка в строке поиска",
+  hero_search_button_text: "Текст кнопки поиска",
+  hero_bulk_prompt: "Подпись группового запроса",
+  hero_bulk_link_text: "Текст ссылки списка",
+  hero_bulk_link_url: "Ссылка списка",
+  hero_excel_link_text: "Текст ссылки Excel",
+  hero_excel_link_url: "Ссылка Excel",
+  hero_photo_link_text: "Текст ссылки фото",
+  hero_photo_link_url: "Ссылка фото",
   id: "Идентификатор",
   status: "Статус",
   created_at: "Дата создания",
