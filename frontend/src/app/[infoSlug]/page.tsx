@@ -29,12 +29,11 @@ type Props = { params: Promise<{ infoSlug: string }> };
 
 async function loadPage(slug: string) {
   if (!informationSlugs.has(slug)) return null;
-  const page =
-    (await getPageBySlug(slug).catch(() => null)) ??
-    getTrustPageFallback(slug);
+  const cmsPage = await getPageBySlug(slug).catch(() => null);
+  const page = cmsPage ?? getTrustPageFallback(slug);
   if (!page) return null;
   const [faq, settings] = await Promise.all([
-    getFaqItems({ pageId: page.id }),
+    cmsPage ? getFaqItems({ pageId: cmsPage.id }) : Promise.resolve([]),
     getSiteSettings(),
   ]);
   return { faq, page, settings };
