@@ -94,11 +94,14 @@ test("defines task folders and an editable homepage singleton", () => {
     "hero_search_button_text", "hero_bulk_prompt", "hero_bulk_link_text",
     "hero_bulk_link_url", "hero_excel_link_text", "hero_excel_link_url",
     "hero_photo_link_text", "hero_photo_link_url", "seo_title", "seo_description",
-    "canonical_url", "og_title", "og_description", "og_image", "is_indexable",
+    "canonical_url", "og_title", "og_description", "og_image", "is_indexable", "sections",
     "translations", "created_at", "updated_at",
   ]) {
     assert.ok(fields.has(field), `missing home_page.${field}`);
   }
+  const homepageSections = homepage.fields.find(({ name }) => name === "sections");
+  assert.equal(homepageSections.type, "alias");
+  assert.deepEqual(homepageSections.special, ["o2m"]);
 
   const sections = schemaBlueprint.collections.find(({ name }) => name === "page_sections");
   const homeRelation = sections.fields.find(({ name }) => name === "home_page");

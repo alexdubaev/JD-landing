@@ -5,6 +5,7 @@ const permission = (collection, action, options = {}) => ({
   validation: options.validation ?? null,
   presets: options.presets ?? null,
   fields: ["*"],
+  allowRestrictedFallback: options.allowRestrictedFallback ?? false,
 });
 
 const read = (collection, options) => permission(collection, "read", options);
@@ -49,11 +50,15 @@ const folderFilter = (folderId) => ({ folder: { _eq: folderId } });
 
 const frontendPermissions = [
   ...websiteCollections.map(read),
-  read("directus_files", { permissions: folderFilter(publicAssetFolderId) }),
+  read("directus_files", {
+    permissions: folderFilter(publicAssetFolderId),
+    allowRestrictedFallback: true,
+  }),
   read("directus_folders"),
   create("directus_files", {
     validation: folderFilter(leadAttachmentFolderId),
     presets: { folder: leadAttachmentFolderId },
+    allowRestrictedFallback: true,
   }),
   // Needed so the API route can move a freshly uploaded attachment into the
   // Lead attachments folder — Directus 12 Core ignores the multipart `folder`
@@ -63,6 +68,7 @@ const frontendPermissions = [
   update("directus_files"),
   remove("directus_files", {
     permissions: folderFilter(leadAttachmentFolderId),
+    allowRestrictedFallback: true,
   }),
   create("leads"),
   create("orders"),
@@ -86,6 +92,7 @@ const contentPermissions = [
   // storage folder manually.
   create("directus_files", {
     presets: { folder: publicAssetFolderId },
+    allowRestrictedFallback: true,
   }),
   update("directus_files"),
   read("directus_folders"),
@@ -182,6 +189,7 @@ export const accessBlueprint = {
         read("order_items"),
         read("directus_files", {
           permissions: folderFilter(leadAttachmentFolderId),
+          allowRestrictedFallback: true,
         }),
       ],
     },

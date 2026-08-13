@@ -38,7 +38,7 @@ test("creates an active non-blocking event flow and request operation", async ()
     "create operation Обновить сайт",
     "connect flow operation",
   ]);
-  assert.equal(flow.trigger, "hook");
+  assert.equal(flow.trigger, "event");
   assert.equal(flow.accountability, "$full");
   assert.deepEqual(flow.options.scope, ["items.create", "items.update", "items.delete"]);
   assert.ok(flow.options.collections.includes("home_page"));

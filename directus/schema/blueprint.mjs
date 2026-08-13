@@ -141,6 +141,10 @@ export const schemaBlueprint = {
         field("og_description", "text"),
         field("og_image", "uuid", { relatedCollection: "directus_files" }),
         field("is_indexable", "boolean", { default: true }),
+        field("sections", "alias", {
+          interface: "list-o2m",
+          special: ["o2m"],
+        }),
         translations(),
       ),
     },

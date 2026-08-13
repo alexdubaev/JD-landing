@@ -27,20 +27,38 @@ const normalize = (value) => {
   );
 };
 
-export function permissionMatches(existing, desired) {
+export function permissionMatches(
+  existing,
+  desired,
+  { allowRestrictedFallback = false } = {},
+) {
+  const rule = (value) =>
+    value && typeof value === "object" && Object.keys(value).length === 0
+      ? null
+      : (value ?? null);
   const comparable = (permission) => ({
     policy: permission.policy,
     collection: permission.collection,
     action: permission.action,
-    permissions: permission.permissions ?? null,
-    validation: permission.validation ?? null,
-    presets: permission.presets ?? null,
+    permissions: rule(permission.permissions),
+    validation: rule(permission.validation),
+    presets: rule(permission.presets),
     fields: permission.fields ?? ["*"],
   });
 
-  return (
+  const exact = (
     JSON.stringify(normalize(comparable(existing))) ===
     JSON.stringify(normalize(comparable(desired)))
+  );
+  if (exact || !allowRestrictedFallback) return exact;
+
+  const fallback = { ...desired };
+  delete fallback.permissions;
+  delete fallback.validation;
+  delete fallback.presets;
+  return (
+    JSON.stringify(normalize(comparable(existing))) ===
+    JSON.stringify(normalize(comparable(fallback)))
   );
 }
 
@@ -231,7 +249,9 @@ export async function applyAccessBlueprint(
             }
           }
         }
-      } else if (!permissionMatches(existing, desired)) {
+      } else if (!permissionMatches(existing, desired, {
+        allowRestrictedFallback: definition.allowRestrictedFallback,
+      })) {
         actions.push(
           `update ${desiredPolicyName} permission ${definition.collection}:${definition.action}`,
         );

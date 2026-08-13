@@ -39,6 +39,30 @@ test("detects whether an existing permission matches the blueprint", () => {
   );
 });
 
+test("recognizes an explicitly allowed Directus Core restricted fallback", () => {
+  const desired = {
+    policy: "policy-id",
+    collection: "directus_files",
+    action: "read",
+    fields: ["*"],
+    permissions: { folder: { _eq: "public-folder" } },
+  };
+  const existing = {
+    id: 1,
+    policy: "policy-id",
+    collection: "directus_files",
+    action: "read",
+    fields: ["*"],
+    permissions: {},
+  };
+
+  assert.equal(permissionMatches(existing, desired), false);
+  assert.equal(
+    permissionMatches(existing, desired, { allowRestrictedFallback: true }),
+    true,
+  );
+});
+
 test("renames managed legacy roles and policies without creating duplicates", async () => {
   const requests = [];
   const client = {

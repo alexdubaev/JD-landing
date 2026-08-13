@@ -686,7 +686,7 @@ git commit -m "fix: render homepage hero from Directus"
 - Modify: `deploy/README.md`
 
 **Interfaces:**
-- Produces: `applyRevalidationFlow(client, config, { dryRun })`; Directus event hook for `items.create`, `items.update`, and `items.delete`; `home_page` allowlist support.
+- Produces: `applyRevalidationFlow(client, config, { dryRun })`; Directus `event` trigger for `items.create`, `items.update`, and `items.delete`; `home_page` allowlist support.
 - Consumes: `NEXT_REVALIDATE_URL`, `REVALIDATE_SECRET`, protected Next.js `POST /api/revalidate`.
 
 - [ ] **Step 1: Write the failing Next.js route test**
@@ -702,7 +702,7 @@ expect(response.status).toBe(200);
 
 Mock `/flows`, `/operations`, and require an idempotent flow named `Ревалидация сайта` with:
 
-- event trigger scopes `items.create`, `items.update`, `items.delete`;
+- `event` trigger scopes `items.create`, `items.update`, `items.delete`;
 - collections `home_page`, `page_sections`, `site_settings`, `navigation_items`, `categories`, `products`, `articles`, `faq_items`, `recent_supplies`;
 - a request operation that POSTs `{ "collection": "{{$trigger.collection}}" }`;
 - header `x-revalidate-secret` sourced from the process environment;

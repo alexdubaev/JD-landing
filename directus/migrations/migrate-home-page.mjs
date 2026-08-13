@@ -49,7 +49,7 @@ export function buildHomePagePayload(page, hero) {
 const pageQuery = () => new URLSearchParams({
   "filter[status][_eq]": "published",
   "filter[slug][_eq]": "home",
-  fields: "id,h1,seo_title,seo_description,canonical_url,og_title,og_description,og_image,is_indexable",
+  fields: "id,h1,seo_title,seo_description,canonical_url,og_image,is_indexable",
   limit: "2",
 });
 

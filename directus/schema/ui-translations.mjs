@@ -54,6 +54,7 @@ export const fieldTranslations = {
   hero_excel_link_url: "Ссылка Excel",
   hero_photo_link_text: "Текст ссылки фото",
   hero_photo_link_url: "Ссылка фото",
+  sections: "Секции главной страницы",
   id: "Идентификатор",
   status: "Статус",
   created_at: "Дата создания",

@@ -56,7 +56,7 @@ export function buildRevalidationBlueprint(config) {
       color: "#2E7D32",
       description: "Автоматически обновляет сайт после сохранения контента в админке.",
       status: "active",
-      trigger: "hook",
+      trigger: "event",
       accountability: "$full",
       options: {
         type: "action",

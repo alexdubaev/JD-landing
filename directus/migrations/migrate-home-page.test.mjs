@@ -64,6 +64,25 @@ test("maps existing hero content and frontend microcopy into the singleton", () 
   });
 });
 
+test("queries only fields that exist on the legacy pages collection", async () => {
+  const paths = [];
+  const payload = buildHomePagePayload(page, hero);
+  const client = {
+    async request(path) {
+      paths.push(path);
+      if (path.startsWith("/items/pages?")) return [page];
+      if (path.startsWith("/items/page_sections?")) return [hero];
+      if (path === "/items/home_page") return { id: HOME_PAGE_ID, ...payload };
+      return {};
+    },
+  };
+
+  await migrateHomePage(client);
+  const pagesRequest = decodeURIComponent(paths.find((path) => path.startsWith("/items/pages?")));
+  assert.equal(pagesRequest.includes("og_title"), false);
+  assert.equal(pagesRequest.includes("og_description"), false);
+});
+
 test("rejects ambiguous or incomplete published hero content before writes", async () => {
   for (const sections of [[], [hero, { ...hero, id: "hero-2" }], [{ ...hero, image: null }]]) {
     let writes = 0;
