@@ -59,6 +59,33 @@ type RawPage = {
   seo_text: string | null;
 };
 
+type RawHomePage = {
+  id: string;
+  status: string;
+  source_page: FileRelation;
+  h1: string | null;
+  hero_title: string | null;
+  hero_text: string | null;
+  hero_image: FileRelation;
+  hero_image_alt: string | null;
+  hero_primary_button_text: string | null;
+  hero_primary_button_url: string | null;
+  hero_secondary_button_text: string | null;
+  hero_secondary_button_url: string | null;
+  hero_search_label: string | null;
+  hero_search_placeholder: string | null;
+  hero_search_button_text: string | null;
+  hero_bulk_prompt: string | null;
+  hero_bulk_link_text: string | null;
+  hero_bulk_link_url: string | null;
+  hero_excel_link_text: string | null;
+  hero_excel_link_url: string | null;
+  hero_photo_link_text: string | null;
+  hero_photo_link_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+};
+
 type RawSection = {
   id: string;
   section_type: string;
@@ -66,6 +93,7 @@ type RawSection = {
   subtitle: string | null;
   text: string | null;
   image: FileRelation;
+  image_alt: string | null;
   button_text: string | null;
   button_url: string | null;
   items: unknown;
@@ -175,6 +203,7 @@ const mapSection = (raw: RawSection): PageSection | null => {
     subtitle: raw.subtitle,
     text: raw.text,
     imageId: fileId(raw.image),
+    imageAlt: raw.image_alt,
     buttonText: raw.button_text,
     buttonUrl: raw.button_url,
     items: toItems(raw.items),
@@ -202,7 +231,7 @@ export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
     "filter[page][_eq]": page.id,
     "filter[is_visible][_eq]": "true",
     fields:
-      "id,section_type,title,subtitle,text,image,button_text,button_url,items,settings,sort_order,is_visible",
+      "id,section_type,title,subtitle,text,image,image_alt,button_text,button_url,items,settings,sort_order,is_visible",
     sort: "sort_order",
     limit: "-1",
   });
@@ -225,8 +254,90 @@ export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
   };
 }
 
-export function getHomePage(): Promise<ContentPage | null> {
-  return getPageBySlug("home");
+const requiredText = (value: string | null) => value?.trim() || null;
+
+export async function getHomePage(): Promise<ContentPage | null> {
+  const fields = [
+    "id", "status", "source_page", "h1", "hero_title", "hero_text",
+    "hero_image", "hero_image_alt", "hero_primary_button_text",
+    "hero_primary_button_url", "hero_secondary_button_text",
+    "hero_secondary_button_url", "hero_search_label", "hero_search_placeholder",
+    "hero_search_button_text", "hero_bulk_prompt", "hero_bulk_link_text",
+    "hero_bulk_link_url", "hero_excel_link_text", "hero_excel_link_url",
+    "hero_photo_link_text", "hero_photo_link_url", "seo_title", "seo_description",
+  ].join(",");
+  const raw = await directusRequest<RawHomePage>(
+    `/items/home_page?${queryString({ fields })}`,
+    { next: { revalidate: 300, tags: ["homepage"] } },
+  );
+  if (!raw || raw.status !== "published") return null;
+
+  const title = requiredText(raw.hero_title);
+  const text = requiredText(raw.hero_text);
+  const imageId = fileId(raw.hero_image);
+  const imageAlt = requiredText(raw.hero_image_alt);
+  const h1 = requiredText(raw.h1);
+  const sourcePageId = fileId(raw.source_page);
+  if (!title || !text || !imageId || !imageAlt || !h1 || !sourcePageId) {
+    throw new Error("Invalid homepage hero content");
+  }
+
+  const hero: PageSection = {
+    id: `${raw.id}:hero`,
+    type: "hero",
+    title,
+    subtitle: null,
+    text,
+    imageId,
+    imageAlt,
+    buttonText: raw.hero_primary_button_text,
+    buttonUrl: raw.hero_primary_button_url,
+    items: [],
+    settings: {
+      secondary_cta_text: raw.hero_secondary_button_text,
+      secondary_cta_url: raw.hero_secondary_button_url,
+      search_label: raw.hero_search_label,
+      search_placeholder: raw.hero_search_placeholder,
+      search_button_text: raw.hero_search_button_text,
+      bulk_prompt: raw.hero_bulk_prompt,
+      bulk_link_text: raw.hero_bulk_link_text,
+      bulk_link_url: raw.hero_bulk_link_url,
+      excel_link_text: raw.hero_excel_link_text,
+      excel_link_url: raw.hero_excel_link_url,
+      photo_link_text: raw.hero_photo_link_text,
+      photo_link_url: raw.hero_photo_link_url,
+    },
+    sortOrder: 0,
+  };
+  const sectionQuery = queryString({
+    "filter[status][_eq]": "published",
+    "filter[home_page][_eq]": raw.id,
+    "filter[is_visible][_eq]": "true",
+    fields:
+      "id,section_type,title,subtitle,text,image,image_alt,button_text,button_url,items,settings,sort_order,is_visible",
+    sort: "sort_order",
+    limit: "-1",
+  });
+  const rawSections = await directusRequest<RawSection[]>(
+    `/items/page_sections?${sectionQuery}`,
+    { next: { revalidate: 300, tags: ["homepage"] } },
+  );
+
+  return {
+    id: sourcePageId,
+    title: h1,
+    slug: "home",
+    h1,
+    seoTitle: raw.seo_title,
+    seoDescription: raw.seo_description,
+    seoText: null,
+    sections: [
+      hero,
+      ...rawSections
+        .map(mapSection)
+        .filter((section): section is PageSection => section !== null),
+    ],
+  };
 }
 
 export async function getFaqItems({

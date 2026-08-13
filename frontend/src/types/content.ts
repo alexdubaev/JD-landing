@@ -60,6 +60,7 @@ export type PageSection = {
   subtitle: string | null;
   text: string | null;
   imageId: string | null;
+  imageAlt?: string | null;
   buttonText: string | null;
   buttonUrl: string | null;
   items: unknown[];

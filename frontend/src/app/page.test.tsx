@@ -166,6 +166,49 @@ const faq: FaqItem[] = [
 ];
 
 describe("HomePageView", () => {
+  it("does not invent optional sections that are absent from Directus", () => {
+    render(
+      <HomePageView
+        articles={[]}
+        categories={[]}
+        contacts={[]}
+        faq={[]}
+        page={{ ...page, sections: [page.sections[0]] }}
+        products={[]}
+        supplies={[]}
+        settings={settings}
+      />,
+    );
+
+    expect(screen.queryByText("Категории продукции")).not.toBeInTheDocument();
+    expect(screen.queryByText("Избранные товары")).not.toBeInTheDocument();
+    expect(screen.queryByText("Вопросы и ответы")).not.toBeInTheDocument();
+  });
+
+  it("renders primary homepage sections in CMS sort order", () => {
+    const orderedSections: ContentPage["sections"] = [
+      page.sections[0],
+      { ...page.sections[1], id: "categories-late", sortOrder: 20, title: "Категории позже" },
+      { ...page.sections[1], id: "trust-early", type: "company_trust", sortOrder: 10, title: "О компании раньше" },
+    ];
+    const { container } = render(
+      <HomePageView
+        articles={[]}
+        categories={categories}
+        contacts={[]}
+        faq={[]}
+        page={{ ...page, sections: orderedSections }}
+        products={[]}
+        supplies={[]}
+        settings={settings}
+      />,
+    );
+
+    expect(container.textContent?.indexOf("О компании раньше")).toBeLessThan(
+      container.textContent?.indexOf("Категории позже") ?? -1,
+    );
+  });
+
   it("renders CMS sections with catalog data and accessible entry points", () => {
     render(
       <HomePageView

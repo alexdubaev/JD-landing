@@ -103,45 +103,92 @@ describe("content queries", () => {
     expect(url.searchParams.get("sort")).toBe("sort_order");
   });
 
-  it("maps only visible published homepage sections", async () => {
+  it("maps the editable homepage singleton and linked published sections", async () => {
     requestMock
+      .mockResolvedValueOnce({
+        id: "singleton-home",
+        status: "published",
+        source_page: "home",
+        h1: "Запчасти John Deere",
+        hero_title: "Редактируемый hero",
+        hero_text: "Текст из Directus",
+        hero_image: { id: "cms-hero-image" },
+        hero_image_alt: "Склад запчастей John Deere",
+        hero_primary_button_text: "Оставить заявку",
+        hero_primary_button_url: "#consultation",
+        hero_secondary_button_text: null,
+        hero_secondary_button_url: null,
+        hero_search_label: "Поиск по каталогу",
+        hero_search_placeholder: "Артикул или название",
+        hero_search_button_text: "Найти",
+        hero_bulk_prompt: "Несколько позиций?",
+        hero_bulk_link_text: "Вставить список",
+        hero_bulk_link_url: "/parts-request",
+        hero_excel_link_text: "Загрузить Excel",
+        hero_excel_link_url: "/parts-request?mode=excel",
+        hero_photo_link_text: "Отправить фото",
+        hero_photo_link_url: "/parts-request?mode=photo",
+        seo_title: "Каталог запчастей",
+        seo_description: "Описание",
+        canonical_url: "/",
+        og_title: null,
+        og_description: null,
+        og_image: null,
+        is_indexable: true,
+      })
       .mockResolvedValueOnce([
         {
-          id: "home",
-          title: "Главная",
-          slug: "home",
-          h1: "Запчасти John Deere",
-          seo_title: "Каталог",
-          seo_description: "Описание",
-          seo_text: "Полезный SEO-текст",
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: "hero",
-          section_type: "hero",
-          title: "Запчасти John Deere",
-          subtitle: "Подбор по артикулу",
-          text: "Проверим запрос",
-          image: { id: "hero-image" },
-          button_text: "В каталог",
-          button_url: "/catalog",
+          id: "categories",
+          section_type: "categories",
+          title: "Категории",
+          subtitle: null,
+          text: null,
+          image: null,
+          image_alt: null,
+          button_text: null,
+          button_url: null,
           items: [],
           settings: {},
-          sort_order: 1,
+          sort_order: 10,
           is_visible: true,
         },
       ]);
 
     const page = await getHomePage();
 
-    expect(page?.sections).toEqual([
-      expect.objectContaining({
-        type: "hero",
-        imageId: "hero-image",
-        buttonUrl: "/catalog",
-      }),
-    ]);
+    expect(requestMock.mock.calls[0][0]).toContain("/items/home_page?");
+    expect(page).toEqual(expect.objectContaining({
+      id: "home",
+      h1: "Запчасти John Deere",
+      seoTitle: "Каталог запчастей",
+    }));
+    expect(page?.sections[0]).toEqual(expect.objectContaining({
+      type: "hero",
+      title: "Редактируемый hero",
+      text: "Текст из Directus",
+      imageId: "cms-hero-image",
+      imageAlt: "Склад запчастей John Deere",
+    }));
+    expect(page?.sections[1]).toEqual(expect.objectContaining({ type: "categories" }));
+    expect(requestMock.mock.calls[0][1]).toEqual({
+      next: { revalidate: 300, tags: ["homepage"] },
+    });
+  });
+
+  it("rejects published homepage data without complete hero content", async () => {
+    requestMock.mockResolvedValueOnce({
+      id: "singleton-home",
+      status: "published",
+      source_page: "home",
+      h1: "Главная",
+      hero_title: "",
+      hero_text: "Описание",
+      hero_image: null,
+      hero_image_alt: "",
+    });
+
+    await expect(getHomePage()).rejects.toThrow("Invalid homepage hero content");
+    expect(requestMock).toHaveBeenCalledTimes(1);
   });
 
   it("loads FAQ items scoped to a page", async () => {
