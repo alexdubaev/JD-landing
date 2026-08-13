@@ -4,7 +4,6 @@ import {
   HomeContacts,
   HomeCta,
   HomeFaq,
-  HomeSeoText,
 } from "@/components/sections/HomeContentSections";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { Container } from "@/components/ui/Container";
@@ -76,13 +75,7 @@ export function ContentPageView({
                 </section>
               );
             case "seo_text":
-              return (
-                <HomeSeoText
-                  key={section.id}
-                  pageText={page.seoText}
-                  section={section}
-                />
-              );
+              return <ContentSection key={section.id} section={section} />;
             default:
               return <ContentSection key={section.id} section={section} />;
           }
