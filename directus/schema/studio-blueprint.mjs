@@ -27,7 +27,7 @@ const collections = {
   home_page: { label: "Главная страница", group: "group_site", icon: "home", sort: 1, hidden: false, singleton: true },
   pages: { label: "Страницы", group: "group_site", icon: "web", sort: 2, hidden: false, displayTemplate: "{{title}} · /{{slug}} · {{status}}" },
   navigation_items: { label: "Меню", group: "group_site", icon: "menu", sort: 3, hidden: false, displayTemplate: "{{label}} · {{location}}" },
-  products: { label: "Товары", group: "group_catalog", icon: "inventory_2", sort: 1, hidden: false, displayTemplate: "{{title}} · {{sku}} · {{availability_status}}" },
+  products: { label: "Товары", group: "group_catalog", icon: "inventory_2", sort: 1, hidden: false, displayTemplate: "{{title}} · {{sku}} · {{category.title}} · {{availability_status}}" },
   categories: { label: "Категории", group: "group_catalog", icon: "category", sort: 2, hidden: false, displayTemplate: "{{title}} · /{{slug}}" },
   articles: { label: "Статьи", group: "group_content", icon: "article", sort: 1, hidden: false, displayTemplate: "{{title}} · {{status}}" },
   faq_items: { label: "Вопросы и ответы", group: "group_content", icon: "quiz", sort: 2, hidden: false, displayTemplate: "{{question}} · {{status}}" },
@@ -128,6 +128,240 @@ const sectionItemRepeater = repeater("{{title}}", [
   { field: "url", name: "Ссылка", type: "string", meta: { interface: "input", width: "half" } },
 ]);
 
+const form = (groups, sections) => ({
+  groups,
+  fields: Object.fromEntries(
+    Object.entries(sections).flatMap(([groupName, fields]) =>
+      fields.map(([name, label, options = {}], index) => [
+        name,
+        input(label, groupName, index + 1, options),
+      ]),
+    ),
+  ),
+});
+
+const standardSystemFields = [
+  ["translations", "Переводы"],
+  ["created_at", "Создано", { width: "half" }],
+  ["updated_at", "Обновлено", { width: "half" }],
+  ["id", "Идентификатор"],
+];
+
+const transactionalSystemFields = standardSystemFields.filter(
+  ([name]) => name !== "translations",
+);
+
+const pagesForm = form(
+  {
+    group_main: group("Основное", 1, { interface: "group-detail" }),
+    group_content: group("Содержимое страницы", 2, { interface: "group-detail" }),
+    group_seo: group("SEO", 3, { closed: true }),
+    group_system: group("Служебное", 4, { closed: true }),
+  },
+  {
+    group_main: [
+      ["status", "Статус", { width: "half" }],
+      ["page_type", "Тип страницы", { width: "half" }],
+      ["title", "Название страницы"],
+      ["slug", "Адрес страницы", { note: "Часть URL без начального слеша." }],
+    ],
+    group_content: [
+      ["h1", "Заголовок H1"],
+      ["eyebrow", "Надзаголовок"],
+      ["intro", "Вводный текст"],
+      ["seo_text", "Основной текст"],
+    ],
+    group_seo: [
+      ["seo_title", "SEO-заголовок"],
+      ["seo_description", "SEO-описание"],
+      ["og_image", "Изображение Open Graph"],
+      ["canonical_url", "Канонический URL"],
+      ["is_indexable", "Разрешить индексацию", { width: "half" }],
+    ],
+    group_system: standardSystemFields,
+  },
+);
+
+const categoriesForm = form(
+  {
+    group_main: group("Основное", 1, { interface: "group-detail" }),
+    group_content: group("Описание и оформление", 2, { interface: "group-detail" }),
+    group_catalog: group("Каталог", 3),
+    group_seo: group("SEO", 4, { closed: true }),
+    group_system: group("Служебное", 5, { closed: true }),
+  },
+  {
+    group_main: [
+      ["status", "Статус", { width: "half" }],
+      ["sort_order", "Порядок", { width: "half" }],
+      ["title", "Название категории"],
+      ["slug", "Адрес категории"],
+      ["parent", "Родительская категория"],
+      ["show_on_homepage", "Показывать на главной", { width: "half" }],
+    ],
+    group_content: [
+      ["description", "Краткое описание"],
+      ["image", "Основное изображение"],
+      ["image_alt", "Alt-текст изображения"],
+      ["icon", "Компактная иконка"],
+      ["icon_alt", "Alt-текст иконки"],
+    ],
+    group_catalog: [
+      ["h1", "Заголовок H1"],
+      ["intro", "Вводный текст"],
+      ["selection_guide", "Как выбрать"],
+      ["internal_links", "Внутренние ссылки"],
+      ["faq", "Связанные вопросы"],
+    ],
+    group_seo: [
+      ["seo_title", "SEO-заголовок"],
+      ["seo_description", "SEO-описание"],
+      ["seo_text", "SEO-текст"],
+      ["og_image", "Изображение Open Graph"],
+      ["is_indexable", "Разрешить индексацию", { width: "half" }],
+      ["redirect_target", "Цель перенаправления"],
+    ],
+    group_system: standardSystemFields,
+  },
+);
+
+const articlesForm = form(
+  {
+    group_main: group("Публикация", 1, { interface: "group-detail" }),
+    group_content: group("Материал", 2, { interface: "group-detail" }),
+    group_relations: group("Связанные материалы", 3),
+    group_seo: group("SEO", 4, { closed: true }),
+    group_system: group("Служебное", 5, { closed: true }),
+  },
+  {
+    group_main: [
+      ["status", "Статус", { width: "half" }],
+      ["published_at", "Дата публикации", { width: "half" }],
+      ["title", "Название статьи"],
+      ["slug", "Адрес статьи"],
+      ["category_label", "Рубрика", { width: "half" }],
+      ["reading_time_minutes", "Время чтения, мин", { width: "half" }],
+      ["is_featured", "Рекомендуемая статья", { width: "half" }],
+      ["sort_order", "Порядок", { width: "half" }],
+    ],
+    group_content: [
+      ["excerpt", "Краткое описание"],
+      ["content", "Текст статьи"],
+      ["cover_image", "Обложка"],
+      ["image_alt", "Alt-текст обложки"],
+      ["author", "Автор", { width: "half" }],
+      ["reviewer", "Проверил", { width: "half" }],
+      ["sources", "Источники"],
+    ],
+    group_relations: [
+      ["related_categories", "Связанные категории"],
+      ["related_products", "Связанные товары"],
+    ],
+    group_seo: [
+      ["seo_title", "SEO-заголовок"],
+      ["seo_description", "SEO-описание"],
+      ["og_image", "Изображение Open Graph"],
+    ],
+    group_system: standardSystemFields,
+  },
+);
+
+const faqForm = form(
+  {
+    group_main: group("Вопрос и ответ", 1, { interface: "group-detail" }),
+    group_context: group("Где показывать", 2),
+    group_system: group("Служебное", 3, { closed: true }),
+  },
+  {
+    group_main: [
+      ["status", "Статус", { width: "half" }],
+      ["is_visible", "Показывать", { width: "half" }],
+      ["question", "Вопрос"],
+      ["answer", "Ответ"],
+      ["sort_order", "Порядок", { width: "half" }],
+    ],
+    group_context: [
+      ["page", "Страница"],
+      ["category", "Категория"],
+      ["product", "Товар"],
+    ],
+    group_system: standardSystemFields,
+  },
+);
+
+const leadsForm = form(
+  {
+    group_contact: group("Контакт", 1, { interface: "group-detail" }),
+    group_request: group("Запрос", 2, { interface: "group-detail" }),
+    group_attribution: group("Источник обращения", 3, { closed: true }),
+    group_workflow: group("Работа с заявкой", 4),
+    group_system: group("Служебное", 5, { closed: true }),
+  },
+  {
+    group_contact: [
+      ["name", "Имя"],
+      ["phone", "Телефон", { width: "half" }],
+      ["email", "Email", { width: "half" }],
+    ],
+    group_request: [
+      ["message", "Сообщение"],
+      ["product", "Товар"],
+      ["category", "Категория"],
+      ["lead_form", "Форма"],
+      ["request_items", "Позиции запроса"],
+      ["attachments", "Вложения"],
+    ],
+    group_attribution: [
+      ["page_url", "Страница отправки"],
+      ["utm_source", "UTM source", { width: "half" }],
+      ["utm_medium", "UTM medium", { width: "half" }],
+      ["utm_campaign", "UTM campaign", { width: "half" }],
+      ["utm_content", "UTM content", { width: "half" }],
+      ["utm_term", "UTM term", { width: "half" }],
+    ],
+    group_workflow: [
+      ["status", "Статус", { width: "half" }],
+      ["manager_comment", "Комментарий менеджера"],
+    ],
+    group_system: transactionalSystemFields,
+  },
+);
+
+const ordersForm = form(
+  {
+    group_contact: group("Покупатель", 1, { interface: "group-detail" }),
+    group_order: group("Заказ", 2, { interface: "group-detail" }),
+    group_attribution: group("Источник заказа", 3, { closed: true }),
+    group_workflow: group("Обработка заказа", 4),
+    group_system: group("Служебное", 5, { closed: true }),
+  },
+  {
+    group_contact: [
+      ["customer_name", "Имя покупателя"],
+      ["phone", "Телефон", { width: "half" }],
+      ["email", "Email", { width: "half" }],
+    ],
+    group_order: [
+      ["comment", "Комментарий"],
+      ["total", "Сумма", { width: "half" }],
+      ["currency", "Валюта", { width: "half" }],
+    ],
+    group_attribution: [
+      ["page_url", "Страница оформления"],
+      ["utm_source", "UTM source", { width: "half" }],
+      ["utm_medium", "UTM medium", { width: "half" }],
+      ["utm_campaign", "UTM campaign", { width: "half" }],
+      ["utm_content", "UTM content", { width: "half" }],
+      ["utm_term", "UTM term", { width: "half" }],
+    ],
+    group_workflow: [
+      ["status", "Статус", { width: "half" }],
+      ["manager_comment", "Комментарий менеджера"],
+    ],
+    group_system: transactionalSystemFields,
+  },
+);
+
 export const studioBlueprint = {
   defaultLanguage: "ru-RU",
   folders: {
@@ -140,21 +374,38 @@ export const studioBlueprint = {
   collections,
   fields: {
     home_page: { groups: homepageGroups, fields: homepageFields },
+    pages: pagesForm,
+    categories: categoriesForm,
+    articles: articlesForm,
+    faq_items: faqForm,
+    leads: leadsForm,
+    orders: ordersForm,
     products: {
       groups: {
         group_main: group("Основное", 1, { interface: "group-detail" }),
         group_media: group("Изображения и документы", 2),
         group_specs: group("Характеристики", 3),
         group_sales: group("Цена и наличие", 4),
-        group_seo: group("SEO", 5, { closed: true }),
-        group_system: group("Служебное", 6, { closed: true }),
+        group_visibility: group("Публикация в каталоге", 5),
+        group_seo: group("SEO", 6, { closed: true }),
+        group_source: group("Источник и проверка", 7, { closed: true }),
+        group_system: group("Служебное", 8, { closed: true }),
       },
       fields: {
-        title: input("Название товара", "group_main", 1),
-        sku: input("Артикул", "group_main", 2, { width: "half" }),
-        category: input("Категория", "group_main", 3, { width: "half" }),
-        short_description: input("Краткое описание", "group_main", 4),
-        full_description: input("Полное описание", "group_main", 5),
+        status: input("Статус", "group_main", 1, { width: "half" }),
+        slug: input("Адрес товара", "group_main", 2),
+        title: input("Название товара", "group_main", 3),
+        sku: input("Артикул", "group_main", 4, { width: "half" }),
+        category: input("Категория", "group_main", 5, { width: "half" }),
+        brand: input("Бренд", "group_main", 6, { width: "half" }),
+        mpn: input("MPN / номер производителя", "group_main", 7, { width: "half" }),
+        gtin: input("GTIN", "group_main", 8, { width: "half" }),
+        part_type: input("Тип детали", "group_main", 9, { width: "half" }),
+        short_description: input("Краткое описание", "group_main", 10),
+        full_description: input("Полное описание", "group_main", 11),
+        cta_text: input("Текст кнопки заявки", "group_main", 12),
+        related_products: input("Связанные товары", "group_main", 13),
+        lead_form: input("Форма заявки", "group_main", 14),
         main_image: input("Основное изображение", "group_media", 1, { interface: "file-image" }),
         image_alt: input("Alt-текст основного изображения", "group_media", 2),
         gallery: input("Галерея", "group_media", 3, galleryRepeater),
@@ -164,10 +415,21 @@ export const studioBlueprint = {
         currency: input("Валюта", "group_sales", 2, { width: "half" }),
         price_status: input("Статус цены", "group_sales", 3, { width: "half" }),
         availability_status: input("Наличие", "group_sales", 4, { width: "half" }),
+        delivery_status: input("Условия поставки", "group_sales", 5),
+        sort_order: input("Порядок", "group_visibility", 1, { width: "half" }),
+        popularity_score: input("Популярность", "group_visibility", 2, { width: "half" }),
+        is_featured: input("Рекомендуемый товар", "group_visibility", 3, { width: "half" }),
+        show_on_homepage: input("Показывать на главной", "group_visibility", 4, { width: "half" }),
         seo_title: input("SEO-заголовок", "group_seo", 1),
         seo_description: input("SEO-описание", "group_seo", 2),
         seo_text: input("SEO-текст", "group_seo", 3),
         og_image: input("Изображение Open Graph", "group_seo", 4, { interface: "file-image" }),
+        seo_quality_status: input("Статус SEO-проверки", "group_seo", 5, { width: "half" }),
+        is_indexable: input("Разрешить индексацию", "group_seo", 6, { width: "half" }),
+        source_name: input("Название источника", "group_source", 1),
+        source_url: input("Ссылка на источник", "group_source", 2),
+        verified_at: input("Проверено", "group_source", 3, { width: "half" }),
+        reviewed_by: input("Проверил", "group_source", 4, { width: "half" }),
         id: input("Идентификатор", "group_system", 1, { hidden: true, readonly: true }),
         translations: input("Переводы", "group_system", 2, { hidden: true }),
         created_at: input("Создано", "group_system", 3, { width: "half", readonly: true }),
@@ -179,29 +441,51 @@ export const studioBlueprint = {
         group_company: group("Компания", 1, { interface: "group-detail" }),
         group_contacts: group("Контакты", 2, { interface: "group-detail" }),
         group_brand: group("Оформление", 3),
-        group_footer: group("Подвал и документы", 4),
-        group_seo: group("SEO по умолчанию", 5, { closed: true }),
-        group_analytics: group("Аналитика", 6, { closed: true }),
-        group_system: group("Служебное", 7, { closed: true }),
+        group_cta: group("Основное действие", 4),
+        group_legal: group("Реквизиты", 5, { closed: true }),
+        group_footer: group("Подвал и документы", 6),
+        group_seo: group("SEO по умолчанию", 7, { closed: true }),
+        group_analytics: group("Аналитика", 8, { closed: true }),
+        group_system: group("Служебное", 9, { closed: true }),
       },
       fields: {
         company_name: input("Название компании", "group_company", 1),
         legal_name: input("Юридическое название", "group_company", 2),
+        company_image: input("Изображение компании", "group_company", 3),
         phone: input("Телефон", "group_contacts", 1, { width: "half" }),
         email: input("Email", "group_contacts", 2, { width: "half" }),
         address: input("Адрес", "group_contacts", 3),
-        working_hours: input("Часы работы", "group_contacts", 4),
-        messengers: input("Мессенджеры", "group_contacts", 5, messengerRepeater),
+        city: input("Город", "group_contacts", 4, { width: "half" }),
+        working_hours: input("Часы работы", "group_contacts", 5, { width: "half" }),
+        delivery_region: input("Регион поставки", "group_contacts", 6),
+        messengers: input("Мессенджеры", "group_contacts", 7, messengerRepeater),
+        social_links: input("Социальные сети", "group_contacts", 8),
         logo: input("Логотип", "group_brand", 1, { interface: "file-image" }),
         favicon: input("Favicon", "group_brand", 2, { interface: "file-image" }),
+        primary_color: input("Основной цвет", "group_brand", 3, { width: "half" }),
+        accent_color: input("Акцентный цвет", "group_brand", 4, { width: "half" }),
+        primary_cta_text: input("Текст основной кнопки", "group_cta", 1, { width: "half" }),
+        primary_cta_url: input("Ссылка основной кнопки", "group_cta", 2, { width: "half" }),
+        inn: input("ИНН", "group_legal", 1, { width: "half" }),
+        kpp: input("КПП", "group_legal", 2, { width: "half" }),
+        ogrn: input("ОГРН", "group_legal", 3, { width: "half" }),
+        legal_address: input("Юридический адрес", "group_legal", 4),
+        vat_info: input("Информация о НДС", "group_legal", 5),
         footer_text: input("Текст подвала", "group_footer", 1),
         footer_disclaimer: input("Примечание в подвале", "group_footer", 2),
+        requisites_url: input("Ссылка на реквизиты", "group_footer", 3),
+        documents_url: input("Ссылка на документы", "group_footer", 4),
         seo_title: input("SEO-заголовок по умолчанию", "group_seo", 1),
         seo_description: input("SEO-описание по умолчанию", "group_seo", 2),
+        og_title: input("Заголовок Open Graph", "group_seo", 3),
+        og_description: input("Описание Open Graph", "group_seo", 4),
+        default_og_image: input("Изображение Open Graph", "group_seo", 5),
         yandex_metrica_id: input("ID Яндекс Метрики", "group_analytics", 1, { width: "half" }),
         gtm_id: input("ID Google Tag Manager", "group_analytics", 2, { width: "half" }),
         id: input("Идентификатор", "group_system", 1, { hidden: true, readonly: true }),
         translations: input("Переводы", "group_system", 2, { hidden: true }),
+        created_at: input("Создано", "group_system", 3, { width: "half", readonly: true }),
+        updated_at: input("Обновлено", "group_system", 4, { width: "half", readonly: true }),
       },
     },
     page_sections: {

@@ -36,7 +36,7 @@ const blueprint = {
   },
 };
 
-test("applies Russian collection, field, locale, and user metadata", async () => {
+test("applies Russian collection, field, locale, and user metadata only when explicitly enabled", async () => {
   const requests = [];
   const client = {
     async request(path, options = {}) {
@@ -56,7 +56,9 @@ test("applies Russian collection, field, locale, and user metadata", async () =>
     },
   };
 
-  const actions = await applyStudioBlueprint(client, blueprint);
+  const actions = await applyStudioBlueprint(client, blueprint, {
+    includeLocaleChanges: true,
+  });
 
   assert.ok(actions.includes("update collection home_page"));
   assert.ok(actions.includes("create group home_page.group_hero"));
@@ -65,6 +67,99 @@ test("applies Russian collection, field, locale, and user metadata", async () =>
   assert.ok(actions.includes("set user editor language ru-RU"));
   assert.ok(requests.some(({ path, method }) => path === "/settings" && method === "PATCH"));
   assert.ok(requests.some(({ path, method }) => path === "/users/editor" && method === "PATCH"));
+});
+
+test("default mode is isolated from settings, users, access, and item data", async () => {
+  const forbiddenPrefixes = [
+    "/settings",
+    "/users",
+    "/roles",
+    "/permissions",
+    "/policies",
+    "/items",
+  ];
+  const client = {
+    async request(path) {
+      assert.equal(
+        forbiddenPrefixes.some((prefix) => path.startsWith(prefix)),
+        false,
+        `forbidden endpoint ${path}`,
+      );
+      if (path === "/collections") {
+        return [
+          { collection: "group_site", meta: {} },
+          { collection: "home_page", meta: {} },
+        ];
+      }
+      if (path === "/fields/home_page") {
+        return [{ field: "hero_title", meta: {} }];
+      }
+      throw new Error(`unexpected endpoint ${path}`);
+    },
+  };
+
+  await assert.doesNotReject(() =>
+    applyStudioBlueprint(client, blueprint, { dryRun: true }),
+  );
+});
+
+test("field updates contain only the Task 2 presentation allowlist", async () => {
+  const writes = [];
+  const scopedBlueprint = structuredClone(blueprint);
+  Object.assign(scopedBlueprint.fields.home_page.fields.hero_title, {
+    interface: "input-rich-text-html",
+    options: { toolbar: ["bold"] },
+    hidden: true,
+    readonly: true,
+  });
+  const client = {
+    async request(path, options = {}) {
+      if (options.method) {
+        writes.push({ path, body: JSON.parse(options.body) });
+        return {};
+      }
+      if (path === "/collections") {
+        return [
+          { collection: "group_site", meta: {} },
+          { collection: "home_page", meta: {} },
+        ];
+      }
+      if (path === "/fields/home_page") {
+        return [
+          {
+            field: "group_hero",
+            meta: {
+              translations: [{ language: "ru-RU", translation: "Первый экран" }],
+              interface: "group-detail",
+              sort: 1,
+              width: "full",
+              special: ["alias", "no-data", "group"],
+            },
+          },
+          { field: "hero_title", meta: {} },
+        ];
+      }
+      throw new Error(`unexpected endpoint ${path}`);
+    },
+  };
+
+  await applyStudioBlueprint(client, scopedBlueprint);
+  const collectionUpdate = writes.find(
+    ({ path }) => path === "/collections/home_page",
+  );
+  assert.deepEqual(Object.keys(collectionUpdate.body.meta).sort(), [
+    "group",
+    "sort",
+    "translations",
+  ]);
+  const update = writes.find(({ path }) => path === "/fields/home_page/hero_title");
+  assert.deepEqual(Object.keys(update.body.meta).sort(), [
+    "group",
+    "note",
+    "sort",
+    "translations",
+    "width",
+  ]);
 });
 
 test("is idempotent when Studio metadata already matches", async () => {
@@ -121,7 +216,9 @@ test("is idempotent when Studio metadata already matches", async () => {
   };
 
   await assert.doesNotReject(async () => {
-    const actions = await applyStudioBlueprint(client, blueprint);
+    const actions = await applyStudioBlueprint(client, blueprint, {
+      includeLocaleChanges: true,
+    });
     assert.deepEqual(actions, []);
   });
 });

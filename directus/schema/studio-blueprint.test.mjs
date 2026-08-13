@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { schemaBlueprint } from "./blueprint.mjs";
 import { studioBlueprint } from "./studio-blueprint.mjs";
 
 test("organizes visible collections into five Russian task folders", () => {
@@ -66,10 +67,57 @@ test("defines friendly homepage groups and repeaters", () => {
 test("uses informative list display templates", () => {
   assert.equal(
     studioBlueprint.collections.products.displayTemplate,
-    "{{title}} · {{sku}} · {{availability_status}}",
+    "{{title}} · {{sku}} · {{category.title}} · {{availability_status}}",
   );
   assert.equal(
     studioBlueprint.collections.leads.displayTemplate,
     "{{name}} · {{phone}} · {{status}} · {{created_at}}",
   );
+});
+
+test("defines task-oriented forms for every owner workflow", () => {
+  const requiredForms = [
+    "home_page",
+    "pages",
+    "products",
+    "categories",
+    "articles",
+    "faq_items",
+    "leads",
+    "orders",
+    "site_settings",
+  ];
+
+  for (const collection of requiredForms) {
+    const layout = studioBlueprint.fields[collection];
+    const schemaCollection = schemaBlueprint.collections.find(
+      ({ name }) => name === collection,
+    );
+    assert.ok(layout, `missing ${collection} form`);
+    assert.ok(Object.keys(layout.groups).length >= 2, `${collection} groups`);
+    assert.ok(Object.keys(layout.fields).length >= 3, `${collection} fields`);
+    assert.deepEqual(
+      Object.keys(layout.fields).sort(),
+      schemaCollection.fields.map(({ name }) => name).sort(),
+      `${collection} form covers its complete schema`,
+    );
+    for (const [field, config] of Object.entries(layout.fields)) {
+      assert.ok(config.group, `${collection}.${field} is ungrouped`);
+      assert.ok(layout.groups[config.group], `${collection}.${field} group exists`);
+      assert.ok(config.width, `${collection}.${field} width`);
+    }
+  }
+
+  assert.equal(studioBlueprint.fields.pages.fields.slug.group, "group_main");
+  assert.equal(studioBlueprint.fields.categories.fields.slug.group, "group_main");
+  assert.equal(studioBlueprint.fields.articles.fields.slug.group, "group_main");
+  assert.equal(studioBlueprint.fields.leads.fields.manager_comment.group, "group_workflow");
+  assert.equal(studioBlueprint.fields.orders.fields.manager_comment.group, "group_workflow");
+});
+
+test("keeps legacy product JSON interfaces until the dual-read migration", () => {
+  const productFields = studioBlueprint.fields.products.fields;
+  assert.equal(productFields.gallery.interface, "list");
+  assert.equal(productFields.specifications.interface, "list");
+  assert.equal(productFields.documents.interface, "list");
 });

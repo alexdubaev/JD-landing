@@ -11,10 +11,7 @@ const sameConfiguredValues = (current = {}, desired = {}) =>
 const collectionMeta = (config) => ({
   translations: translations(config.label),
   ...(config.group !== undefined ? { group: config.group } : {}),
-  ...(config.icon !== undefined ? { icon: config.icon } : {}),
   ...(config.sort !== undefined ? { sort: config.sort } : {}),
-  ...(config.hidden !== undefined ? { hidden: config.hidden } : {}),
-  ...(config.singleton !== undefined ? { singleton: config.singleton } : {}),
   ...(config.displayTemplate !== undefined
     ? { display_template: config.displayTemplate }
     : {}),
@@ -23,8 +20,6 @@ const collectionMeta = (config) => ({
 
 const fieldMeta = (config) => ({
   translations: translations(config.label),
-  ...(config.interface !== undefined ? { interface: config.interface } : {}),
-  ...(config.options !== undefined ? { options: config.options } : {}),
   ...(config.display !== undefined ? { display: config.display } : {}),
   ...(config.displayOptions !== undefined
     ? { display_options: config.displayOptions }
@@ -33,8 +28,6 @@ const fieldMeta = (config) => ({
   ...(config.width !== undefined ? { width: config.width } : {}),
   ...(config.sort !== undefined ? { sort: config.sort } : {}),
   ...(config.group !== undefined ? { group: config.group } : {}),
-  ...(config.hidden !== undefined ? { hidden: config.hidden } : {}),
-  ...(config.readonly !== undefined ? { readonly: config.readonly } : {}),
 });
 
 const groupFieldPayload = (field, config) => ({
@@ -43,6 +36,8 @@ const groupFieldPayload = (field, config) => ({
   schema: null,
   meta: {
     ...fieldMeta({ ...config, width: "full" }),
+    ...(config.interface !== undefined ? { interface: config.interface } : {}),
+    ...(config.options !== undefined ? { options: config.options } : {}),
     special: ["alias", "no-data", "group"],
   },
 });
@@ -50,7 +45,7 @@ const groupFieldPayload = (field, config) => ({
 export async function applyStudioBlueprint(
   client,
   blueprint = studioBlueprint,
-  { dryRun = false } = {},
+  { dryRun = false, includeLocaleChanges = false } = {},
 ) {
   const actions = [];
   const collectionRows = await client.request("/collections");
@@ -128,31 +123,33 @@ export async function applyStudioBlueprint(
     }
   }
 
-  const settings = await client.request("/settings");
-  if (settings.default_language !== blueprint.defaultLanguage) {
-    actions.push(`set default language ${blueprint.defaultLanguage}`);
-    if (!dryRun) {
-      await client.request("/settings", {
-        method: "PATCH",
-        body: JSON.stringify({ default_language: blueprint.defaultLanguage }),
-      });
+  if (includeLocaleChanges) {
+    const settings = await client.request("/settings");
+    if (settings.default_language !== blueprint.defaultLanguage) {
+      actions.push(`set default language ${blueprint.defaultLanguage}`);
+      if (!dryRun) {
+        await client.request("/settings", {
+          method: "PATCH",
+          body: JSON.stringify({ default_language: blueprint.defaultLanguage }),
+        });
+      }
     }
-  }
 
-  const userQuery = new URLSearchParams({
-    "filter[status][_neq]": "archived",
-    fields: "id,language",
-    limit: "-1",
-  });
-  const users = await client.request(`/users?${userQuery.toString()}`);
-  for (const user of users) {
-    if (user.language === blueprint.defaultLanguage) continue;
-    actions.push(`set user ${user.id} language ${blueprint.defaultLanguage}`);
-    if (!dryRun) {
-      await client.request(`/users/${encodeURIComponent(user.id)}`, {
-        method: "PATCH",
-        body: JSON.stringify({ language: blueprint.defaultLanguage }),
-      });
+    const userQuery = new URLSearchParams({
+      "filter[status][_neq]": "archived",
+      fields: "id,language",
+      limit: "-1",
+    });
+    const users = await client.request(`/users?${userQuery.toString()}`);
+    for (const user of users) {
+      if (user.language === blueprint.defaultLanguage) continue;
+      actions.push(`set user ${user.id} language ${blueprint.defaultLanguage}`);
+      if (!dryRun) {
+        await client.request(`/users/${encodeURIComponent(user.id)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ language: blueprint.defaultLanguage }),
+        });
+      }
     }
   }
 

@@ -8,6 +8,7 @@
     "schema:apply": "node schema/apply-schema.mjs",
     "schema:translations": "node schema/apply-studio.mjs",
     "schema:studio": "node schema/apply-studio.mjs",
+    "studio:workspace": "node studio/apply-workspace.mjs",
     "schema:snapshot": "node schema/snapshot-schema.mjs",
     "access:apply": "node access/apply-access.mjs",
     "products:import": "node import/products.mjs",
