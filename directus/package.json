@@ -15,7 +15,8 @@
     "seo:generate:apply": "node import/generate-seo.mjs --apply",
     "assets:sync": "node import/sync-editorial-assets.mjs",
     "categories:merge": "node scripts/merge-categories.mjs",
-    "migrate:home-page": "node migrations/migrate-home-page.mjs"
+    "migrate:home-page": "node migrations/migrate-home-page.mjs",
+    "flows:revalidation": "node flows/apply-revalidation-flow.mjs"
   },
   "engines": {
     "node": ">=20"

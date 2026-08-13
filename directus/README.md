@@ -40,7 +40,13 @@ Files:
 The public Directus policy is intentionally closed. Only a server-side Next.js
 client may use the `Frontend API` role. See
 [`../DIRECTUS_COLLECTIONS_PLAN.md`](../DIRECTUS_COLLECTIONS_PLAN.md) for the
-license constraints and security boundaries.
+collection model, license constraints, and security boundaries.
+
+After schema, Studio metadata, and access are applied, provision the managed
+cache invalidation flow with `npm run flows:revalidation`. Set
+`NEXT_REVALIDATE_URL` and `REVALIDATE_SECRET` first. Use `-- --dry-run` to
+inspect drift without API writes. The secret must match the server-only
+`REVALIDATE_SECRET` used by Next.js.
 
 ## Russian Data Studio labels
 

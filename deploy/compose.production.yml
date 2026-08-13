@@ -41,6 +41,8 @@ services:
       WEBSOCKETS_ENABLED: "true"
       TELEMETRY: "false"
       MAX_PAYLOAD_SIZE: 50mb
+      NEXT_REVALIDATE_URL: http://frontend:3000/api/revalidate
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
     volumes:
       - directus_uploads:/directus/uploads
       - directus_extensions:/directus/extensions

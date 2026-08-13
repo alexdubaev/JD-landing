@@ -18,6 +18,8 @@ const collectionTags = {
   "recent-supplies": ["recent-supplies", "homepage"],
   recent_supplies: ["recent-supplies", "homepage"],
   orders: ["orders"],
+  "home-page": ["homepage"],
+  home_page: ["homepage"],
   homepage: ["homepage"],
   sitemap: ["sitemap"],
 } as const;
@@ -41,6 +43,8 @@ const collectionIndexNowPaths = {
   "recent-supplies": ["/"],
   recent_supplies: ["/"],
   orders: [],
+  "home-page": ["/"],
+  home_page: ["/"],
   homepage: ["/"],
   sitemap: ["/"],
 } as const;

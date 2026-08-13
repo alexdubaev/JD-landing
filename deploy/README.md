@@ -46,6 +46,10 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=<Cloudflare Turnstile site key>
 TURNSTILE_SECRET_KEY=<Cloudflare Turnstile secret key>
 ```
 
+The same `REVALIDATE_SECRET` is injected into Directus and the frontend.
+Directus uses the private Docker URL `http://frontend:3000/api/revalidate` in
+the managed flow, so CMS saves invalidate the Next.js cache immediately.
+
 Configure both Turnstile variables together. The public site key is embedded at
 image build time; the secret stays server-side and is used only by `/api/leads`.
 

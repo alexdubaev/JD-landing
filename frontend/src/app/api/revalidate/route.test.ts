@@ -66,6 +66,20 @@ describe("POST /api/revalidate", () => {
     expect(revalidateTag).toHaveBeenCalledWith("sitemap", { expire: 0 });
   });
 
+  it("revalidates the homepage singleton after an editor saves it", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("https://site.test/api/revalidate", {
+        method: "POST",
+        headers: { "x-revalidate-secret": "test-secret" },
+        body: JSON.stringify({ collection: "home_page" }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(revalidateTag).toHaveBeenCalledWith("homepage", { expire: 0 });
+  });
+
   it("revalidates the shared header after a navigation change", async () => {
     const { POST } = await import("./route");
     const response = await POST(
