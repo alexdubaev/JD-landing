@@ -14,6 +14,7 @@ const remove = (collection, options) => permission(collection, "delete", options
 
 const websiteCollections = [
   "site_settings",
+  "home_page",
   "pages",
   "page_sections",
   "navigation_items",
@@ -39,7 +40,7 @@ const websiteCollections = [
 ];
 
 const contentCollections = websiteCollections.filter(
-  (collection) => collection !== "site_settings",
+  (collection) => !["site_settings", "home_page"].includes(collection),
 );
 
 const publicAssetFolderId = "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a";
@@ -71,6 +72,8 @@ const frontendPermissions = [
 const contentPermissions = [
   read("site_settings"),
   update("site_settings"),
+  read("home_page"),
+  update("home_page"),
   ...contentCollections.flatMap((collection) => [
     read(collection),
     create(collection),
@@ -90,6 +93,7 @@ const contentPermissions = [
 ];
 
 const seoCollections = [
+  "home_page",
   "pages",
   "page_sections",
   "categories",
@@ -130,12 +134,14 @@ export const accessBlueprint = {
     {
       key: "frontend_api",
       role: {
-        name: "Frontend API",
+        name: "API фронтенда",
+        existingNames: ["Frontend API"],
         icon: "dns",
         description:
-          "Server-only Next.js access. Publication filters and lead validation are enforced by the frontend.",
+          "Серверный доступ Next.js. Не используется в браузере.",
       },
-      policyName: "Frontend API",
+      policyName: "API фронтенда",
+      existingPolicyNames: ["Frontend API"],
       appAccess: false,
       adminAccess: false,
       permissions: frontendPermissions,
@@ -143,12 +149,14 @@ export const accessBlueprint = {
     {
       key: "content_manager",
       role: {
-        name: "Content Manager",
+        name: "Контент-менеджер",
+        existingNames: ["Content Manager"],
         icon: "edit_note",
         description:
-          "Manages site content and catalog without delete access. Directus 12 Core grants all fields for each allowed action.",
+          "Управляет сайтом, каталогом и контентом без права удаления защищённых данных.",
       },
-      policyName: "Content Manager",
+      policyName: "Контент-менеджер",
+      existingPolicyNames: ["Content Manager"],
       appAccess: true,
       adminAccess: false,
       permissions: contentPermissions,
@@ -156,12 +164,14 @@ export const accessBlueprint = {
     {
       key: "sales_manager",
       role: {
-        name: "Sales Manager",
+        name: "Менеджер продаж",
+        existingNames: ["Sales Manager"],
         icon: "support_agent",
         description:
-          "Reads and updates leads without delete access. Directus 12 Core cannot restrict updates to individual fields.",
+          "Работает с заявками и заказами без права удаления.",
       },
-      policyName: "Sales Manager",
+      policyName: "Менеджер продаж",
+      existingPolicyNames: ["Sales Manager"],
       appAccess: true,
       adminAccess: false,
       permissions: [
@@ -178,12 +188,14 @@ export const accessBlueprint = {
     {
       key: "seo_manager",
       role: {
-        name: "SEO Manager",
+        name: "SEO-менеджер",
+        existingNames: ["SEO Manager"],
         icon: "manage_search",
         description:
-          "Manages SEO-bearing collections. Directus 12 Core cannot restrict updates to SEO fields only.",
+          "Управляет SEO-полями страниц, категорий, товаров и статей.",
       },
-      policyName: "SEO Manager",
+      policyName: "SEO-менеджер",
+      existingPolicyNames: ["SEO Manager"],
       appAccess: true,
       adminAccess: false,
       permissions: seoPermissions,

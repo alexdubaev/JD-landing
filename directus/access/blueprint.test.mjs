@@ -14,11 +14,16 @@ test("defines the required non-admin roles and policies", () => {
   );
 
   assert.deepEqual(roles, new Set([
-    "Frontend API",
-    "Content Manager",
-    "Sales Manager",
-    "SEO Manager",
+    "API фронтенда",
+    "Контент-менеджер",
+    "Менеджер продаж",
+    "SEO-менеджер",
   ]));
+
+  const contentManager = accessBlueprint.policies.find(
+    ({ key }) => key === "content_manager",
+  );
+  assert.deepEqual(contentManager.role.existingNames, ["Content Manager"]);
 
   for (const policy of accessBlueprint.policies) {
     assert.equal(policy.adminAccess, false);
@@ -44,6 +49,7 @@ test("frontend API confines lead attachment file writes to its private folder", 
   assert.ok(keys.has("products:read"));
   assert.ok(keys.has("categories:read"));
   assert.ok(keys.has("site_settings:read"));
+  assert.ok(keys.has("home_page:read"));
   assert.ok(keys.has("directus_files:read"));
   assert.ok(keys.has("leads:create"));
   assert.ok(keys.has("directus_files:create"));
@@ -76,6 +82,9 @@ test("content managers cannot delete protected content", () => {
 
   assert.ok(policy.permissions.some(
     ({ collection, action }) => collection === "products" && action === "create",
+  ));
+  assert.ok(policy.permissions.some(
+    ({ collection, action }) => collection === "home_page" && action === "update",
   ));
   assert.ok(!policy.permissions.some(({ action }) => action === "delete"));
   assert.ok(!policy.permissions.some(({ collection }) => collection === "leads"));
@@ -124,6 +133,7 @@ test("SEO managers can update SEO-bearing collections but not leads", () => {
   const keys = new Set(policy.permissions.map(permissionKey));
 
   assert.ok(keys.has("pages:update"));
+  assert.ok(keys.has("home_page:update"));
   assert.ok(keys.has("categories:update"));
   assert.ok(keys.has("products:update"));
   assert.ok(keys.has("faq_items:update"));
