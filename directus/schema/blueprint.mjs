@@ -43,8 +43,13 @@ const translations = () =>
   });
 
 export const schemaBlueprint = {
-  version: 2,
+  version: 3,
   collections: [
+    { name: "group_site", folder: true, icon: "web", sort: 1, fields: [] },
+    { name: "group_catalog", folder: true, icon: "inventory_2", sort: 2, fields: [] },
+    { name: "group_content", folder: true, icon: "article", sort: 3, fields: [] },
+    { name: "group_sales", folder: true, icon: "request_quote", sort: 4, fields: [] },
+    { name: "group_settings", folder: true, icon: "settings", sort: 5, fields: [] },
     {
       name: "site_settings",
       icon: "settings",
@@ -97,6 +102,49 @@ export const schemaBlueprint = {
       ],
     },
     {
+      name: "home_page",
+      icon: "home",
+      singleton: true,
+      fields: contentFields(
+        field("source_page", "uuid", {
+          required: true,
+          relatedCollection: "pages",
+          index: true,
+        }),
+        field("h1", "string", { required: true }),
+        field("hero_title", "string", { required: true }),
+        field("hero_text", "text", { required: true }),
+        field("hero_image", "uuid", {
+          required: true,
+          relatedCollection: "directus_files",
+          interface: "file-image",
+        }),
+        field("hero_image_alt", "string", { required: true }),
+        field("hero_primary_button_text", "string"),
+        field("hero_primary_button_url", "string"),
+        field("hero_secondary_button_text", "string"),
+        field("hero_secondary_button_url", "string"),
+        field("hero_search_label", "string", { required: true }),
+        field("hero_search_placeholder", "string", { required: true }),
+        field("hero_search_button_text", "string", { required: true }),
+        field("hero_bulk_prompt", "string", { required: true }),
+        field("hero_bulk_link_text", "string", { required: true }),
+        field("hero_bulk_link_url", "string", { required: true }),
+        field("hero_excel_link_text", "string", { required: true }),
+        field("hero_excel_link_url", "string", { required: true }),
+        field("hero_photo_link_text", "string", { required: true }),
+        field("hero_photo_link_url", "string", { required: true }),
+        field("seo_title", "string"),
+        field("seo_description", "text"),
+        field("canonical_url", "text"),
+        field("og_title", "string"),
+        field("og_description", "text"),
+        field("og_image", "uuid", { relatedCollection: "directus_files" }),
+        field("is_indexable", "boolean", { default: true }),
+        translations(),
+      ),
+    },
+    {
       name: "pages",
       icon: "web",
       fields: contentFields(
@@ -133,6 +181,11 @@ export const schemaBlueprint = {
       name: "page_sections",
       icon: "view_quilt",
       fields: contentFields(
+        field("home_page", "uuid", {
+          relatedCollection: "home_page",
+          oneField: "sections",
+          index: true,
+        }),
         field("page", "uuid", {
           required: true,
           relatedCollection: "pages",
@@ -168,6 +221,7 @@ export const schemaBlueprint = {
           relatedCollection: "directus_files",
           interface: "file-image",
         }),
+        field("image_alt", "string"),
         field("button_text", "string"),
         field("button_url", "string"),
         field("items", "json"),

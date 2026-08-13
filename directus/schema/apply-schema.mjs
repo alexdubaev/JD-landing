@@ -79,6 +79,19 @@ export function buildFieldPayload(field) {
 }
 
 export function buildCollectionPayload(collection) {
+  if (collection.folder) {
+    return {
+      collection: collection.name,
+      meta: {
+        icon: collection.icon ?? "folder",
+        hidden: false,
+        singleton: false,
+        sort: collection.sort ?? null,
+      },
+      schema: null,
+    };
+  }
+
   const primary = collection.fields.find((field) => field.primary);
   if (!primary) {
     throw new Error(`Collection ${collection.name} has no primary field`);
@@ -209,6 +222,7 @@ export async function applyBlueprint(client, blueprint, { dryRun = false } = {})
   }
 
   for (const collection of blueprint.collections) {
+    if (collection.folder) continue;
     const currentFields = collectionNames.has(collection.name) || !dryRun
       ? await client.request(`/fields/${collection.name}`)
       : [];
@@ -246,6 +260,7 @@ export async function applyBlueprint(client, blueprint, { dryRun = false } = {})
   );
 
   for (const collection of blueprint.collections) {
+    if (collection.folder) continue;
     for (const field of collection.fields) {
       if (!field.relatedCollection) continue;
       const key = relationKey(collection.name, field.name);

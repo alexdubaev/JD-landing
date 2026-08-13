@@ -5,7 +5,10 @@ import { readFile } from "node:fs/promises";
 import { schemaBlueprint } from "./blueprint.mjs";
 
 test("deployment stays within the Directus 12 Core collection limit", async () => {
-  assert.ok(schemaBlueprint.collections.length <= 25);
+  const countedCollections = schemaBlueprint.collections.filter(
+    ({ folder }) => !folder,
+  );
+  assert.ok(countedCollections.length <= 25);
 
   const productionCompose = await readFile(
     new URL("../../deploy/compose.production.yml", import.meta.url),

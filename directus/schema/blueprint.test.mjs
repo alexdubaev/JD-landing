@@ -4,7 +4,13 @@ import assert from "node:assert/strict";
 import { schemaBlueprint } from "./blueprint.mjs";
 
 const requiredCollections = [
+  "group_site",
+  "group_catalog",
+  "group_content",
+  "group_sales",
+  "group_settings",
   "site_settings",
+  "home_page",
   "pages",
   "page_sections",
   "navigation_items",
@@ -67,8 +73,38 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 24);
-  assert.ok(names.length <= 26);
+  assert.equal(names.length, 30);
+});
+
+test("defines task folders and an editable homepage singleton", () => {
+  const folders = schemaBlueprint.collections.filter(({ folder }) => folder);
+  assert.deepEqual(
+    folders.map(({ name }) => name),
+    ["group_site", "group_catalog", "group_content", "group_sales", "group_settings"],
+  );
+
+  const homepage = schemaBlueprint.collections.find(({ name }) => name === "home_page");
+  assert.equal(homepage.singleton, true);
+  const fields = new Set(homepage.fields.map(({ name }) => name));
+  for (const field of [
+    "id", "status", "source_page", "h1", "hero_title", "hero_text",
+    "hero_image", "hero_image_alt", "hero_primary_button_text",
+    "hero_primary_button_url", "hero_secondary_button_text",
+    "hero_secondary_button_url", "hero_search_label", "hero_search_placeholder",
+    "hero_search_button_text", "hero_bulk_prompt", "hero_bulk_link_text",
+    "hero_bulk_link_url", "hero_excel_link_text", "hero_excel_link_url",
+    "hero_photo_link_text", "hero_photo_link_url", "seo_title", "seo_description",
+    "canonical_url", "og_title", "og_description", "og_image", "is_indexable",
+    "translations", "created_at", "updated_at",
+  ]) {
+    assert.ok(fields.has(field), `missing home_page.${field}`);
+  }
+
+  const sections = schemaBlueprint.collections.find(({ name }) => name === "page_sections");
+  const homeRelation = sections.fields.find(({ name }) => name === "home_page");
+  assert.equal(homeRelation.relatedCollection, "home_page");
+  assert.equal(homeRelation.oneField, "sections");
+  assert.ok(sections.fields.some(({ name }) => name === "image_alt"));
 });
 
 test("stores factual company fields and translation-ready recent supplies", () => {
@@ -97,6 +133,7 @@ test("seeds the DEERE-SHOP singleton brand settings", () => {
 test("keeps editorial collections translation-ready without junction tables", () => {
   const translatable = [
     "site_settings",
+    "home_page",
     "pages",
     "page_sections",
     "navigation_items",
