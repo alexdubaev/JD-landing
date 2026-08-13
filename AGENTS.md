@@ -2,6 +2,24 @@
 
 ## Project
 
+## Mandatory scope-lock and release rules
+
+Read [ADR-002](docs/decisions/ADR-002-scope-locked-changes-and-content-only-releases.md)
+before making any write, commit or production deployment.
+
+- Treat CMS edits as **content-only** by default: update only the requested Directus
+  fields/assets, revalidate only the affected route, and do not deploy frontend code.
+- For any code change, state the requested behaviour, allowed files/fields, protected
+  areas and verification routes before editing. Before committing and deploying, verify
+  that `git diff --name-only` stays within the allowed file list.
+- If a diff touches an undeclared file or protected area, stop and ask the owner. Do not
+  combine convenience fixes, refactors or unrelated pending work into the release.
+- Security, Directus roles/permissions, secrets, schema, dependencies, `deploy/`,
+  Docker, Caddy, VPS configuration, lead processing, catalogue data and unrelated pages
+  are read-only unless the owner explicitly asks to change that exact area.
+- Deploy one reviewed commit only. Do not publish an accumulation of unrelated branch
+  changes. A release is not complete until the declared public routes are verified.
+
 Build a landing-page catalog for John Deere products using:
 
 - Frontend: Next.js
