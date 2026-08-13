@@ -72,7 +72,10 @@ describe("GET /media/[fileId]", () => {
           }),
         ),
       )
-      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] })));
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] })))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { status: "draft", hero_image: fileId } })),
+      );
 
     const response = await GET(
       new Request(`https://example.test/media/${fileId}`),
@@ -80,7 +83,7 @@ describe("GET /media/[fileId]", () => {
     );
 
     expect(response.status).toBe(404);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it("proxies a root-level file when it is used by a published hero section", async () => {
@@ -115,6 +118,42 @@ describe("GET /media/[fileId]", () => {
     expect(response.status).toBe(200);
     expect(String(fetchMock.mock.calls[1][0])).toContain(
       `/items/page_sections?filter[image][_eq]=${fileId}`,
+    );
+  });
+
+  it("proxies a root-level file used by the published homepage singleton", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({
+          data: {
+            id: fileId,
+            folder: null,
+            type: "image/jpeg",
+            filename_download: "homepage.jpg",
+          },
+        })),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] })))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({
+          data: { status: "published", hero_image: { id: fileId } },
+        })),
+      )
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([255, 216, 255]), {
+          headers: { "Content-Type": "image/jpeg" },
+        }),
+      );
+
+    const response = await GET(
+      new Request(`https://example.test/media/${fileId}`),
+      { params: Promise.resolve({ fileId }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(String(fetchMock.mock.calls[2][0])).toContain(
+      "/items/home_page?fields=status%2Chero_image",
     );
   });
 });

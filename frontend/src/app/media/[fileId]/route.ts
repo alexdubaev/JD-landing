@@ -42,6 +42,24 @@ const isPublishedSectionImage = async (fileId: string) => {
   }
 };
 
+const isPublishedHomeHeroImage = async (fileId: string) => {
+  try {
+    const query = new URLSearchParams({ fields: "status,hero_image" });
+    const homepage = await directusRequest<{
+      status: string | null;
+      hero_image: string | { id: string } | null;
+    }>(`/items/home_page?${query.toString()}`, {
+      next: { revalidate: 300, tags: ["homepage", `file:${fileId}`] },
+    });
+    const heroImageId = typeof homepage.hero_image === "string"
+      ? homepage.hero_image
+      : homepage.hero_image?.id;
+    return homepage.status === "published" && heroImageId === fileId;
+  } catch {
+    return false;
+  }
+};
+
 const safeTransforms = (url: URL) => {
   const output = new URLSearchParams();
   for (const name of ["width", "height", "quality"] as const) {
@@ -99,7 +117,11 @@ export async function GET(
   }
   const isInPublicFolder =
     fileFolderId(file.folder) === environment.DIRECTUS_PUBLIC_FOLDER_ID;
-  if (!isInPublicFolder && !(await isPublishedSectionImage(fileId))) {
+  if (
+    !isInPublicFolder &&
+    !(await isPublishedSectionImage(fileId)) &&
+    !(await isPublishedHomeHeroImage(fileId))
+  ) {
     return new Response("Not found", { status: 404 });
   }
 

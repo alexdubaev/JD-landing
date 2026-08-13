@@ -87,7 +87,6 @@ export function HomePageView({
       <HomeHero
         benefitsSection={find("advantages") ?? null}
         contacts={contacts}
-        h1={page.h1}
         section={hero}
         settings={settings}
       />
