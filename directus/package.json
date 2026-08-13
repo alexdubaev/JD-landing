@@ -16,7 +16,9 @@
     "assets:sync": "node import/sync-editorial-assets.mjs",
     "categories:merge": "node scripts/merge-categories.mjs",
     "migrate:home-page": "node migrations/migrate-home-page.mjs",
-    "flows:revalidation": "node flows/apply-revalidation-flow.mjs"
+    "flows:revalidation": "node flows/apply-revalidation-flow.mjs",
+    "release:baseline": "node releases/capture-baseline.mjs",
+    "release:compare": "node releases/compare-baseline.mjs"
   },
   "engines": {
     "node": ">=20"
