@@ -8,6 +8,8 @@ npm test
 npm run schema:check
 npm run schema:apply
 npm run schema:studio
+npm run migrate:home-page -- --dry-run
+npm run migrate:home-page -- --apply
 npm run schema:translations
 npm run access:apply
 npm run schema:snapshot
@@ -28,6 +30,7 @@ Files:
 - `schema/apply-studio.mjs` — idempotent Studio metadata and Russian locale installer;
 - `schema/ui-translations.mjs` — Russian names for project collections, fields, and choice labels;
 - `schema/snapshot.json` — generated Directus snapshot;
+- `migrations/migrate-home-page.mjs` — idempotently transfers the published homepage and hero into `home_page`; writes require `--apply`;
 - `access/blueprint.mjs` — Directus 12 Core-compatible roles and policies;
 - `access/apply-access.mjs` — idempotent access installer.
 - `import/products.mjs` — validates and idempotently imports the prepared 299
