@@ -19,6 +19,7 @@
     "migrate:home-page": "node migrations/migrate-home-page.mjs",
     "migrations:decommission": "node migrations/decommission-legacy-collections.mjs",
     "migrations:decommission-reconcile": "node migrations/reconcile-legacy-decommission.mjs",
+    "migrations:page-section-xor": "node migrations/migrate-page-section-owners.mjs",
     "flows:revalidation": "node flows/apply-revalidation-flow.mjs",
     "release:baseline": "node releases/capture-baseline.mjs",
     "release:compare": "node releases/compare-baseline.mjs"

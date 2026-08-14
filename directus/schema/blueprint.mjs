@@ -191,7 +191,6 @@ export const schemaBlueprint = {
           index: true,
         }),
         field("page", "uuid", {
-          required: true,
           relatedCollection: "pages",
           index: true,
           onDelete: "CASCADE",

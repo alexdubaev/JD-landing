@@ -120,6 +120,25 @@ test("defines task folders and an editable homepage singleton", () => {
   assert.ok(sections.fields.some(({ name }) => name === "image_alt"));
 });
 
+test("page_sections owner fields are nullable to model exactly-one-owner", () => {
+  const sections = schemaBlueprint.collections.find(({ name }) => name === "page_sections");
+  const page = sections.fields.find(({ name }) => name === "page");
+  const homePage = sections.fields.find(({ name }) => name === "home_page");
+
+  // Owner-XOR migration: either page or home_page may be null, so neither
+  // owner field may stay required. This is the only page_sections schema
+  // change of the owner-XOR release.
+  assert.equal(page.required, undefined, "page_sections.page must be nullable");
+  assert.equal(homePage.required, undefined, "page_sections.home_page must stay nullable");
+  assert.equal(page.relatedCollection, "pages");
+  assert.equal(page.onDelete, "CASCADE");
+  assert.equal(homePage.relatedCollection, "home_page");
+
+  // Other page_sections integrity fields keep their required status.
+  const sectionType = sections.fields.find(({ name }) => name === "section_type");
+  assert.equal(sectionType.required, true);
+});
+
 test("stores factual company fields and translation-ready recent supplies", () => {
   const settings = schemaBlueprint.collections.find(({ name }) => name === "site_settings");
   const settingFields = new Set(settings.fields.map(({ name }) => name));
