@@ -30,6 +30,7 @@ test("organizes visible collections into five Russian task folders", () => {
 test("hides technical collections from top-level navigation", () => {
   for (const key of [
     "page_sections",
+    "articles_editor_nodes",
     "product_images",
     "product_specifications",
     "product_documents",
@@ -128,4 +129,25 @@ test("keeps legacy product JSON interfaces until the dual-read migration", () =>
   assert.equal(productFields.gallery.interface, "list");
   assert.equal(productFields.specifications.interface, "list");
   assert.equal(productFields.documents.interface, "list");
+});
+
+test("articles form wires the flexible editor with a hidden M2A alias in the same group", () => {
+  const articles = studioBlueprint.fields.articles.fields;
+
+  assert.equal(articles.content_blocks.interface, "flexible-editor");
+  assert.equal(articles.content_blocks.options.m2aField, "editor_nodes");
+  assert.equal(articles.content_blocks.options.tools.includes("h1"), false);
+  assert.deepEqual(
+    articles.content_blocks.options.relationBlocks,
+    ["products", "categories"],
+  );
+
+  assert.equal(articles.editor_nodes.hidden, true);
+  // The extension loses the M2A connection unless both fields share a group.
+  assert.equal(
+    articles.editor_nodes.group,
+    articles.content_blocks.group,
+    "editor_nodes must sit in the same group as content_blocks",
+  );
+  assert.equal(articles.content_blocks.group, "group_content");
 });

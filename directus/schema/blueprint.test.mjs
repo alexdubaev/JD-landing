@@ -16,6 +16,7 @@ const requiredCollections = [
   "navigation_items",
   "categories",
   "articles",
+  "articles_editor_nodes",
   "products",
   "faq_items",
   "lead_forms",
@@ -76,7 +77,12 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 24);
+  assert.equal(names.length, 25);
+  assert.equal(
+    schemaBlueprint.collections.filter(({ folder }) => !folder).length,
+    20,
+    "19 data collections plus the editor junction",
+  );
 });
 
 test("the six legacy collections have been decommissioned from the blueprint", () => {
@@ -228,6 +234,64 @@ test("articles contain publishing, cover, content and SEO fields", () => {
   ]) {
     assert.ok(fields.has(field), `missing articles.${field}`);
   }
+});
+
+test("articles declare the additive flexible-editor schema without touching content", () => {
+  const articles = schemaBlueprint.collections.find(
+    ({ name }) => name === "articles",
+  );
+
+  // The HTML field stays the canonical source until the cutover release.
+  const content = articles.fields.find(({ name }) => name === "content");
+  assert.equal(content.type, "text");
+  assert.equal(content.required, true);
+  assert.equal(content.interface, "input-rich-text-html");
+
+  const contentBlocks = articles.fields.find(({ name }) => name === "content_blocks");
+  assert.equal(contentBlocks.type, "json");
+  assert.equal(contentBlocks.required, undefined, "content_blocks is nullable");
+  assert.equal(contentBlocks.interface, "flexible-editor");
+  assert.deepEqual(contentBlocks.special, ["cast-json"]);
+  assert.equal(contentBlocks.options.m2aField, "editor_nodes");
+  assert.deepEqual(contentBlocks.options.relationBlocks, ["products", "categories"]);
+  assert.equal(contentBlocks.options.tools.includes("h1"), false, "H1 tool is disabled");
+  for (const tool of ["h2", "h3", "h4", "bulletList", "orderedList", "blockquote", "link", "table"]) {
+    assert.ok(contentBlocks.options.tools.includes(tool), `${tool} tool is enabled`);
+  }
+
+  const editorNodes = articles.fields.find(({ name }) => name === "editor_nodes");
+  assert.equal(editorNodes.type, "alias");
+  assert.equal(editorNodes.interface, null, "the M2A alias carries no interface");
+  assert.equal(editorNodes.hidden, true, "the M2A alias is hidden on detail");
+  assert.deepEqual(editorNodes.special, ["m2a"]);
+  assert.equal(editorNodes.relatedCollection, "articles_editor_nodes");
+});
+
+test("articles_editor_nodes is a hidden junction with a generated UUID primary key", () => {
+  const junction = schemaBlueprint.collections.find(
+    ({ name }) => name === "articles_editor_nodes",
+  );
+  assert.equal(junction.hidden, true);
+
+  const names = junction.fields.map(({ name }) => name);
+  assert.deepEqual(names, ["id", "articles_id", "collection", "item"]);
+
+  const primaryKey = junction.fields.find(({ name }) => name === "id");
+  assert.equal(primaryKey.type, "uuid");
+  assert.equal(primaryKey.primary, true);
+  assert.equal(primaryKey.default, "uuid", "PK = Generated UUID");
+
+  const owner = junction.fields.find(({ name }) => name === "articles_id");
+  assert.equal(owner.relatedCollection, "articles");
+  assert.equal(owner.oneField, "editor_nodes");
+  assert.equal(owner.onDelete, "CASCADE", "article deletion cascades to junction rows");
+
+  const discriminator = junction.fields.find(({ name }) => name === "collection");
+  assert.deepEqual(discriminator.special, ["m2a"]);
+
+  const item = junction.fields.find(({ name }) => name === "item");
+  assert.deepEqual(item.special, ["m2o"]);
+  assert.equal(item.junctionField, "collection");
 });
 
 test("products contain every catalog, media, SEO, and lead field", () => {
