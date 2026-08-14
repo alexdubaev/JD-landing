@@ -153,7 +153,7 @@ test("apply without --release-id is refused", async () => {
   );
 });
 
-test("apply patches rows first, then the nullable field meta, then requires the CHECK SQL", async () => {
+test("apply makes the page field nullable FIRST, then patches rows, then requires the CHECK SQL", async () => {
   const client = mockClientForSections(productionSections());
   const result = await runOwnerMigration(client, {
     apply: true,
@@ -183,8 +183,8 @@ test("apply patches rows first, then the nullable field meta, then requires the 
   const fieldPatchIndex = client.requests.indexOf(fieldPatch);
   for (const entry of rowPatches) {
     assert.ok(
-      client.requests.indexOf(entry) < fieldPatchIndex,
-      "every row patch precedes the field meta patch",
+      fieldPatchIndex < client.requests.indexOf(entry),
+      "the field must become nullable BEFORE any row patch (production R6 lesson: page=null on a required field is rejected with FAILED_VALIDATION)",
     );
   }
 

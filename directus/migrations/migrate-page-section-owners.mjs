@@ -19,7 +19,8 @@ import {
  * Modes:
  * - default (--dry-run): read the owner table, build the before-state NDJSON
  *   and the patch plan; STOP before any write when a precondition fails.
- * - --apply --release-id=<id>: row patches, then the nullable field meta,
+ * - --apply --release-id=<id>: the nullable field meta first (a required field
+ *   rejects page=null), then the row patches,
  *   then the operator executes sql/page-section-owner-xor-up.sql in the same
  *   maintenance window (Directus REST cannot run raw SQL).
  * - --restore --before-state=<file>: rollback path — restore both owner
@@ -232,6 +233,19 @@ export async function runOwnerMigration(
   const plan = buildPatchPlan(classifiedRows);
   const report = [];
   if (apply) {
+    // The field MUST become nullable BEFORE row patches: Directus rejects
+    // page=null on a required field (FAILED_VALIDATION), so patching rows
+    // first fails on the very first dual-owner row.
+    await client.request(`/fields/${OWNER_COLLECTION}/page`, {
+      method: "PATCH",
+      body: nullableFieldPatch(),
+    });
+    report.push({
+      action: "update field meta",
+      field: `${OWNER_COLLECTION}.page`,
+      change: "required=false, is_nullable=true",
+      releaseId,
+    });
     for (const patch of plan.patches) {
       if (patch.noop) {
         report.push({ action: "verify row owner", id: patch.id, owner: patch.owner });
@@ -249,16 +263,6 @@ export async function runOwnerMigration(
         releaseId,
       });
     }
-    await client.request(`/fields/${OWNER_COLLECTION}/page`, {
-      method: "PATCH",
-      body: nullableFieldPatch(),
-    });
-    report.push({
-      action: "update field meta",
-      field: `${OWNER_COLLECTION}.page`,
-      change: "required=false, is_nullable=true",
-      releaseId,
-    });
   } else {
     for (const patch of plan.patches) {
       report.push({
