@@ -40,12 +40,6 @@ const collections = {
   product_documents: { label: "Документы товаров", hidden: true, icon: "description" },
   order_items: { label: "Позиции заказов", hidden: true, icon: "list_alt" },
   contact_channels: { label: "Каналы связи", hidden: true, icon: "contact_phone" },
-  hero_blocks: { label: "Первый экран — архив", hidden: true, icon: "view_carousel" },
-  advantages: { label: "Преимущества — архив", hidden: true, icon: "verified" },
-  cta_blocks: { label: "Призывы к действию — архив", hidden: true, icon: "ads_click" },
-  seo_text_blocks: { label: "SEO-тексты — архив", hidden: true, icon: "text_snippet" },
-  banners: { label: "Баннеры — архив", hidden: true, icon: "campaign" },
-  testimonials: { label: "Отзывы — архив", hidden: true, icon: "format_quote" },
   lead_forms: { label: "Настройки форм", hidden: true, icon: "dynamic_form" },
   seo_redirects: { label: "SEO-редиректы", hidden: true, icon: "route" },
 };

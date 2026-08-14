@@ -20,20 +20,23 @@ const requiredCollections = [
   "faq_items",
   "lead_forms",
   "leads",
-  "testimonials",
-  "banners",
-  "hero_blocks",
-  "advantages",
-  "cta_blocks",
   "contact_channels",
   "recent_supplies",
-  "seo_text_blocks",
   "product_images",
   "product_specifications",
   "product_documents",
   "seo_redirects",
   "orders",
   "order_items",
+];
+
+const decommissionedCollections = [
+  "hero_blocks",
+  "advantages",
+  "cta_blocks",
+  "seo_text_blocks",
+  "banners",
+  "testimonials",
 ];
 
 const requiredProductFields = [
@@ -73,7 +76,14 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 30);
+  assert.equal(names.length, 24);
+});
+
+test("the six legacy collections have been decommissioned from the blueprint", () => {
+  const names = new Set(schemaBlueprint.collections.map(({ name }) => name));
+  for (const name of decommissionedCollections) {
+    assert.ok(!names.has(name), `${name} must not be present after decommission`);
+  }
 });
 
 test("defines task folders and an editable homepage singleton", () => {
@@ -145,14 +155,8 @@ test("keeps editorial collections translation-ready without junction tables", ()
     "products",
     "faq_items",
     "lead_forms",
-    "testimonials",
-    "banners",
-    "hero_blocks",
-    "advantages",
-    "cta_blocks",
     "contact_channels",
     "recent_supplies",
-    "seo_text_blocks",
     "product_images",
     "product_specifications",
     "product_documents",

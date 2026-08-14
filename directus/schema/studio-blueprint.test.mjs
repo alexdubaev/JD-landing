@@ -27,7 +27,7 @@ test("organizes visible collections into five Russian task folders", () => {
   assert.equal(studioBlueprint.collections.site_settings.group, "group_settings");
 });
 
-test("hides technical and legacy collections from top-level navigation", () => {
+test("hides technical collections from top-level navigation", () => {
   for (const key of [
     "page_sections",
     "product_images",
@@ -35,16 +35,24 @@ test("hides technical and legacy collections from top-level navigation", () => {
     "product_documents",
     "order_items",
     "contact_channels",
+    "lead_forms",
+    "seo_redirects",
+  ]) {
+    assert.equal(studioBlueprint.collections[key].hidden, true, key);
+  }
+});
+
+test("the six decommissioned legacy collections are gone from the studio blueprint", () => {
+  const keys = Object.keys(studioBlueprint.collections);
+  for (const legacy of [
     "hero_blocks",
     "advantages",
     "cta_blocks",
     "seo_text_blocks",
     "banners",
     "testimonials",
-    "lead_forms",
-    "seo_redirects",
   ]) {
-    assert.equal(studioBlueprint.collections[key].hidden, true, key);
+    assert.ok(!keys.includes(legacy), `${legacy} must not appear in studio blueprint`);
   }
 });
 
