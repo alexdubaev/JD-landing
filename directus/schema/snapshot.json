@@ -11171,7 +11171,7 @@
         "note": null,
         "options": null,
         "readonly": true,
-        "required": true,
+        "required": false,
         "searchable": true,
         "sort": 2,
         "special": [
@@ -11195,7 +11195,7 @@
         "max_length": null,
         "numeric_precision": null,
         "numeric_scale": null,
-        "is_nullable": false,
+        "is_nullable": true,
         "is_unique": false,
         "is_indexed": true,
         "is_primary_key": false,
