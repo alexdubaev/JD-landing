@@ -165,3 +165,29 @@ export type ArticlePage = {
   pageSize: number;
   totalPages: number;
 };
+
+/**
+ * Item returned by the Directus `deere-shop-search` endpoint
+ * (GET /deere-shop/search): a bounded product projection of an indexed
+ * sku_normalized / mpn_normalized / product_codes.normalized_code match.
+ */
+export type ProductSearchSuggestion = {
+  id: string;
+  slug: string;
+  title: string;
+  sku: string;
+  mpn: string | null;
+  category: { slug: string; title: string } | null;
+};
+
+export type ProductSearchSource = "normalized" | "codes";
+
+export type ProductSearchResponse = {
+  data: ProductSearchSuggestion[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    source: ProductSearchSource;
+  };
+};

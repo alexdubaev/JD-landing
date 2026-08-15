@@ -26,6 +26,7 @@ const requiredCollections = [
   "product_images",
   "product_specifications",
   "product_documents",
+  "product_codes",
   "seo_redirects",
   "orders",
   "order_items",
@@ -77,11 +78,11 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 25);
+  assert.equal(names.length, 26);
   assert.equal(
     schemaBlueprint.collections.filter(({ folder }) => !folder).length,
-    20,
-    "19 data collections plus the editor junction",
+    21,
+    "20 data collections plus the editor junction and product_codes",
   );
 });
 
@@ -303,6 +304,90 @@ test("products contain every catalog, media, SEO, and lead field", () => {
   for (const field of requiredProductFields) {
     assert.ok(fields.has(field), `missing products.${field}`);
   }
+});
+
+test("products gain hidden indexed normalized code copies without touching sku/mpn", () => {
+  const products = schemaBlueprint.collections.find(
+    ({ name }) => name === "products",
+  );
+
+  for (const name of ["sku_normalized", "mpn_normalized"]) {
+    const normalized = products.fields.find(({ name: n }) => n === name);
+    assert.equal(normalized.type, "string", `products.${name} is a string`);
+    assert.equal(normalized.required, undefined, `products.${name} is nullable`);
+    assert.equal(normalized.unique, undefined, `products.${name} is not unique`);
+    assert.equal(normalized.index, true, `products.${name} is indexed`);
+    assert.equal(normalized.hidden, true, `products.${name} is hidden in Studio`);
+    assert.ok(
+      typeof normalized.note === "string" && normalized.note.includes("backfill"),
+      `products.${name} documents the backfill as its only writer`,
+    );
+  }
+
+  // The canonical article fields stay exactly as they were (ADR-003).
+  const sku = products.fields.find(({ name }) => name === "sku");
+  assert.equal(sku.required, true);
+  assert.equal(sku.unique, true);
+  assert.equal(sku.index, true);
+  const mpn = products.fields.find(({ name }) => name === "mpn");
+  assert.equal(mpn.required, undefined);
+  assert.equal(mpn.index, true);
+});
+
+test("product_codes stores additional OEM codes behind a required normalized key", () => {
+  const codes = schemaBlueprint.collections.find(
+    ({ name }) => name === "product_codes",
+  );
+
+  assert.deepEqual(
+    codes.fields.map(({ name }) => name),
+    [
+      "id",
+      "product",
+      "code",
+      "normalized_code",
+      "code_type",
+      "source_name",
+      "source_reference",
+      "is_active",
+      "created_at",
+      "updated_at",
+    ],
+  );
+
+  const product = codes.fields.find(({ name }) => name === "product");
+  assert.equal(product.relatedCollection, "products");
+  assert.equal(product.required, true);
+  assert.equal(product.onDelete, "CASCADE", "product deletion cascades to codes");
+
+  const code = codes.fields.find(({ name }) => name === "code");
+  assert.equal(code.required, true);
+  const normalizedCode = codes.fields.find(({ name }) => name === "normalized_code");
+  assert.equal(normalizedCode.required, true);
+  assert.equal(normalizedCode.index, true);
+
+  const codeType = codes.fields.find(({ name }) => name === "code_type");
+  assert.equal(codeType.required, true);
+  assert.deepEqual(codeType.choices, [
+    "oem",
+    "mpn",
+    "supplier",
+    "previous",
+    "superseded",
+    "external",
+    "barcode",
+  ]);
+
+  const sourceName = codes.fields.find(({ name }) => name === "source_name");
+  assert.equal(sourceName.required, true, "source_name is NOT NULL so the unique key is deterministic");
+  assert.equal(codes.fields.find(({ name }) => name === "is_active").default, true);
+
+  // The composite unique constraint lives in the operator-run SQL file.
+  assert.match(
+    codes.note ?? "",
+    /product, code_type, normalized_code, source_name/,
+    "the composite unique constraint is documented on the collection",
+  );
 });
 
 test("all declared relation targets exist", () => {

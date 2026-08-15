@@ -25,7 +25,8 @@
     "release:baseline": "node releases/capture-baseline.mjs",
     "release:compare": "node releases/compare-baseline.mjs",
     "migrations:article-content": "node migrations/migrate-article-content.mjs",
-    "migrations:article-content-reconcile": "node migrations/reconcile-article-content.mjs"
+    "migrations:article-content-reconcile": "node migrations/reconcile-article-content.mjs",
+    "migrations:product-search": "node migrations/backfill-product-search.mjs"
   },
   "engines": {
     "node": ">=20"

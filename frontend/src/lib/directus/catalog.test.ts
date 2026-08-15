@@ -1,20 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { ProductCardData } from "@/types/catalog";
+
 import {
+  DirectusRequestError,
   directusEnvelopeRequest,
   directusRequest,
 } from "./client";
 import {
+  fetchProductSuggestions,
   getCatalogPage,
   getCategories,
   getFeaturedProducts,
   getHomepageCategories,
 } from "./catalog";
 
-vi.mock("./client", () => ({
-  directusRequest: vi.fn(),
-  directusEnvelopeRequest: vi.fn(),
-}));
+vi.mock("./client", async () => {
+  const actual = await vi.importActual<typeof import("./client")>("./client");
+  return {
+    ...actual,
+    directusRequest: vi.fn(),
+    directusEnvelopeRequest: vi.fn(),
+  };
+});
 
 const requestMock = vi.mocked(directusRequest);
 const envelopeRequestMock = vi.mocked(directusEnvelopeRequest);
@@ -184,4 +192,136 @@ describe("catalog queries", () => {
     expect(products.map(({ id }) => id)).toEqual(["complete", "incomplete"]);
   });
 
+});
+
+const rawProduct = (id: string) => ({
+  id,
+  title: `Товар ${id}`,
+  slug: `product-${id}`,
+  sku: `SKU-${id}`,
+  category: null,
+  short_description: null,
+  main_image: null,
+  image_alt: null,
+  price: null,
+  currency: "RUB",
+  price_status: "on_request",
+  availability_status: "on_request",
+});
+
+const suggestion = (id: string): ProductCardData => ({
+  id,
+  title: `Товар ${id}`,
+  slug: `product-${id}`,
+  sku: `SKU-${id}`,
+  category: null,
+  shortDescription: null,
+  mainImageId: null,
+  imageAlt: null,
+  price: null,
+  currency: "RUB",
+  priceStatus: "on_request",
+  availabilityStatus: "on_request",
+  brand: null,
+  mpn: null,
+  gtin: null,
+  partType: null,
+  deliveryStatus: null,
+});
+
+describe("fetchProductSuggestions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("routes code-like queries through the indexed /deere-shop/search endpoint", async () => {
+    requestMock
+      .mockResolvedValueOnce([
+        { id: "p2", slug: "product-p2", title: "Товар p2", sku: "SKU-P2", mpn: null, category: null },
+        { id: "p1", slug: "product-p1", title: "Товар p1", sku: "SKU-P1", mpn: null, category: null },
+      ])
+      // Hydration returns the cards in the opposite order to prove the
+      // endpoint ranking is preserved.
+      .mockResolvedValueOnce([rawProduct("p1"), rawProduct("p2")]);
+
+    const items = await fetchProductSuggestions(" re-504 836 ", 6);
+
+    const endpointUrl = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(endpointUrl.pathname).toBe("/deere-shop/search");
+    expect(endpointUrl.searchParams.get("q")).toBe("RE504836");
+    expect(endpointUrl.searchParams.get("limit")).toBe("6");
+
+    const hydrationUrl = new URL(requestMock.mock.calls[1][0], "https://cms.test");
+    expect(hydrationUrl.pathname).toBe("/items/products");
+    expect(hydrationUrl.searchParams.get("filter[id][_in]")).toBe("p2,p1");
+
+    expect(items).toEqual([suggestion("p2"), suggestion("p1")]);
+    expect(requestMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("skips hydration when the endpoint finds nothing", async () => {
+    requestMock.mockResolvedValueOnce([]);
+
+    await expect(fetchProductSuggestions("ZZ999999")).resolves.toEqual([]);
+
+    expect(requestMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the legacy path when the endpoint is not installed (404)", async () => {
+    requestMock
+      .mockRejectedValueOnce(new DirectusRequestError(404, "/deere-shop/search"))
+      .mockResolvedValueOnce([]) // legacy SKU index scan
+      .mockResolvedValueOnce([]); // legacy products query
+
+    await expect(fetchProductSuggestions("RE504836", 6)).resolves.toEqual([]);
+
+    // The fallback reuses the legacy full-scan suggestion path untouched.
+    const skuIndexUrl = new URL(requestMock.mock.calls[1][0], "https://cms.test");
+    expect(skuIndexUrl.pathname).toBe("/items/products");
+    expect(skuIndexUrl.searchParams.get("fields")).toBe("id,sku");
+    expect(String(requestMock.mock.calls[2][0])).toContain("/items/products");
+  });
+
+  it("falls back to the legacy path on a network error", async () => {
+    requestMock
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([rawProduct("p1")]);
+
+    const items = await fetchProductSuggestions("RE504836", 6);
+
+    expect(items).toEqual([suggestion("p1")]);
+    expect(String(requestMock.mock.calls[0][0])).toContain("/deere-shop/search");
+    expect(String(requestMock.mock.calls[1][0])).toContain("/items/products");
+  });
+
+  it("propagates endpoint errors other than 404/network", async () => {
+    requestMock.mockRejectedValueOnce(
+      new DirectusRequestError(500, "/deere-shop/search"),
+    );
+
+    await expect(fetchProductSuggestions("RE504836")).rejects.toBeInstanceOf(
+      DirectusRequestError,
+    );
+  });
+
+  it("keeps free-text queries on the legacy full-text search path", async () => {
+    requestMock.mockResolvedValueOnce([]);
+
+    await fetchProductSuggestions("насос гидравлический", 6);
+
+    expect(requestMock).toHaveBeenCalledTimes(1);
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.pathname).toBe("/items/products");
+    expect(url.searchParams.get("search")).toBe("насос гидравлический");
+  });
+
+  it("keeps queries that normalize below two characters on the legacy path", async () => {
+    requestMock.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+    await fetchProductSuggestions("a", 6);
+
+    expect(String(requestMock.mock.calls[0][0])).not.toContain("/deere-shop/search");
+    expect(String(requestMock.mock.calls[0][0])).toContain("/items/products");
+  });
 });

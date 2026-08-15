@@ -416,6 +416,16 @@ export const schemaBlueprint = {
         field("brand", "string"),
         field("mpn", "string", { index: true }),
         field("gtin", "string", { index: true }),
+        field("sku_normalized", "string", {
+          hidden: true,
+          index: true,
+          note: "Derived uppercase alphanumeric copy of sku, filled only by migrations/backfill-product-search.mjs. Indexed search key, never edited by hand.",
+        }),
+        field("mpn_normalized", "string", {
+          hidden: true,
+          index: true,
+          note: "Derived uppercase alphanumeric copy of mpn, filled only by migrations/backfill-product-search.mjs. Indexed search key, never edited by hand.",
+        }),
         field("part_type", "string", {
           choices: ["original", "oem", "analog"],
         }),
@@ -606,6 +616,49 @@ export const schemaBlueprint = {
         field("sort_order", "integer", { default: 0, index: true }),
         translations(),
       ),
+    },
+    {
+      name: "product_codes",
+      icon: "qr_code_2",
+      note: "Additional OEM/MPN/supplier/previous/superseded/external/barcode codes of a product (ADR-003); products.sku and products.mpn stay the canonical article fields. The composite UNIQUE (product, code_type, normalized_code, source_name) is created by migrations/sql/product-search-indexes-up.sql — the Directus REST API cannot express composite constraints.",
+      fields: [
+        id(),
+        field("product", "uuid", {
+          required: true,
+          relatedCollection: "products",
+          index: true,
+          onDelete: "CASCADE",
+        }),
+        field("code", "string", { required: true }),
+        field("normalized_code", "string", {
+          required: true,
+          index: true,
+          note: "Uppercase alphanumeric copy of code: the indexed OEM search key.",
+        }),
+        field("code_type", "string", {
+          required: true,
+          default: "oem",
+          choices: [
+            "oem",
+            "mpn",
+            "supplier",
+            "previous",
+            "superseded",
+            "external",
+            "barcode",
+          ],
+          index: true,
+        }),
+        field("source_name", "string", {
+          required: true,
+          default: "manual",
+          index: true,
+          note: "Provenance of the code (feed or catalog name, 'manual' for editors).",
+        }),
+        field("source_reference", "string"),
+        field("is_active", "boolean", { default: true, index: true }),
+        ...timestamps(),
+      ],
     },
     {
       name: "seo_redirects",

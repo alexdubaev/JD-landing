@@ -7,10 +7,15 @@ import type {
   PageSeo,
   Product,
   ProductCardData,
+  ProductSearchSuggestion,
   PublicFile,
 } from "@/types/catalog";
 
-import { directusEnvelopeRequest, directusRequest } from "./client";
+import {
+  DirectusRequestError,
+  directusEnvelopeRequest,
+  directusRequest,
+} from "./client";
 import { getServerEnv } from "./env";
 
 type FileRelation = string | { id: string } | null;
@@ -338,6 +343,74 @@ export async function getCatalogSuggestions(search: string, limit = 6) {
     next: { revalidate: 60, tags: ["products"] },
   });
   return items.map(mapProductCard);
+}
+
+/**
+ * The same normalization the Directus `deere-shop-search` endpoint and the
+ * backfill migration apply: uppercase, trim, strip every non-alphanumeric
+ * character (e.g. " re-504 836 " -> "RE504836").
+ */
+const normalizeCodeQuery = (value: string) =>
+  value.trim().toUpperCase().replace(/[^A-Z0-9]+/gu, "");
+
+/**
+ * Indexed SKU/OEM suggestions via the Directus endpoint extension
+ * (GET /deere-shop/search): bounded starts_with lookups over
+ * products.sku_normalized / mpn_normalized and product_codes.normalized_code.
+ * The matched ids are hydrated into full product cards (published only),
+ * keeping the endpoint's ranking order.
+ */
+async function fetchIndexedProductSuggestions(
+  search: string,
+  safeLimit: number,
+): Promise<ProductCardData[]> {
+  const query = queryString({
+    q: normalizeCodeQuery(search),
+    limit: String(safeLimit),
+  });
+  const suggestions = await directusRequest<ProductSearchSuggestion[]>(
+    `/deere-shop/search?${query}`,
+    { next: { revalidate: 60, tags: ["products"] } },
+  );
+  const ids = suggestions.map((item) => item?.id).filter(Boolean);
+  if (!ids.length) return [];
+  const hydrated = await getProductsByIds(ids);
+  const order = new Map(suggestions.map((item, index) => [item.id, index]));
+  return hydrated.toSorted(
+    (left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0),
+  );
+}
+
+const isEndpointUnavailable = (error: unknown): boolean => {
+  if (error instanceof DirectusRequestError) return error.status === 404;
+  return error instanceof TypeError;
+};
+
+/**
+ * Catalog suggestions for the search box. Code-like queries (latin letters,
+ * digits, spaces, hyphens — the legacy `looksLikeSkuQuery` split) go to the
+ * indexed `/deere-shop/search` endpoint; free-text queries keep the legacy
+ * Directus full-text path.
+ *
+ * FALLBACK (explicit): when the endpoint answers 404 (the deere-shop-search
+ * extension is not installed on this Directus yet) or Directus is
+ * unreachable (network error), code-like queries degrade to the legacy
+ * scan-based path instead of failing. Any other error propagates so real
+ * regressions stay visible.
+ */
+export async function fetchProductSuggestions(
+  search: string,
+  limit = 6,
+): Promise<ProductCardData[]> {
+  const safeLimit = Math.min(6, Math.max(1, Math.floor(limit)));
+  if (looksLikeSkuQuery(search) && normalizeCodeQuery(search).length >= 2) {
+    try {
+      return await fetchIndexedProductSuggestions(search, safeLimit);
+    } catch (error) {
+      if (!isEndpointUnavailable(error)) throw error;
+    }
+  }
+  return getCatalogSuggestions(search, safeLimit);
 }
 
 const sortByQuery: Record<CatalogQuery["sort"], string> = {

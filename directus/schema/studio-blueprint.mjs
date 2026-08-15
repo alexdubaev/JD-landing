@@ -29,6 +29,7 @@ const collections = {
   navigation_items: { label: "Меню", group: "group_site", icon: "menu", sort: 3, hidden: false, displayTemplate: "{{label}} · {{location}}" },
   products: { label: "Товары", group: "group_catalog", icon: "inventory_2", sort: 1, hidden: false, displayTemplate: "{{title}} · {{sku}} · {{category.title}} · {{availability_status}}" },
   categories: { label: "Категории", group: "group_catalog", icon: "category", sort: 2, hidden: false, displayTemplate: "{{title}} · /{{slug}}" },
+  product_codes: { label: "Коды товаров", group: "group_catalog", icon: "qr_code_2", sort: 3, hidden: false, displayTemplate: "{{code}} · {{code_type}} · {{product.sku}}" },
   articles: { label: "Статьи", group: "group_content", icon: "article", sort: 1, hidden: false, displayTemplate: "{{title}} · {{status}}" },
   faq_items: { label: "Вопросы и ответы", group: "group_content", icon: "quiz", sort: 2, hidden: false, displayTemplate: "{{question}} · {{status}}" },
   recent_supplies: { label: "Недавние поставки", group: "group_content", icon: "local_shipping", sort: 3, hidden: false, displayTemplate: "{{equipment_type}} · {{region}} · {{status}}" },
@@ -468,6 +469,16 @@ export const studioBlueprint = {
         translations: input("Переводы", "group_system", 2, { hidden: true }),
         created_at: input("Создано", "group_system", 3, { width: "half", readonly: true }),
         updated_at: input("Обновлено", "group_system", 4, { width: "half", readonly: true }),
+        sku_normalized: input("Артикул (нормализованный)", "group_system", 5, {
+          hidden: true,
+          readonly: true,
+          note: "Индексный ключ поиска — заполняется только миграцией backfill-product-search.",
+        }),
+        mpn_normalized: input("MPN (нормализованный)", "group_system", 6, {
+          hidden: true,
+          readonly: true,
+          note: "Индексный ключ поиска — заполняется только миграцией backfill-product-search.",
+        }),
       },
     },
     site_settings: {
