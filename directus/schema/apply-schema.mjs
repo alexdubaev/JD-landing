@@ -263,6 +263,12 @@ export async function applyBlueprint(client, blueprint, { dryRun = false } = {})
     if (collection.folder) continue;
     for (const field of collection.fields) {
       if (!field.relatedCollection) continue;
+      // Alias fields have no DB column, so posting their relation side makes
+      // Directus generate a foreign key on a non-existent column (production
+      // R7 lesson). The alias side is registered automatically when the
+      // junction-side M2O carries meta.one_field, and /relations never lists
+      // the alias side as its own row — skip it instead of POSTing.
+      if (field.type === "alias") continue;
       const key = relationKey(collection.name, field.name);
       if (relationNames.has(key)) continue;
 

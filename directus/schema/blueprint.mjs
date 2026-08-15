@@ -372,14 +372,14 @@ export const schemaBlueprint = {
           index: true,
           onDelete: "CASCADE",
         }),
-        field("collection", "string", {
+        field("collection", "alias", {
           special: ["m2a"],
-          note: "Polymorphic discriminator of the related collection (products or categories).",
+          note: "Polymorphic discriminator of the related collection (products or categories). Alias — matches the live schema created by the R7 migration.",
         }),
         field("item", "uuid", {
           special: ["m2o"],
           junctionField: "collection",
-          note: "Polymorphic key of the related item.",
+          note: "Polymorphic key of the related item. Column (the R7 migration created it with a real column; only the discriminator is an alias).",
         }),
       ],
     },
