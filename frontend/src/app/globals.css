@@ -6958,3 +6958,118 @@ p {
   }
 }
 
+
+/* Structured article content (Flexible Editor renderer, Task 8) */
+
+.article-content ul,
+.article-content ol {
+  margin: 1.25rem 0;
+  padding-inline-start: 1.5rem;
+}
+
+.article-content ul {
+  list-style: disc;
+}
+
+.article-content ol {
+  list-style: decimal;
+}
+
+.article-content li + li {
+  margin-top: 0.35rem;
+}
+
+.article-content table {
+  width: 100%;
+  margin: 1.5rem 0;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.article-content th,
+.article-content td {
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border, #d8ddd8);
+  text-align: left;
+  vertical-align: top;
+}
+
+.article-content th {
+  background: var(--surface-muted, #eef1eb);
+}
+
+.article-content__relation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border, #d8ddd8);
+  border-radius: var(--radius-md, 0.625rem);
+  background: var(--surface, #ffffff);
+  text-decoration: none;
+  color: inherit;
+}
+
+.article-content__relation:hover {
+  border-color: var(--primary, #4c8f2b);
+}
+
+.article-content__relation-image {
+  width: 84px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-sm, 0.375rem);
+}
+
+.article-content__relation-title {
+  font-weight: 600;
+}
+
+.article-content__relation-meta {
+  color: var(--muted-foreground, #5d6861);
+  font-size: 0.9rem;
+}
+
+.article-content__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 1rem 0;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.article-content__cta--primary {
+  background: var(--primary, #4c8f2b);
+  color: var(--primary-foreground, #ffffff);
+}
+
+.article-content__cta--primary:hover {
+  background: var(--primary-hover, #3f7923);
+}
+
+.article-content__cta--secondary {
+  border: 1px solid var(--primary, #4c8f2b);
+  color: var(--primary, #4c8f2b);
+}
+
+.article-content__cta--text {
+  color: var(--primary, #4c8f2b);
+  text-decoration: underline;
+  padding-inline: 0;
+}
+
+.article-content__diagnostic {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--focus, #b18500);
+  border-radius: var(--radius-sm, 0.375rem);
+  background: var(--surface-muted, #eef1eb);
+  color: var(--muted-foreground, #5d6861);
+  font-size: 0.9rem;
+}

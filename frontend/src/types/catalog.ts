@@ -138,6 +138,15 @@ export type ArticleCardData = {
 
 export type Article = ArticleCardData & {
   content: string;
+  /**
+   * Structured body from `articles.content_blocks` (Directus Flexible Editor
+   * JSON). Relation nodes are normalised to the renderer contract when the
+   * article is loaded (see `@/lib/directus/articles`); the renderer
+   * (`@/lib/articles/structured-content.ts`) owns the JSON contract, so the
+   * field stays `unknown` here. Null/undefined/invalid value → the article
+   * page renders the sanitized `content` HTML fallback instead.
+   */
+  contentBlocks?: unknown;
   author?: string | null;
   reviewer?: string | null;
   sources?: unknown[];
