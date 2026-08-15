@@ -215,32 +215,28 @@ export function buildAliasFieldPayload() {
 }
 
 /**
- * The four M2A relations, in creation order. Every referenced field already
+ * The three M2A relations, in creation order. Every referenced field already
  * exists at this point (junction fields ship with the collection payload,
- * the alias field is posted right before these relations).
+ * the alias field is posted before these relations).
+ *
+ * PRODUCTION R7 LESSON: do NOT post the alias-side relation
+ * (articles.editor_nodes -> junction) separately — Directus generates a DB
+ * foreign key for it and fails on the alias column that does not exist
+ * ("column editor_nodes referenced in foreign key constraint does not
+ * exist"). The alias side is auto-created by Directus when the junction-side
+ * M2O carries meta.one_field (same pattern as apply-schema.mjs).
  */
 export function buildEditorRelationPayloads() {
   return [
-    {
-      collection: EDITOR_COLLECTION,
-      field: EDITOR_ALIAS_FIELD,
-      related_collection: EDITOR_JUNCTION_COLLECTION,
-      meta: {
-        special: ["m2a"],
-        junction_field: "articles_id",
-        one_field: EDITOR_ALIAS_FIELD,
-        sort_field: null,
-        one_deselect_action: null,
-      },
-      schema: null,
-    },
     {
       collection: EDITOR_JUNCTION_COLLECTION,
       field: "articles_id",
       related_collection: EDITOR_COLLECTION,
       meta: {
         special: ["m2o"],
-        junction_field: EDITOR_ALIAS_FIELD,
+        junction_field: null,
+        one_field: EDITOR_ALIAS_FIELD,
+        one_deselect_action: "delete",
       },
       schema: {
         on_delete: "CASCADE",
@@ -274,6 +270,12 @@ export function buildEditorRelationPayloads() {
   ];
 }
 
+export function editorRelationKeys() {
+  return buildEditorRelationPayloads().map(
+    ({ collection, field }) => `${collection}.${field}`,
+  );
+}
+
 export function buildContentBlocksFieldPayload() {
   return {
     field: EDITOR_CONTENT_FIELD,
@@ -305,10 +307,18 @@ const isSystemCollection = (name) => String(name).startsWith("directus_");
 
 /**
  * Reads the current schema state needed by the preconditions. Read-only.
+ * Resumable: also collects which editor relations already exist.
  */
 export async function collectEditorState(client) {
   const collections = await client.request("/collections");
   const articlesFields = await client.request(`/fields/${EDITOR_COLLECTION}`);
+  const relations = await client.request(
+    "/relations?limit=-1&fields=collection,field",
+  );
+  const relationKeys = new Set(
+    (relations ?? []).map(({ collection, field }) => `${collection}.${field}`),
+  );
+  const wantedRelations = new Set(editorRelationKeys());
   return {
     collections,
     collectionNames: new Set(collections.map(({ collection }) => collection)),
@@ -318,37 +328,25 @@ export async function collectEditorState(client) {
     articlesFieldNames: new Set(
       (articlesFields ?? []).map(({ field }) => field),
     ),
+    existingRelations: wantedRelations,
+    missingRelations: [...wantedRelations].filter((key) => !relationKeys.has(key)),
   };
 }
 
 /**
- * Pure evaluation of the STOP preconditions and the idempotency no-op.
+ * Pure evaluation of the STOP preconditions, the idempotency no-op and the
+ * resume plan. PRODUCTION R7 LESSON: a partial apply (junction + alias field
+ * created, relations/field pending after a failed relation payload) must be
+ * RESUMABLE — existing pieces are skipped, only the missing ones are created.
  */
 export function evaluateEditorState(state) {
   const blockers = [];
   const junctionExists = state.collectionNames.has(EDITOR_JUNCTION_COLLECTION);
   const aliasExists = state.articlesFieldNames.has(EDITOR_ALIAS_FIELD);
   const contentFieldExists = state.articlesFieldNames.has(EDITOR_CONTENT_FIELD);
-  const fullyApplied = junctionExists && aliasExists && contentFieldExists;
-
-  if (!fullyApplied && junctionExists) {
-    blockers.push({
-      code: "junction-already-exists",
-      detail: `${EDITOR_JUNCTION_COLLECTION} exists without the complete editor field set`,
-    });
-  }
-  if (!fullyApplied && aliasExists) {
-    blockers.push({
-      code: "field-already-exists",
-      detail: `${EDITOR_COLLECTION}.${EDITOR_ALIAS_FIELD} already exists`,
-    });
-  }
-  if (!fullyApplied && contentFieldExists) {
-    blockers.push({
-      code: "field-already-exists",
-      detail: `${EDITOR_COLLECTION}.${EDITOR_CONTENT_FIELD} already exists`,
-    });
-  }
+  const relationsComplete = state.missingRelations.length === 0;
+  const fullyApplied =
+    junctionExists && aliasExists && contentFieldExists && relationsComplete;
 
   for (const required of [EDITOR_COLLECTION, ...EDITOR_RELATED_COLLECTIONS]) {
     if (!state.collectionNames.has(required)) {
@@ -359,7 +357,7 @@ export function evaluateEditorState(state) {
     }
   }
 
-  if (!fullyApplied && state.dataCollectionCount + 1 > COLLECTION_BUDGET_LIMIT) {
+  if (!junctionExists && state.dataCollectionCount + 1 > COLLECTION_BUDGET_LIMIT) {
     blockers.push({
       code: "collection-budget",
       detail: `adding ${EDITOR_JUNCTION_COLLECTION} would reach ${state.dataCollectionCount + 1} data collections, over the limit of ${COLLECTION_BUDGET_LIMIT}`,
@@ -373,7 +371,11 @@ export function evaluateEditorState(state) {
     junctionExists,
     aliasExists,
     contentFieldExists,
-    projectedCollectionCount: state.dataCollectionCount + 1,
+    relationsComplete,
+    missingRelations: state.missingRelations ?? [],
+    projectedCollectionCount: junctionExists
+      ? state.dataCollectionCount
+      : state.dataCollectionCount + 1,
   };
 }
 
@@ -446,72 +448,76 @@ export async function runArticleEditorSetup(
   const contentField = buildContentBlocksFieldPayload();
 
   const report = [];
-  if (apply) {
-    // ORDER MATTERS: junction first (extension README), then the alias field,
-    // then the relations that reference it (Directus REST requires existing
-    // fields), then content_blocks. Schema/meta only — no item data.
-    await client.request("/collections", {
-      method: "POST",
-      body: JSON.stringify(junction),
-    });
-    report.push({
-      action: "create collection",
-      collection: EDITOR_JUNCTION_COLLECTION,
-      releaseId,
-    });
+  // RESUME-AWARE: existing pieces (e.g. after a failed apply) are skipped,
+  // only the missing ones are created. ORDER MATTERS for fresh runs: junction
+  // first (extension README), then the alias field, then the junction-side
+  // relations (the alias side is auto-created via meta.one_field), then
+  // content_blocks. Schema/meta only — no item data. Every write is awaited.
+  const createOrSkip = async (exists, entry, createWrite) => {
+    if (exists) {
+      report.push({ action: `skip existing ${entry.action.replace(/^create /, "")}`, ...entry.rest });
+      return;
+    }
+    if (apply) {
+      await createWrite();
+    }
+    report.push(apply ? { ...entry, ...entry.rest, releaseId } : entry);
+  };
 
-    await client.request(`/fields/${EDITOR_COLLECTION}`, {
-      method: "POST",
-      body: JSON.stringify(aliasField),
-    });
-    report.push({
-      action: "create field",
-      field: `${EDITOR_COLLECTION}.${EDITOR_ALIAS_FIELD}`,
-      releaseId,
-    });
-
-    for (const relation of relations) {
-      await client.request("/relations", {
+  await createOrSkip(
+    evaluation.junctionExists,
+    { action: "create collection", rest: { collection: EDITOR_JUNCTION_COLLECTION } },
+    async () => {
+      await client.request("/collections", {
         method: "POST",
-        body: JSON.stringify(relation),
+        body: JSON.stringify(junction),
       });
-      report.push({
-        action: "create relation",
-        relation: relation.related_collection
-          ? `${relation.collection}.${relation.field} -> ${relation.related_collection}`
-          : `${relation.collection}.${relation.field} -> (polymorphic)`,
-        releaseId,
-      });
-    }
+    },
+  );
 
-    await client.request(`/fields/${EDITOR_COLLECTION}`, {
-      method: "POST",
-      body: JSON.stringify(contentField),
-    });
-    report.push({
-      action: "create field",
-      field: `${EDITOR_COLLECTION}.${EDITOR_CONTENT_FIELD}`,
-      releaseId,
-    });
-  } else {
-    report.push({ action: "create collection", collection: EDITOR_JUNCTION_COLLECTION });
-    report.push({
-      action: "create field",
-      field: `${EDITOR_COLLECTION}.${EDITOR_ALIAS_FIELD}`,
-    });
-    for (const relation of relations) {
-      report.push({
-        action: "create relation",
-        relation: relation.related_collection
-          ? `${relation.collection}.${relation.field} -> ${relation.related_collection}`
-          : `${relation.collection}.${relation.field} -> (polymorphic)`,
+  await createOrSkip(
+    evaluation.aliasExists,
+    { action: "create field", rest: { field: `${EDITOR_COLLECTION}.${EDITOR_ALIAS_FIELD}` } },
+    async () => {
+      await client.request(`/fields/${EDITOR_COLLECTION}`, {
+        method: "POST",
+        body: JSON.stringify(aliasField),
       });
-    }
-    report.push({
-      action: "create field",
-      field: `${EDITOR_COLLECTION}.${EDITOR_CONTENT_FIELD}`,
-    });
+    },
+  );
+
+  const missing = new Set(evaluation.missingRelations ?? []);
+  for (const relation of relations) {
+    const key = `${relation.collection}.${relation.field}`;
+    await createOrSkip(
+      !missing.has(key),
+      {
+        action: "create relation",
+        rest: {
+          relation: relation.related_collection
+            ? `${relation.collection}.${relation.field} -> ${relation.related_collection}`
+            : `${relation.collection}.${relation.field} -> (polymorphic)`,
+        },
+      },
+      async () => {
+        await client.request("/relations", {
+          method: "POST",
+          body: JSON.stringify(relation),
+        });
+      },
+    );
   }
+
+  await createOrSkip(
+    evaluation.contentFieldExists,
+    { action: "create field", rest: { field: `${EDITOR_COLLECTION}.${EDITOR_CONTENT_FIELD}` } },
+    async () => {
+      await client.request(`/fields/${EDITOR_COLLECTION}`, {
+        method: "POST",
+        body: JSON.stringify(contentField),
+      });
+    },
+  );
 
   return {
     ok: true,

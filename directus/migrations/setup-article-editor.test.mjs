@@ -69,6 +69,7 @@ const productionCollections = (extra = []) => [
 const mockClient = ({
   collections = productionCollections(),
   articlesFields = BASE_ARTICLES_FIELDS,
+  relations = [],
 } = {}) => {
   const requests = [];
   return {
@@ -79,6 +80,7 @@ const mockClient = ({
       if (method !== "GET") return null;
       if (path === "/collections") return collections;
       if (path === "/fields/articles") return articlesFields;
+      if (path.startsWith("/relations")) return relations;
       return [];
     },
   };
@@ -131,23 +133,20 @@ test("alias payload is a hidden m2a alias without an interface", () => {
 test("relation payloads wire the M2A with cascade triggers and the allowed collections", () => {
   const relations = buildEditorRelationPayloads();
 
-  assert.equal(relations.length, 4);
+  // PRODUCTION R7 LESSON: exactly THREE relations, all junction-side. Posting
+  // the alias-side relation makes Directus generate a DB foreign key on the
+  // (column-less) alias field and fails; the alias side is auto-created via
+  // meta.one_field on the junction-side owner relation.
+  assert.equal(relations.length, 3);
 
-  const aliasRelation = relations[0];
-  assert.equal(aliasRelation.collection, "articles");
-  assert.equal(aliasRelation.field, EDITOR_ALIAS_FIELD);
-  assert.equal(aliasRelation.related_collection, EDITOR_JUNCTION_COLLECTION);
-  assert.deepEqual(aliasRelation.meta.special, ["m2a"]);
-  assert.equal(aliasRelation.meta.one_field, EDITOR_ALIAS_FIELD);
-  assert.equal(aliasRelation.meta.junction_field, "articles_id");
-
-  const ownerRelation = relations[1];
+  const ownerRelation = relations[0];
   assert.equal(ownerRelation.collection, EDITOR_JUNCTION_COLLECTION);
   assert.equal(ownerRelation.field, "articles_id");
   assert.equal(ownerRelation.related_collection, "articles");
+  assert.equal(ownerRelation.meta.one_field, EDITOR_ALIAS_FIELD);
   assert.equal(ownerRelation.schema.on_delete, "CASCADE");
 
-  const discriminatorRelation = relations[2];
+  const discriminatorRelation = relations[1];
   assert.equal(discriminatorRelation.field, "collection");
   assert.equal(discriminatorRelation.related_collection, null);
   assert.deepEqual(discriminatorRelation.meta.one_allowed_collections, [
@@ -160,7 +159,7 @@ test("relation payloads wire the M2A with cascade triggers and the allowed colle
     "deselecting a related item deletes the junction row",
   );
 
-  const itemRelation = relations[3];
+  const itemRelation = relations[2];
   assert.equal(itemRelation.field, "item");
   assert.equal(itemRelation.related_collection, null);
   assert.equal(itemRelation.meta.junction_field, "collection");
@@ -204,7 +203,6 @@ test("dry run plans the editor schema and performs no writes", async () => {
       "create relation",
       "create relation",
       "create relation",
-      "create relation",
       "create field",
     ],
   );
@@ -245,7 +243,7 @@ test("apply creates the junction before the alias, relations and content_blocks"
   const relationPosts = writeOrder.filter(({ path }) => path === "/relations");
 
   assert.equal(fieldPosts.length, 2);
-  assert.equal(relationPosts.length, 4);
+  assert.equal(relationPosts.length, 3);
   assert.ok(junctionPost, "creates the junction collection");
   // ORDER MATTERS: junction first (extension README), alias field before the
   // relations that reference it, content_blocks last.
@@ -286,6 +284,7 @@ test("a fully applied schema reports as a clean idempotent no-op", async () => {
       { field: EDITOR_ALIAS_FIELD },
       { field: EDITOR_CONTENT_FIELD },
     ],
+    relations: buildEditorRelationPayloads().map(({ collection, field }) => ({ collection, field })),
   });
   const result = await runArticleEditorSetup(client, { apply: true, releaseId: "R5A" });
 
@@ -296,49 +295,38 @@ test("a fully applied schema reports as a clean idempotent no-op", async () => {
   assert.equal(writeRequests(client).length, 0, "already applied performs no writes");
 });
 
-test("STOPS when only part of the editor schema exists", async () => {
-  const partialStates = [
-    {
-      collections: productionCollections([EDITOR_JUNCTION_COLLECTION]),
-      articlesFields: BASE_ARTICLES_FIELDS,
-      expectedCode: "junction-already-exists",
-    },
-    {
-      collections: productionCollections(),
-      articlesFields: [...BASE_ARTICLES_FIELDS, { field: EDITOR_ALIAS_FIELD }],
-      expectedCode: "field-already-exists",
-    },
-    {
-      collections: productionCollections(),
-      articlesFields: [...BASE_ARTICLES_FIELDS, { field: EDITOR_CONTENT_FIELD }],
-      expectedCode: "field-already-exists",
-    },
-    {
-      collections: productionCollections([EDITOR_JUNCTION_COLLECTION]),
-      articlesFields: [
-        ...BASE_ARTICLES_FIELDS,
-        { field: EDITOR_ALIAS_FIELD },
-        { field: EDITOR_CONTENT_FIELD },
-        { field: "future_field" },
-      ],
-      // Complete editor set + an unexpected extra field still applies cleanly.
-      expectedCode: null,
-    },
-  ];
+test("RESUMES after a partial apply instead of stopping (production R7 lesson)", async () => {
+  // Partial state from the failed first apply: junction + alias field exist,
+  // relations and content_blocks are missing. The run must skip the existing
+  // pieces and create ONLY the missing ones.
+  const client = mockClient({
+    collections: productionCollections([EDITOR_JUNCTION_COLLECTION]),
+    articlesFields: [...BASE_ARTICLES_FIELDS, { field: EDITOR_ALIAS_FIELD }],
+  });
+  const result = await runArticleEditorSetup(client, { apply: true, releaseId: "R5A-resume" });
 
-  for (const state of partialStates) {
-    const client = mockClient(state);
-    const result = await runArticleEditorSetup(client, { apply: true, releaseId: "R5A" });
-    if (state.expectedCode === null) {
-      assert.equal(result.stopped, false, "complete editor set stays a no-op");
-      continue;
-    }
-    assert.equal(result.stopped, true, `${state.expectedCode} stops the run`);
-    assert.ok(
-      result.blockers.some((blocker) => blocker.code === state.expectedCode),
-    );
-    assert.equal(writeRequests(client).length, 0, "stopped before any write");
-  }
+  assert.equal(result.ok, true);
+  assert.equal(result.stopped, false);
+  assert.equal(result.noop, false);
+  assert.equal(result.applied, true);
+
+  const actions = result.report.map(({ action }) => action);
+  assert.deepEqual(actions, [
+    "skip existing collection",
+    "skip existing field",
+    "create relation",
+    "create relation",
+    "create relation",
+    "create field",
+  ]);
+
+  const posts = writeRequests(client);
+  assert.equal(posts.length, 4, "only the missing relations + content_blocks are written");
+  assert.ok(posts.every(({ path }) => path === "/relations" || path === "/fields/articles"));
+  const fieldBodies = posts
+    .filter(({ path }) => path === "/fields/articles")
+    .map(({ body }) => JSON.parse(body).field);
+  assert.deepEqual(fieldBodies, [EDITOR_CONTENT_FIELD]);
 });
 
 test("STOPS when the collection budget would exceed the Core limit", async () => {
