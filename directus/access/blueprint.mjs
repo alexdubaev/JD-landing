@@ -21,6 +21,9 @@ const websiteCollections = [
   "navigation_items",
   "categories",
   "articles",
+  // Junction of the article flexible editor: the frontend resolves relation
+  // nodes (products/categories) through it when rendering content_blocks.
+  "articles_editor_nodes",
   "products",
   "faq_items",
   "lead_forms",
