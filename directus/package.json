@@ -23,7 +23,9 @@
     "migrations:article-editor": "node migrations/setup-article-editor.mjs",
     "flows:revalidation": "node flows/apply-revalidation-flow.mjs",
     "release:baseline": "node releases/capture-baseline.mjs",
-    "release:compare": "node releases/compare-baseline.mjs"
+    "release:compare": "node releases/compare-baseline.mjs",
+    "migrations:article-content": "node migrations/migrate-article-content.mjs",
+    "migrations:article-content-reconcile": "node migrations/reconcile-article-content.mjs"
   },
   "engines": {
     "node": ">=20"
