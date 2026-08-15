@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { Product, PublicFile } from "@/types/catalog";
+import type { Product, ProductImageItem, PublicFile } from "@/types/catalog";
 
 import { AddToCartButton } from "./AddToCartButton";
 import { ProductGallery } from "./ProductGallery";
@@ -31,10 +31,20 @@ export function ProductDetail({
   documents: PublicFile[];
   product: Product;
 }) {
-  const imageIds = [
-    ...(product.mainImageId ? [product.mainImageId] : []),
-    ...product.galleryIds,
+  // Normalized dual-read view (R7A): canonical product_images rows when they
+  // exist, otherwise the mapped legacy gallery references — both arrive as
+  // ProductImageItem. The main image stays the gallery anchor.
+  const galleryImages: ProductImageItem[] = [
+    ...(product.mainImageId
+      ? [{ imageId: product.mainImageId, alt: product.imageAlt }]
+      : []),
+    ...(product.images ?? []),
   ];
+  // A canonical product_documents row may override the display title of the
+  // attached file; legacy JSON references carry no override.
+  const documentTitles = new Map(
+    (product.documentItems ?? []).map((item) => [item.fileId, item.title]),
+  );
   const consultationUrl = new URLSearchParams({
     product: product.id,
     ...(product.category ? { category: product.category.id } : {}),
@@ -45,7 +55,7 @@ export function ProductDetail({
       <div className="product-detail">
         <ProductGallery
           imageAlt={product.imageAlt || product.title}
-          imageIds={imageIds}
+          images={galleryImages}
         />
         <div className="product-detail__content">
           {product.category ? (
@@ -99,7 +109,9 @@ export function ProductDetail({
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  {document.title || document.filename}
+                  {documentTitles.get(document.id) ||
+                    document.title ||
+                    document.filename}
                 </a>
               </li>
             ))}

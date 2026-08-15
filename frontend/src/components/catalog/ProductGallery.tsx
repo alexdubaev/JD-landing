@@ -5,16 +5,21 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { directusAssetUrl } from "@/lib/directus/assets";
+import type { ProductImageItem } from "@/types/catalog";
 
 export function ProductGallery({
   imageAlt,
-  imageIds,
+  images,
 }: {
   imageAlt: string;
-  imageIds: string[];
+  images: ProductImageItem[];
 }) {
-  const uniqueIds = [...new Set(imageIds.filter(Boolean))];
-  const [activeId, setActiveId] = useState(uniqueIds[0] ?? null);
+  const uniqueItems = [
+    ...new Map(
+      images.filter(({ imageId }) => Boolean(imageId)).map((item) => [item.imageId, item]),
+    ).values(),
+  ];
+  const [activeId, setActiveId] = useState(uniqueItems[0]?.imageId ?? null);
   const reduceMotion = useReducedMotion();
 
   if (!activeId) {
@@ -32,6 +37,11 @@ export function ProductGallery({
     );
   }
 
+  const activeItem = uniqueItems.find(({ imageId }) => imageId === activeId);
+  // A canonical product_images row may carry its own alt_text; the legacy
+  // gallery fallback maps every reference without one, so the product-level
+  // alt stays the fallback.
+  const activeAlt = activeItem?.alt || imageAlt;
   const activeUrl = directusAssetUrl(activeId, {
     width: 1200,
     height: 900,
@@ -54,7 +64,7 @@ export function ProductGallery({
               transition={{ duration: reduceMotion ? 0 : 0.2 }}
             >
               <Image
-                alt={imageAlt}
+                alt={activeAlt}
                 fill
                 priority
                 sizes="(max-width: 52rem) 100vw, 50vw"
@@ -64,10 +74,10 @@ export function ProductGallery({
           ) : null}
         </AnimatePresence>
       </div>
-      {uniqueIds.length > 1 ? (
+      {uniqueItems.length > 1 ? (
         <div aria-label="Галерея товара" className="product-gallery__thumbs">
-          {uniqueIds.map((id, index) => {
-            const thumbnail = directusAssetUrl(id, {
+          {uniqueItems.map(({ imageId }, index) => {
+            const thumbnail = directusAssetUrl(imageId, {
               width: 180,
               height: 135,
               fit: "contain",
@@ -77,9 +87,9 @@ export function ProductGallery({
             return (
               <button
                 aria-label={`Показать изображение ${index + 1}`}
-                aria-pressed={id === activeId}
-                key={id}
-                onClick={() => setActiveId(id)}
+                aria-pressed={imageId === activeId}
+                key={imageId}
+                onClick={() => setActiveId(imageId)}
                 type="button"
               >
                 {thumbnail ? (

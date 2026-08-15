@@ -131,6 +131,27 @@ test("keeps legacy product JSON interfaces until the dual-read migration", () =>
   assert.equal(productFields.documents.interface, "list");
 });
 
+test("wires the R7C child-collection aliases hidden until the cutover gate", () => {
+  const productFields = studioBlueprint.fields.products.fields;
+
+  const aliases = {
+    image_items: "group_media",
+    document_items: "group_media",
+    specification_items: "group_specs",
+  };
+  for (const [field, group] of Object.entries(aliases)) {
+    assert.ok(productFields[field], `missing products form entry ${field}`);
+    assert.equal(productFields[field].interface, "list-o2m", `${field} is an O2M list`);
+    assert.equal(productFields[field].hidden, true, `${field} stays hidden until R7C`);
+    assert.equal(productFields[field].group, group, `${field} group`);
+    assert.match(productFields[field].note ?? "", /R7C/, `${field} documents the gate`);
+  }
+
+  // Legacy JSON interfaces stay editable "list" repeaters until the gate
+  // (asserted above) — the aliases only ADD the canonical editing surface.
+  assert.equal(productFields.gallery.readonly, undefined);
+});
+
 test("articles form wires the flexible editor with a hidden M2A alias in the same group", () => {
   const articles = studioBlueprint.fields.articles.fields;
 

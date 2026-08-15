@@ -334,6 +334,41 @@ test("products gain hidden indexed normalized code copies without touching sku/m
   assert.equal(mpn.index, true);
 });
 
+test("products declare the R7C child-collection aliases as alias-type only", () => {
+  const products = schemaBlueprint.collections.find(
+    ({ name }) => name === "products",
+  );
+
+  const aliases = {
+    image_items: "product_images",
+    specification_items: "product_specifications",
+    document_items: "product_documents",
+  };
+  for (const [name, relatedCollection] of Object.entries(aliases)) {
+    const alias = products.fields.find(({ name: n }) => n === name);
+    assert.ok(alias, `missing products.${name}`);
+    // Alias type => apply-schema posts schema: null, so a future apply can
+    // never try to create a physical column for these fields.
+    assert.equal(alias.type, "alias", `products.${name} is an alias`);
+    assert.deepEqual(alias.special, ["o2m"], `products.${name} is a special o2m`);
+    assert.equal(alias.relatedCollection, relatedCollection);
+    assert.equal(alias.hidden, true, `products.${name} is hidden until the R7C gate`);
+    assert.match(
+      alias.note ?? "",
+      /R7C/,
+      `products.${name} documents the gated cutover`,
+    );
+  }
+
+  // The legacy JSON fields stay exactly as they were until the R7C gate.
+  for (const name of ["gallery", "specifications", "documents"]) {
+    const legacy = products.fields.find(({ name: n }) => n === name);
+    assert.equal(legacy.type, "json", `products.${name} stays json`);
+    assert.equal(legacy.required, undefined, `products.${name} stays nullable`);
+    assert.equal(legacy.interface, undefined, `products.${name} keeps no blueprint interface`);
+  }
+});
+
 test("product_codes stores additional OEM codes behind a required normalized key", () => {
   const codes = schemaBlueprint.collections.find(
     ({ name }) => name === "product_codes",

@@ -60,12 +60,69 @@ export type ProductCardData = {
   deliveryStatus?: string | null;
 };
 
+/**
+ * One gallery image of a product in the normalized dual-read view: either a
+ * `product_images` row (R7 canonical child collection, `alt` from alt_text) or
+ * a mapped legacy `products.gallery` JSON reference (`alt` is null, the caller
+ * falls back to the product-level image alt).
+ */
+export type ProductImageItem = {
+  imageId: string;
+  alt: string | null;
+};
+
+/**
+ * One specification row of a product in the normalized dual-read view: either a
+ * `product_specifications` row or a parsed legacy `products.specifications`
+ * JSON entry ({ name | label | title, value }).
+ */
+export type ProductSpecificationItem = {
+  name: string;
+  value: string;
+  unit: string | null;
+  group: string | null;
+};
+
+/**
+ * One attached document of a product in the normalized dual-read view: either
+ * a `product_documents` row (title override from the junction) or a mapped
+ * legacy `products.documents` JSON reference (no title override).
+ */
+export type ProductDocumentItem = {
+  fileId: string;
+  title: string | null;
+};
+
+/**
+ * Which side of the R7A dual-read won for a product: the canonical child
+ * collection rows ("children") or the legacy JSON field ("legacy"). Until an
+ * explicit migration-complete criterion exists, an EMPTY child list never
+ * shadows a non-empty legacy value — the source is "legacy" in that case.
+ */
+export type ProductMediaSource = "children" | "legacy";
+
+export type ProductMediaSources = {
+  images: ProductMediaSource;
+  specifications: ProductMediaSource;
+  documents: ProductMediaSource;
+};
+
 export type Product = ProductCardData & {
   fullDescription: string | null;
   seoText: string | null;
   galleryIds: string[];
   specifications: unknown[];
   documentIds: string[];
+  /**
+   * Normalized dual-read views of the product media (R7A). `getProductBySlugs`
+   * always fills them; `galleryIds` / `specifications` / `documentIds` carry
+   * the WINNING side of the same dual-read so pages that still read the legacy
+   * field names render child-collection data once it exists.
+   */
+  images?: ProductImageItem[];
+  specificationItems?: ProductSpecificationItem[];
+  documentItems?: ProductDocumentItem[];
+  mediaSources?: ProductMediaSources;
   sourceName?: string | null;
   sourceUrl?: string | null;
   verifiedAt?: string | null;

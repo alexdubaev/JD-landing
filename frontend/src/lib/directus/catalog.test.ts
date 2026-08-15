@@ -13,6 +13,7 @@ import {
   getCategories,
   getFeaturedProducts,
   getHomepageCategories,
+  getProductBySlugs,
 } from "./catalog";
 
 vi.mock("./client", async () => {
@@ -323,5 +324,202 @@ describe("fetchProductSuggestions", () => {
 
     expect(String(requestMock.mock.calls[0][0])).not.toContain("/deere-shop/search");
     expect(String(requestMock.mock.calls[0][0])).toContain("/items/products");
+  });
+});
+
+const rawDetailProduct = (overrides: Record<string, unknown> = {}) => ({
+  id: "product-1",
+  title: "Насос гидравлический",
+  slug: "hydraulic-pump",
+  sku: "RE654321",
+  category: { id: "category-1", title: "Гидравлика", slug: "hydraulics" },
+  short_description: null,
+  full_description: null,
+  seo_text: null,
+  main_image: null,
+  gallery: ["legacy-gallery-1", "legacy-gallery-2"],
+  specifications: [{ name: "Масса", value: "12 кг" }],
+  documents: ["legacy-doc-1"],
+  price: null,
+  currency: "RUB",
+  price_status: "on_request",
+  availability_status: "on_request",
+  image_alt: "Насос",
+  seo_title: null,
+  seo_description: null,
+  og_image: null,
+  seo_quality_status: null,
+  is_indexable: true,
+  related_products: [],
+  cta_text: null,
+  ...overrides,
+});
+
+/**
+ * Mocks the four requests of the R7A dual-read: the product detail query plus
+ * the three bounded child-collection reads (product_images,
+ * product_specifications, product_documents).
+ */
+const dualReadMock = ({
+  detail = [rawDetailProduct()],
+  images = [],
+  specifications = [],
+  documents = [],
+  rejectImages = false,
+}: {
+  detail?: unknown[];
+  images?: { image: string | null; alt_text: string | null; sort_order?: number }[];
+  specifications?: {
+    group_name: string | null;
+    name: string | null;
+    value: string | null;
+    unit: string | null;
+    sort_order?: number;
+  }[];
+  documents?: { file: string | null; title: string | null; sort_order?: number }[];
+  rejectImages?: boolean;
+} = {}) =>
+  requestMock.mockImplementation(async (path: string) => {
+    if (path.startsWith("/items/products?")) return detail;
+    if (path.startsWith("/items/product_images?")) {
+      if (rejectImages) {
+        throw new DirectusRequestError(403, "/items/product_images");
+      }
+      return images;
+    }
+    if (path.startsWith("/items/product_specifications?")) return specifications;
+    if (path.startsWith("/items/product_documents?")) return documents;
+    throw new Error(`unexpected request ${path}`);
+  });
+
+describe("product media dual-read (R7A)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders canonical child rows when the child collections are filled", async () => {
+    dualReadMock({
+      images: [
+        { image: "child-image-1", alt_text: "Насос в разрезе", sort_order: 1 },
+        { image: "child-image-2", alt_text: null, sort_order: 2 },
+      ],
+      specifications: [
+        {
+          group_name: "Габариты",
+          name: "Масса",
+          value: "12",
+          unit: "кг",
+          sort_order: 1,
+        },
+      ],
+      documents: [{ file: "child-doc-1", title: "Паспорт насоса", sort_order: 1 }],
+    });
+
+    const product = await getProductBySlugs("hydraulics", "hydraulic-pump");
+
+    expect(product?.images).toEqual([
+      { imageId: "child-image-1", alt: "Насос в разрезе" },
+      { imageId: "child-image-2", alt: null },
+    ]);
+    expect(product?.specificationItems).toEqual([
+      { name: "Масса", value: "12", unit: "кг", group: "Габариты" },
+    ]);
+    expect(product?.documentItems).toEqual([
+      { fileId: "child-doc-1", title: "Паспорт насоса" },
+    ]);
+    expect(product?.mediaSources).toEqual({
+      images: "children",
+      specifications: "children",
+      documents: "children",
+    });
+    // The winning side is mirrored into the legacy field names so pages that
+    // still read them (documents fetch, SpecTable) render child data.
+    expect(product?.galleryIds).toEqual(["child-image-1", "child-image-2"]);
+    expect(product?.documentIds).toEqual(["child-doc-1"]);
+
+    const childUrls = requestMock.mock.calls
+      .map(([path]) => new URL(String(path), "https://cms.test"))
+      .filter((url) => url.pathname.startsWith("/items/product_"));
+    expect(childUrls).toHaveLength(3);
+    for (const url of childUrls) {
+      expect(url.searchParams.get("filter[product][_eq]")).toBe("product-1");
+      expect(url.searchParams.get("limit")).toBe("100");
+      expect(url.searchParams.get("limit")).not.toBe("-1");
+      expect(url.searchParams.get("sort")).toBe("sort_order,id");
+    }
+  });
+
+  it("never shadows non-empty legacy values with an empty child list", async () => {
+    dualReadMock();
+
+    const product = await getProductBySlugs("hydraulics", "hydraulic-pump");
+
+    expect(product?.images).toEqual([
+      { imageId: "legacy-gallery-1", alt: null },
+      { imageId: "legacy-gallery-2", alt: null },
+    ]);
+    expect(product?.specificationItems).toEqual([
+      { name: "Масса", value: "12 кг", unit: null, group: null },
+    ]);
+    expect(product?.documentItems).toEqual([{ fileId: "legacy-doc-1", title: null }]);
+    expect(product?.mediaSources).toEqual({
+      images: "legacy",
+      specifications: "legacy",
+      documents: "legacy",
+    });
+    expect(product?.galleryIds).toEqual(["legacy-gallery-1", "legacy-gallery-2"]);
+    expect(product?.specifications).toEqual([
+      { name: "Масса", value: "12 кг", unit: null, group: null },
+    ]);
+    expect(product?.documentIds).toEqual(["legacy-doc-1"]);
+  });
+
+  it("returns empty normalized views when both sides are empty", async () => {
+    dualReadMock({
+      detail: [
+        rawDetailProduct({
+          gallery: [],
+          specifications: [],
+          documents: [],
+        }),
+      ],
+    });
+
+    const product = await getProductBySlugs("hydraulics", "hydraulic-pump");
+
+    expect(product?.images).toEqual([]);
+    expect(product?.specificationItems).toEqual([]);
+    expect(product?.documentItems).toEqual([]);
+    expect(product?.mediaSources).toEqual({
+      images: "legacy",
+      specifications: "legacy",
+      documents: "legacy",
+    });
+  });
+
+  it("degrades unreadable child collections to the legacy fallback", async () => {
+    dualReadMock({
+      rejectImages: true,
+      specifications: [
+        { group_name: null, name: "Масса", value: "12", unit: "кг", sort_order: 1 },
+      ],
+    });
+
+    const product = await getProductBySlugs("hydraulics", "hydraulic-pump");
+
+    // The failed product_images read falls back to legacy gallery refs; the
+    // readable child collections still win independently.
+    expect(product?.images).toEqual([
+      { imageId: "legacy-gallery-1", alt: null },
+      { imageId: "legacy-gallery-2", alt: null },
+    ]);
+    expect(product?.specificationItems).toEqual([
+      { name: "Масса", value: "12", unit: "кг", group: null },
+    ]);
+    expect(product?.mediaSources).toEqual({
+      images: "legacy",
+      specifications: "children",
+      documents: "legacy",
+    });
   });
 });

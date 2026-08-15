@@ -1,9 +1,16 @@
-type Specification = {
+type SpecificationRow = {
   name: string;
   value: string;
+  unit: string | null;
 };
 
-const parseSpecifications = (items: unknown[]): Specification[] =>
+/**
+ * Parses the dual-read specification rows of a product. The R7A dual-read in
+ * `getProductBySlugs` feeds this the WINNING side — canonical
+ * product_specifications rows ({ name, value, unit, group_name }) or the
+ * mapped legacy products.specifications JSON ({ name | label | title, value }).
+ */
+const parseSpecifications = (items: unknown[]): SpecificationRow[] =>
   items.flatMap((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
     const record = item as Record<string, unknown>;
@@ -17,7 +24,11 @@ const parseSpecifications = (items: unknown[]): Specification[] =>
     }
     const name = String(rawName).trim();
     const value = String(rawValue).trim();
-    return name && value ? [{ name, value }] : [];
+    const unit =
+      typeof record.unit === "string" && record.unit.trim() !== ""
+        ? record.unit.trim()
+        : null;
+    return name && value ? [{ name, value, unit }] : [];
   });
 
 export function SpecTable({ specifications }: { specifications: unknown[] }) {
@@ -33,7 +44,7 @@ export function SpecTable({ specifications }: { specifications: unknown[] }) {
             {rows.map((row, index) => (
               <tr key={`${row.name}:${index}`}>
                 <th scope="row">{row.name}</th>
-                <td>{row.value}</td>
+                <td>{row.unit ? `${row.value} ${row.unit}` : row.value}</td>
               </tr>
             ))}
           </tbody>

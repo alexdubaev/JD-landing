@@ -432,6 +432,31 @@ export const schemaBlueprint = {
         field("delivery_status", "string"),
         field("specifications", "json"),
         field("documents", "json"),
+        // R7C DECLARATION ONLY — not applied in the R7A/R7B releases. Alias
+        // fields have no DB column (schema: null in apply-schema), so a
+        // future schema:apply creates metadata only. The legacy JSON fields
+        // above keep their list interfaces until the gated R7C cutover.
+        field("image_items", "alias", {
+          special: ["o2m"],
+          interface: null,
+          hidden: true,
+          relatedCollection: "product_images",
+          note: "R7C declaration: hidden O2M alias over product_images. products.gallery JSON stays the editable interface until the R7C gate (after the R7B gallery migration and reconcile).",
+        }),
+        field("specification_items", "alias", {
+          special: ["o2m"],
+          interface: null,
+          hidden: true,
+          relatedCollection: "product_specifications",
+          note: "R7C declaration: hidden O2M alias over product_specifications. products.specifications JSON stays the editable interface until the R7C gate.",
+        }),
+        field("document_items", "alias", {
+          special: ["o2m"],
+          interface: null,
+          hidden: true,
+          relatedCollection: "product_documents",
+          note: "R7C declaration: hidden O2M alias over product_documents. products.documents JSON stays the editable interface until the R7C gate.",
+        }),
         field("source_name", "string"),
         field("source_url", "string"),
         field("verified_at", "timestamp"),
