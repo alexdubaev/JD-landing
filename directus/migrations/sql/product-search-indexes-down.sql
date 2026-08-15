@@ -14,3 +14,7 @@ DROP INDEX CONCURRENTLY IF EXISTS products_sku_normalized_idx;
 
 ALTER TABLE product_codes
   DROP CONSTRAINT IF EXISTS product_codes_product_type_code_source_unique;
+
+DROP INDEX CONCURRENTLY IF EXISTS product_codes_normalized_code_pattern_idx;
+DROP INDEX CONCURRENTLY IF EXISTS products_mpn_normalized_pattern_idx;
+DROP INDEX CONCURRENTLY IF EXISTS products_sku_normalized_pattern_idx;

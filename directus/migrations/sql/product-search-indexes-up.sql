@@ -41,3 +41,13 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Production R10 lesson: the default B-tree indexes are NOT usable for LIKE
+-- 'prefix%' under a non-C collation (planner falls back to a sequential scan).
+-- Pattern-ops indexes make prefix search index-backed (EXPLAIN-verified).
+CREATE INDEX CONCURRENTLY IF NOT EXISTS products_sku_normalized_pattern_idx
+  ON products (sku_normalized varchar_pattern_ops);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS products_mpn_normalized_pattern_idx
+  ON products (mpn_normalized varchar_pattern_ops);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS product_codes_normalized_code_pattern_idx
+  ON product_codes (normalized_code varchar_pattern_ops);
