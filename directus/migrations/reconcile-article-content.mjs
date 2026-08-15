@@ -22,9 +22,12 @@ export async function reconcileArticleContent(client, { beforeState, plan }) {
   const plannedSlugs = new Set((plan?.articles ?? []).map(({ slug }) => slug));
 
   for (const row of beforeState) {
-    const [article] = await client.request(
+    // The Directus REST API returns the item OBJECT for a single-item GET
+    // (unlike list queries, which return arrays).
+    const fetched = await client.request(
       `/items/articles/${encodeURIComponent(row.id)}?fields=id,slug,content,content_blocks`,
     );
+    const article = Array.isArray(fetched) ? fetched[0] : fetched;
     if (!article) {
       violations.push({ code: "missing-article", slug: row.slug });
       continue;

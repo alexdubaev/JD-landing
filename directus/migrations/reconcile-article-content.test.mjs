@@ -32,7 +32,8 @@ const mockClient = ({ articles = ARTICLES, junctions = [] } = {}) => {
       if (method === "GET" && pathname.startsWith("/items/articles/")) {
         const id = decodeURIComponent(pathname.split("/").pop());
         const article = state.articles.get(id);
-        return article ? [article] : [];
+        // Real Directus returns the OBJECT for single-item GETs.
+        return article ?? null;
       }
       if (method === "GET" && pathname === "/items/articles_editor_nodes") {
         const want = params.get("filter[articles_id][_eq]");
