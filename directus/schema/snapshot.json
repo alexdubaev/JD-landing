@@ -60,7 +60,12 @@
         "sort": null,
         "sort_field": null,
         "status": "active",
-        "translations": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Узлы редактора статей"
+          }
+        ],
         "unarchive_value": "draft",
         "versioning": false
       },
@@ -624,18 +629,23 @@
         "collapse": "open",
         "collection": "product_codes",
         "color": null,
-        "display_template": null,
-        "group": null,
+        "display_template": "{{code}} · {{code_type}} · {{product.sku}}",
+        "group": "group_catalog",
         "hidden": false,
         "icon": "qr_code_2",
         "item_duplication_fields": null,
         "note": null,
         "preview_url": null,
         "singleton": false,
-        "sort": null,
+        "sort": 3,
         "sort_field": null,
         "status": "active",
-        "translations": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Коды товаров"
+          }
+        ],
         "unarchive_value": "draft",
         "versioning": false
       },
@@ -1219,7 +1229,7 @@
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 3,
+        "sort": 5,
         "special": [
           "m2o"
         ],
@@ -1270,7 +1280,7 @@
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 4,
+        "sort": 6,
         "special": null,
         "translations": [
           {
@@ -1868,7 +1878,7 @@
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 5,
+        "sort": 7,
         "special": null,
         "translations": [
           {
@@ -1917,7 +1927,7 @@
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 6,
+        "sort": 8,
         "special": null,
         "translations": [
           {
@@ -1968,7 +1978,7 @@
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 7,
+        "sort": 9,
         "special": [
           "cast-json"
         ],
@@ -2296,7 +2306,7 @@
         "display": null,
         "display_options": null,
         "field": "editor_nodes",
-        "group": null,
+        "group": "group_content",
         "hidden": true,
         "interface": null,
         "note": "Hidden M2A alias managed by the flexible editor.",
@@ -2304,11 +2314,16 @@
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 9,
+        "sort": 4,
         "special": [
           "m2a"
         ],
-        "translations": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Узлы редактора (служебное)"
+          }
+        ],
         "validation": null,
         "validation_message": null,
         "width": "full"
@@ -2324,10 +2339,10 @@
         "display": null,
         "display_options": null,
         "field": "content_blocks",
-        "group": null,
+        "group": "group_content",
         "hidden": false,
         "interface": "flexible-editor",
-        "note": "Structured ProseMirror content. articles.content (HTML) stays canonical until cutover.",
+        "note": "Структурный контент статьи. Поле «Текст статьи» (HTML) остаётся каноническим до перехода.",
         "options": {
           "m2aField": "editor_nodes",
           "relationBlocks": [
@@ -2372,11 +2387,16 @@
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 10,
+        "sort": 3,
         "special": [
           "cast-json"
         ],
-        "translations": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Блочный редактор статьи"
+          }
+        ],
         "validation": null,
         "validation_message": null,
         "width": "full"
@@ -18289,17 +18309,22 @@
         "display": null,
         "display_options": null,
         "field": "sku_normalized",
-        "group": null,
+        "group": "group_system",
         "hidden": true,
         "interface": "input",
-        "note": null,
+        "note": "Индексный ключ поиска — заполняется только миграцией backfill-product-search.",
         "options": null,
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 44,
+        "sort": 5,
         "special": null,
-        "translations": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Артикул (нормализованный)"
+          }
+        ],
         "validation": null,
         "validation_message": null,
         "width": "full"
@@ -18333,17 +18358,22 @@
         "display": null,
         "display_options": null,
         "field": "mpn_normalized",
-        "group": null,
+        "group": "group_system",
         "hidden": true,
         "interface": "input",
-        "note": null,
+        "note": "Индексный ключ поиска — заполняется только миграцией backfill-product-search.",
         "options": null,
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 45,
+        "sort": 6,
         "special": null,
-        "translations": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "MPN (нормализованный)"
+          }
+        ],
         "validation": null,
         "validation_message": null,
         "width": "full"
@@ -18365,6 +18395,105 @@
         "has_auto_increment": false,
         "foreign_key_table": null,
         "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "products",
+      "field": "image_items",
+      "type": "alias",
+      "meta": {
+        "collection": "products",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "image_items",
+        "group": "group_media",
+        "hidden": true,
+        "interface": "select-dropdown-m2o",
+        "note": "Канонические изображения товара (product_images). Скрыто до перехода R7C — до него редактируется галерея JSON.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 5,
+        "special": [
+          "o2m"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Изображения галереи (структурные)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      }
+    },
+    {
+      "collection": "products",
+      "field": "specification_items",
+      "type": "alias",
+      "meta": {
+        "collection": "products",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "specification_items",
+        "group": "group_specs",
+        "hidden": true,
+        "interface": "select-dropdown-m2o",
+        "note": "Канонические характеристики товара (product_specifications). Скрыто до перехода R7C — до них редактируется список JSON.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 2,
+        "special": [
+          "o2m"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Характеристики (структурные)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      }
+    },
+    {
+      "collection": "products",
+      "field": "document_items",
+      "type": "alias",
+      "meta": {
+        "collection": "products",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "document_items",
+        "group": "group_media",
+        "hidden": true,
+        "interface": "select-dropdown-m2o",
+        "note": "Канонические документы товара (product_documents). Скрыто до перехода R7C — до него редактируется список JSON.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 6,
+        "special": [
+          "o2m"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Документы (структурные)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
       }
     },
     {
