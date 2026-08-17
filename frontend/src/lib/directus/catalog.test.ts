@@ -8,6 +8,7 @@ import {
   directusRequest,
 } from "./client";
 import {
+  fetchProductAnalogs,
   fetchProductSuggestions,
   getCatalogPage,
   getCategories,
@@ -521,5 +522,147 @@ describe("product media dual-read (R7A)", () => {
       specifications: "children",
       documents: "legacy",
     });
+  });
+});
+
+const analogRow = (
+  from: string,
+  to: string,
+  relation_type: string,
+  overrides: Record<string, unknown> = {},
+) => ({
+  id: `row-${from}-${to}-${relation_type}`,
+  product_from: from,
+  product_to: to,
+  relation_type,
+  source_name: null,
+  note: null,
+  verified_at: null,
+  ...overrides,
+});
+
+/**
+ * Mocks the two requests of the R8 analog dual-read: the bounded
+ * products_analogs edge query plus the published-product hydration.
+ */
+const analogsMock = ({
+  rows = [],
+  products = [],
+  rejectRows = false,
+}: {
+  rows?: ReturnType<typeof analogRow>[];
+  products?: ReturnType<typeof rawProduct>[] | unknown[];
+  rejectRows?: boolean;
+} = {}) =>
+  requestMock.mockImplementation(async (path: string) => {
+    if (path.startsWith("/items/products_analogs?")) {
+      if (rejectRows) {
+        throw new DirectusRequestError(403, "/items/products_analogs");
+      }
+      return rows;
+    }
+    if (path.startsWith("/items/products?")) {
+      const url = new URL(path, "https://cms.test");
+      const ids = (url.searchParams.get("filter[id][_in]") ?? "")
+        .split(",")
+        .filter(Boolean);
+      return (products as { id: string }[]).filter((product) =>
+        ids.includes(product.id),
+      );
+    }
+    throw new Error(`unexpected request ${path}`);
+  });
+
+describe("fetchProductAnalogs (R8 dual-read)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("queries both junction sides with a bounded limit", async () => {
+    analogsMock({ rows: [], products: [] });
+
+    await fetchProductAnalogs("product-1");
+
+    const edgesUrl = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(edgesUrl.pathname).toBe("/items/products_analogs");
+    expect(edgesUrl.searchParams.get("filter[_or][0][product_from][_eq]")).toBe(
+      "product-1",
+    );
+    expect(edgesUrl.searchParams.get("filter[_or][1][product_to][_eq]")).toBe(
+      "product-1",
+    );
+    expect(edgesUrl.searchParams.get("limit")).toBe("100");
+    expect(edgesUrl.searchParams.get("limit")).not.toBe("-1");
+
+    // An empty edge list skips the hydration request entirely.
+    expect(requestMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps symmetric edges from both directions and keeps only outgoing supersession", async () => {
+    analogsMock({
+      rows: [
+        analogRow("product-1", "p2", "analog"), // current product = from side
+        analogRow("p3", "product-1", "oem_cross"), // current product = to side
+        analogRow("product-1", "p4", "superseded_by"), // outgoing — rendered
+        analogRow("p5", "product-1", "superseded_by"), // incoming — never rendered
+        analogRow("product-1", "p6", "cross_sell"), // unknown type — dropped
+      ],
+      products: [rawProduct("p2"), rawProduct("p3"), rawProduct("p4")],
+    });
+
+    const view = await fetchProductAnalogs("product-1");
+
+    expect(view.analogs.map(({ relationType, direction, product }) => ({
+      relationType,
+      direction,
+      id: product.id,
+    }))).toEqual([
+      { relationType: "analog", direction: "from", id: "p2" },
+      { relationType: "oem_cross", direction: "to", id: "p3" },
+    ]);
+    expect(view.supersededBy.map(({ direction, product }) => ({
+      direction,
+      id: product.id,
+    }))).toEqual([{ direction: "from", id: "p4" }]);
+  });
+
+  it("drops edges whose other side fails to hydrate (unpublished or deleted)", async () => {
+    analogsMock({
+      rows: [analogRow("product-1", "p2", "analog"), analogRow("product-1", "p9", "analog")],
+      products: [rawProduct("p2")], // p9 stays unpublished -> no card
+    });
+
+    const view = await fetchProductAnalogs("product-1");
+
+    expect(view.analogs.map(({ product }) => product.id)).toEqual(["p2"]);
+  });
+
+  it("carries edge provenance into the mapped items", async () => {
+    analogsMock({
+      rows: [
+        analogRow("product-1", "p2", "analog", {
+          source_name: "jd-catalog-2026",
+          note: "Полный аналог по посадке",
+          verified_at: "2026-08-01T00:00:00Z",
+        }),
+      ],
+      products: [rawProduct("p2")],
+    });
+
+    const view = await fetchProductAnalogs("product-1");
+
+    expect(view.analogs[0]).toMatchObject({
+      sourceName: "jd-catalog-2026",
+      note: "Полный аналог по посадке",
+      verifiedAt: "2026-08-01T00:00:00Z",
+    });
+  });
+
+  it("degrades an unreadable junction to the empty view so legacy fallback still renders", async () => {
+    analogsMock({ rejectRows: true });
+
+    const view = await fetchProductAnalogs("product-1");
+
+    expect(view).toEqual({ analogs: [], supersededBy: [] });
   });
 });

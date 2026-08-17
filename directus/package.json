@@ -28,7 +28,8 @@
     "migrations:article-content-reconcile": "node migrations/reconcile-article-content.mjs",
     "migrations:product-search": "node migrations/backfill-product-search.mjs",
     "migrations:product-gallery": "node migrations/migrate-product-gallery.mjs",
-    "migrations:product-gallery-reconcile": "node migrations/reconcile-product-gallery.mjs"
+    "migrations:product-gallery-reconcile": "node migrations/reconcile-product-gallery.mjs",
+    "migrations:product-analogs-reconcile": "node migrations/reconcile-product-analogs.mjs"
   },
   "engines": {
     "node": ">=20"

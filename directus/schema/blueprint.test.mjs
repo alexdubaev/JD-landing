@@ -27,6 +27,7 @@ const requiredCollections = [
   "product_specifications",
   "product_documents",
   "product_codes",
+  "products_analogs",
   "seo_redirects",
   "orders",
   "order_items",
@@ -78,11 +79,11 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 26);
+  assert.equal(names.length, 27);
   assert.equal(
     schemaBlueprint.collections.filter(({ folder }) => !folder).length,
-    21,
-    "20 data collections plus the editor junction and product_codes",
+    22,
+    "20 data collections plus the editor junction, product_codes and products_analogs",
   );
 });
 
@@ -423,6 +424,101 @@ test("product_codes stores additional OEM codes behind a required normalized key
     /product, code_type, normalized_code, source_name/,
     "the composite unique constraint is documented on the collection",
   );
+});
+
+test("products_analogs stores typed one-edge relations behind a canonical key", () => {
+  const analogs = schemaBlueprint.collections.find(
+    ({ name }) => name === "products_analogs",
+  );
+
+  assert.deepEqual(
+    analogs.fields.map(({ name }) => name),
+    [
+      "id",
+      "product_from",
+      "product_to",
+      "relation_type",
+      "canonical_key",
+      "source_name",
+      "note",
+      "verified_at",
+      "created_at",
+      "updated_at",
+    ],
+  );
+
+  // Both sides are required products with CASCADE — an edge cannot outlive
+  // either endpoint.
+  for (const [name, oneField] of [
+    ["product_from", "analogs_from"],
+    ["product_to", "analogs_to"],
+  ]) {
+    const side = analogs.fields.find(({ name: n }) => n === name);
+    assert.equal(side.relatedCollection, "products");
+    assert.equal(side.required, true, `products_analogs.${name} is required`);
+    assert.equal(side.onDelete, "CASCADE", `products_analogs.${name} cascades`);
+    assert.equal(side.oneField, oneField, `products_analogs.${name} registers the alias`);
+    assert.equal(side.index, true);
+  }
+
+  const relationType = analogs.fields.find(({ name }) => name === "relation_type");
+  assert.equal(relationType.required, true);
+  assert.deepEqual(relationType.choices, [
+    "analog",
+    "oem_cross",
+    "compatible",
+    "superseded_by",
+  ]);
+
+  const canonicalKey = analogs.fields.find(({ name }) => name === "canonical_key");
+  assert.equal(canonicalKey.required, true);
+  assert.equal(canonicalKey.index, true);
+  // The PHYSICAL unique constraint lives in the operator-run SQL file (the
+  // product_codes precedent): Directus would create its own differently named
+  // constraint on top of the guarded one.
+  assert.equal(canonicalKey.unique, undefined, "the unique constraint is owned by the SQL file");
+  assert.match(
+    analogs.note ?? "",
+    /sql\/product-analogs-constraints-up\.sql/,
+    "the collection documents the SQL constraints file",
+  );
+  assert.match(
+    analogs.note ?? "",
+    /superseded_by is directed/,
+    "the collection documents the symmetric/directed split",
+  );
+
+  const sourceName = analogs.fields.find(({ name }) => name === "source_name");
+  assert.equal(sourceName.required, true);
+  assert.equal(sourceName.default, "manual");
+});
+
+test("products declare hidden R8 analog aliases without touching related_products", () => {
+  const products = schemaBlueprint.collections.find(
+    ({ name }) => name === "products",
+  );
+
+  const aliases = {
+    analogs_from: "products_analogs",
+    analogs_to: "products_analogs",
+  };
+  for (const [name, relatedCollection] of Object.entries(aliases)) {
+    const alias = products.fields.find(({ name: n }) => n === name);
+    assert.ok(alias, `missing products.${name}`);
+    // Alias type => apply-schema posts schema: null and SKIPS the relation —
+    // the junction-side M2O with one_field registers the alias automatically.
+    assert.equal(alias.type, "alias", `products.${name} is an alias`);
+    assert.deepEqual(alias.special, ["o2m"], `products.${name} is a special o2m`);
+    assert.equal(alias.relatedCollection, relatedCollection);
+    assert.equal(alias.hidden, true, `products.${name} is hidden`);
+    assert.match(alias.note ?? "", /R8/, `products.${name} documents the release`);
+  }
+
+  // The legacy related_products JSON field stays exactly as it was until a
+  // separate gated cutover re-confirms it is empty.
+  const legacy = products.fields.find(({ name }) => name === "related_products");
+  assert.equal(legacy.type, "json", "products.related_products stays json");
+  assert.equal(legacy.required, undefined, "products.related_products stays nullable");
 });
 
 test("all declared relation targets exist", () => {

@@ -457,6 +457,24 @@ export const schemaBlueprint = {
           relatedCollection: "product_documents",
           note: "R7C declaration: hidden O2M alias over product_documents. products.documents JSON stays the editable interface until the R7C gate.",
         }),
+        // R8 DECLARATION — hidden O2M aliases over products_analogs. Alias
+        // fields have no DB column and are never posted as relation sides:
+        // the junction-side M2Os below carry one_field and register them.
+        // Edits happen in the products_analogs collection, not on the form.
+        field("analogs_from", "alias", {
+          special: ["o2m"],
+          interface: null,
+          hidden: true,
+          relatedCollection: "products_analogs",
+          note: "R8 declaration: hidden O2M alias over products_analogs.product_from (edges stored with this product as the from side). Manage edges in the products_analogs collection.",
+        }),
+        field("analogs_to", "alias", {
+          special: ["o2m"],
+          interface: null,
+          hidden: true,
+          relatedCollection: "products_analogs",
+          note: "R8 declaration: hidden O2M alias over products_analogs.product_to (edges stored with this product as the to side). Manage edges in the products_analogs collection.",
+        }),
         field("source_name", "string"),
         field("source_url", "string"),
         field("verified_at", "timestamp"),
@@ -682,6 +700,47 @@ export const schemaBlueprint = {
         }),
         field("source_reference", "string"),
         field("is_active", "boolean", { default: true, index: true }),
+        ...timestamps(),
+      ],
+    },
+    {
+      name: "products_analogs",
+      icon: "compare_arrows",
+      note: "Typed one-edge relations between products (R8, ADR-003): analog/oem_cross/compatible are symmetric — canonical_key derives from the SORTED id pair so a mirror duplicate is physically impossible under the unique key; superseded_by is directed and keeps the from/to order. No self-edges (CHECK) and UNIQUE canonical_key are enforced by migrations/sql/product-analogs-constraints-up.sql — the Directus REST API cannot express table CHECKs.",
+      fields: [
+        id(),
+        field("product_from", "uuid", {
+          required: true,
+          relatedCollection: "products",
+          oneField: "analogs_from",
+          index: true,
+          onDelete: "CASCADE",
+        }),
+        field("product_to", "uuid", {
+          required: true,
+          relatedCollection: "products",
+          oneField: "analogs_to",
+          index: true,
+          onDelete: "CASCADE",
+        }),
+        field("relation_type", "string", {
+          required: true,
+          choices: ["analog", "oem_cross", "compatible", "superseded_by"],
+          index: true,
+        }),
+        field("canonical_key", "string", {
+          required: true,
+          index: true,
+          note: "Deterministic edge key '<type>:<from>:<to>': the pair is SORTED for the symmetric types and the direction preserved for superseded_by. Physically UNIQUE via migrations/sql/product-analogs-constraints-up.sql; recomputed and verified by migrations/reconcile-product-analogs.mjs.",
+        }),
+        field("source_name", "string", {
+          required: true,
+          default: "manual",
+          index: true,
+          note: "Provenance of the relation (feed or catalog name, 'manual' for editors).",
+        }),
+        field("note", "text"),
+        field("verified_at", "timestamp"),
         ...timestamps(),
       ],
     },

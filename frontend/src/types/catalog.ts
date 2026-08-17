@@ -107,6 +107,45 @@ export type ProductMediaSources = {
   documents: ProductMediaSource;
 };
 
+/**
+ * Relation type of a `products_analogs` edge (R8): `analog`, `oem_cross` and
+ * `compatible` are logically bidirectional; `superseded_by` is directed
+ * ("this article was replaced by...").
+ */
+export type ProductRelationType =
+  | "analog"
+  | "oem_cross"
+  | "compatible"
+  | "superseded_by";
+
+/**
+ * One `products_analogs` edge (R8) normalized for the current product:
+ * `direction` tells which side of the stored row the product occupies, and
+ * `product` is the hydrated card of the OTHER side (published products only —
+ * edges to unpublished/missing products are dropped).
+ */
+export type ProductAnalogItem = {
+  relationType: ProductRelationType;
+  direction: "from" | "to";
+  product: ProductCardData;
+  sourceName: string | null;
+  note: string | null;
+  verifiedAt: string | null;
+};
+
+/**
+ * Normalized `products_analogs` view of ONE product (R8 dual-read): the
+ * symmetric relations (both directions of the stored rows) plus the directed
+ * "replaced by" list. The INCOMING side of a supersession ("заменяет...") is
+ * dropped by the mapping and never rendered. An EMPTY view must never shadow
+ * non-empty legacy `related_products` — RelatedProducts applies that
+ * fallback rule (the same rule as the R7A media dual-read).
+ */
+export type ProductAnalogsView = {
+  analogs: ProductAnalogItem[];
+  supersededBy: ProductAnalogItem[];
+};
+
 export type Product = ProductCardData & {
   fullDescription: string | null;
   seoText: string | null;

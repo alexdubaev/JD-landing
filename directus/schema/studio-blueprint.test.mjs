@@ -152,6 +152,38 @@ test("wires the R7C child-collection aliases hidden until the cutover gate", () 
   assert.equal(productFields.gallery.readonly, undefined);
 });
 
+test("products_analogs is an editable catalog collection", () => {
+  assert.deepEqual(studioBlueprint.collections.products_analogs, {
+    label: "Аналоги товаров",
+    group: "group_catalog",
+    icon: "compare_arrows",
+    sort: 4,
+    hidden: false,
+    displayTemplate: "{{relation_type}} · {{product_from.sku}} → {{product_to.sku}}",
+  });
+});
+
+test("wires the R8 analog aliases hidden in a dedicated products group", () => {
+  const productForm = studioBlueprint.fields.products;
+
+  assert.ok(productForm.groups.group_analogs, "missing products group_analogs");
+  assert.equal(productForm.groups.group_analogs.label, "Аналоги");
+
+  const productFields = productForm.fields;
+  for (const field of ["analogs_from", "analogs_to"]) {
+    assert.ok(productFields[field], `missing products form entry ${field}`);
+    assert.equal(productFields[field].interface, "list-o2m", `${field} is an O2M list`);
+    assert.equal(productFields[field].hidden, true, `${field} stays hidden`);
+    assert.equal(productFields[field].group, "group_analogs", `${field} group`);
+    assert.match(productFields[field].note ?? "", /products_analogs/, `${field} points editors at the junction collection`);
+  }
+
+  // The legacy related_products JSON interface stays untouched until the
+  // gated cutover re-confirms it is empty.
+  assert.equal(productFields.related_products.hidden, undefined);
+  assert.equal(productFields.related_products.interface, undefined);
+});
+
 test("articles form wires the flexible editor with a hidden M2A alias in the same group", () => {
   const articles = studioBlueprint.fields.articles.fields;
 
