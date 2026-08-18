@@ -631,6 +631,7 @@ export const schemaBlueprint = {
         field("product", "uuid", {
           required: true,
           relatedCollection: "products",
+          oneField: "image_items",
           index: true,
           onDelete: "CASCADE",
         }),
@@ -650,6 +651,7 @@ export const schemaBlueprint = {
         field("product", "uuid", {
           required: true,
           relatedCollection: "products",
+          oneField: "specification_items",
           index: true,
           onDelete: "CASCADE",
         }),
@@ -668,6 +670,7 @@ export const schemaBlueprint = {
         field("product", "uuid", {
           required: true,
           relatedCollection: "products",
+          oneField: "document_items",
           index: true,
           onDelete: "CASCADE",
         }),
