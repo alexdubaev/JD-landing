@@ -84,11 +84,13 @@ const SPEC_FIELD_NAMES = [
 const productionCollections = (extra = []) => [
   ...[...DATA_COLLECTIONS, ...extra].map((collection) => ({
     collection,
+    schema: { name: collection }, // physical collections carry schema.name
     meta: { folder: false },
   })),
-  { collection: "group_content", meta: { folder: true } },
-  { collection: "directus_users", meta: {} },
-  { collection: "directus_files", meta: {} },
+  // Folder pseudo-collections (schema=null) must never count.
+  { collection: "group_content", schema: null, meta: { folder: true } },
+  { collection: "directus_users", schema: { name: "directus_users" }, meta: {} },
+  { collection: "directus_files", schema: { name: "directus_files" }, meta: {} },
 ];
 
 /**

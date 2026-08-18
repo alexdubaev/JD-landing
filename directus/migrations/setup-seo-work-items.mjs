@@ -127,8 +127,13 @@ export async function collectSeoWorkItemsState(client) {
   return {
     collections,
     collectionNames,
+    // Canonical counting (platform-compatibility test): physical collections
+    // only. Folder pseudo-collections have schema=null and MUST NOT count —
+    // without the schema?.name check five folders inflated the count and
+    // falsely tripped the budget guard on production (R10A lesson).
     dataCollectionCount: collections.filter(
-      ({ collection, meta }) => !isSystemCollection(collection) && !meta?.folder,
+      ({ collection, schema, meta }) =>
+        schema?.name && !isSystemCollection(collection) && !meta?.folder,
     ).length,
     collectionExists,
     fieldNames: new Set((fields ?? []).map(({ field }) => field)),
@@ -264,7 +269,7 @@ export async function runSeoWorkItemsSetup(
     if (apply) {
       await createWrite();
     }
-    report.push(apply ? { ...entry, ...entry.rest, releaseId } : entry);
+    report.push(apply ? { ...entry, ...entry.rest, releaseId } : { ...entry, ...entry.rest });
   };
 
   await createOrSkip(

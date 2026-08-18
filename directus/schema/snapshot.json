@@ -275,6 +275,38 @@
       }
     },
     {
+      "collection": "group_seo",
+      "meta": {
+        "accountability": "all",
+        "archive_app_filter": true,
+        "archive_field": null,
+        "archive_value": null,
+        "autosave_revision_interval": null,
+        "collapse": "open",
+        "collection": "group_seo",
+        "color": null,
+        "display_template": null,
+        "group": null,
+        "hidden": false,
+        "icon": "travel_explore",
+        "item_duplication_fields": null,
+        "note": null,
+        "preview_url": null,
+        "singleton": false,
+        "sort": 6,
+        "sort_field": null,
+        "status": "active",
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "SEO"
+          }
+        ],
+        "unarchive_value": null,
+        "versioning": false
+      }
+    },
+    {
       "collection": "group_settings",
       "meta": {
         "accountability": "all",
@@ -896,6 +928,41 @@
       },
       "schema": {
         "name": "seo_redirects"
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "meta": {
+        "accountability": "all",
+        "archive_app_filter": true,
+        "archive_field": "status",
+        "archive_value": "archived",
+        "autosave_revision_interval": null,
+        "collapse": "open",
+        "collection": "seo_work_items",
+        "color": null,
+        "display_template": "{{type}} · {{title}} · {{status}} · {{severity}}",
+        "group": "group_seo",
+        "hidden": false,
+        "icon": "checklist",
+        "item_duplication_fields": null,
+        "note": null,
+        "preview_url": null,
+        "singleton": false,
+        "sort": 1,
+        "sort_field": null,
+        "status": "active",
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "SEO-задачи"
+          }
+        ],
+        "unarchive_value": "draft",
+        "versioning": false
+      },
+      "schema": {
+        "name": "seo_work_items"
       }
     },
     {
@@ -18869,7 +18936,7 @@
         "numeric_precision": null,
         "numeric_scale": null,
         "is_nullable": false,
-        "is_unique": false,
+        "is_unique": true,
         "is_indexed": true,
         "is_primary_key": false,
         "is_generated": false,
@@ -20178,6 +20245,1800 @@
         "has_auto_increment": false,
         "foreign_key_table": null,
         "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "id",
+      "type": "uuid",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "id",
+        "group": "group_system",
+        "hidden": true,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": true,
+        "required": true,
+        "searchable": true,
+        "sort": 5,
+        "special": [
+          "uuid"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Идентификатор"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "id",
+        "table": "seo_work_items",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": false,
+        "is_unique": true,
+        "is_indexed": false,
+        "is_primary_key": true,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "type",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "type",
+        "group": "group_main",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 1,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Тип задачи"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "type",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": null,
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "subtype",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "subtype",
+        "group": "group_main",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 2,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Подтип"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "subtype",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": null,
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "status",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "status",
+        "group": "group_main",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": {
+          "choices": [
+            {
+              "text": "draft",
+              "value": "draft"
+            },
+            {
+              "text": "ready",
+              "value": "ready"
+            },
+            {
+              "text": "review",
+              "value": "review"
+            },
+            {
+              "text": "applied",
+              "value": "applied"
+            },
+            {
+              "text": "rolled back",
+              "value": "rolled_back"
+            },
+            {
+              "text": "rejected",
+              "value": "rejected"
+            }
+          ]
+        },
+        "readonly": false,
+        "required": true,
+        "searchable": true,
+        "sort": 3,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Статус"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "status",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": "draft",
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": false,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "severity",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "severity",
+        "group": "group_main",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 4,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Критичность"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "severity",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": "minor",
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "priority_score",
+      "type": "integer",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "priority_score",
+        "group": "group_main",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 5,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Приоритет"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "priority_score",
+        "table": "seo_work_items",
+        "data_type": "integer",
+        "default_value": 0,
+        "max_length": null,
+        "numeric_precision": 32,
+        "numeric_scale": 0,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "confidence",
+      "type": "decimal",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "confidence",
+        "group": "group_main",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 6,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Уверенность"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "confidence",
+        "table": "seo_work_items",
+        "data_type": "numeric",
+        "default_value": 0,
+        "max_length": null,
+        "numeric_precision": 5,
+        "numeric_scale": 4,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "entity_type",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "entity_type",
+        "group": "group_entity",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 1,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Тип сущности"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "entity_type",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": null,
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "entity_id",
+      "type": "uuid",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "entity_id",
+        "group": "group_entity",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 2,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "ID сущности"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "entity_id",
+        "table": "seo_work_items",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "entity_key",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "entity_key",
+        "group": "group_entity",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 3,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Ключ сущности (slug/sku)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "entity_key",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": null,
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "url",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "url",
+        "group": "group_entity",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 4,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "URL страницы"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "url",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": null,
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "title",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "title",
+        "group": "group_main",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 7,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Заголовок"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "title",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": null,
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "summary",
+      "type": "text",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "summary",
+        "group": "group_main",
+        "hidden": false,
+        "interface": "input-multiline",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 8,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Краткое описание"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "summary",
+        "table": "seo_work_items",
+        "data_type": "text",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "recommendation",
+      "type": "text",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "recommendation",
+        "group": "group_recommendation",
+        "hidden": false,
+        "interface": "input-multiline",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 1,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Рекомендация"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "recommendation",
+        "table": "seo_work_items",
+        "data_type": "text",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "current_value_json",
+      "type": "json",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "current_value_json",
+        "group": "group_recommendation",
+        "hidden": false,
+        "interface": "input-code",
+        "note": null,
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 2,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Текущее значение (JSON)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "current_value_json",
+        "table": "seo_work_items",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "proposed_value_json",
+      "type": "json",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "proposed_value_json",
+        "group": "group_recommendation",
+        "hidden": false,
+        "interface": "input-code",
+        "note": null,
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 3,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Предлагаемое значение (JSON)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "proposed_value_json",
+        "table": "seo_work_items",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "patch_json",
+      "type": "json",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "patch_json",
+        "group": "group_recommendation",
+        "hidden": false,
+        "interface": "input-code",
+        "note": null,
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 4,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Патч полей (JSON)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "patch_json",
+        "table": "seo_work_items",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "evidence_json",
+      "type": "json",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "evidence_json",
+        "group": "group_evidence",
+        "hidden": false,
+        "interface": "input-code",
+        "note": null,
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 1,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Обоснование (JSON)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "evidence_json",
+        "table": "seo_work_items",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "sources_json",
+      "type": "json",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "sources_json",
+        "group": "group_evidence",
+        "hidden": false,
+        "interface": "input-code",
+        "note": null,
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 2,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Источники (JSON)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "sources_json",
+        "table": "seo_work_items",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "metrics_json",
+      "type": "json",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "metrics_json",
+        "group": "group_evidence",
+        "hidden": false,
+        "interface": "input-code",
+        "note": null,
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 3,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Метрики (JSON)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "metrics_json",
+        "table": "seo_work_items",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "dedupe_key",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "dedupe_key",
+        "group": "group_system",
+        "hidden": false,
+        "interface": "input",
+        "note": "Вычисляет воркер (sha256 сущность+тип+подтип+патч); уникален физически, через SQL-констрейнт.",
+        "options": null,
+        "readonly": false,
+        "required": true,
+        "searchable": true,
+        "sort": 1,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Ключ дедупликации"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "dedupe_key",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": null,
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": false,
+        "is_unique": true,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "before_hash",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "before_hash",
+        "group": "group_system",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 2,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Хеш до изменения"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "before_hash",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": null,
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "article",
+      "type": "uuid",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "article",
+        "group": "group_entity",
+        "hidden": false,
+        "interface": "select-dropdown-m2o",
+        "note": "Заполняется только после одобрения задачи; публикует человек, не воркер.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 5,
+        "special": [
+          "m2o"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Статья (черновик)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "article",
+        "table": "seo_work_items",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "articles",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "worker_run_id",
+      "type": "string",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "worker_run_id",
+        "group": "group_pipeline",
+        "hidden": false,
+        "interface": "input",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 1,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Прогон воркера"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "worker_run_id",
+        "table": "seo_work_items",
+        "data_type": "character varying",
+        "default_value": null,
+        "max_length": 255,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "claimed_at",
+      "type": "timestamp",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "claimed_at",
+        "group": "group_pipeline",
+        "hidden": false,
+        "interface": "datetime",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 2,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Захвачено"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "claimed_at",
+        "table": "seo_work_items",
+        "data_type": "timestamp with time zone",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "expires_at",
+      "type": "timestamp",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "expires_at",
+        "group": "group_pipeline",
+        "hidden": false,
+        "interface": "datetime",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 3,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Захват истекает"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "expires_at",
+        "table": "seo_work_items",
+        "data_type": "timestamp with time zone",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": true,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "applied_at",
+      "type": "timestamp",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "applied_at",
+        "group": "group_pipeline",
+        "hidden": false,
+        "interface": "datetime",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 4,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Применено"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "applied_at",
+        "table": "seo_work_items",
+        "data_type": "timestamp with time zone",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "rolled_back_at",
+      "type": "timestamp",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "rolled_back_at",
+        "group": "group_pipeline",
+        "hidden": false,
+        "interface": "datetime",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 5,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Откатено"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "rolled_back_at",
+        "table": "seo_work_items",
+        "data_type": "timestamp with time zone",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "last_error",
+      "type": "text",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "last_error",
+        "group": "group_pipeline",
+        "hidden": false,
+        "interface": "input-multiline",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 6,
+        "special": null,
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Последняя ошибка"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "last_error",
+        "table": "seo_work_items",
+        "data_type": "text",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "created_at",
+      "type": "timestamp",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "created_at",
+        "group": "group_system",
+        "hidden": true,
+        "interface": "datetime",
+        "note": null,
+        "options": null,
+        "readonly": true,
+        "required": false,
+        "searchable": true,
+        "sort": 3,
+        "special": [
+          "date-created"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Создано"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "created_at",
+        "table": "seo_work_items",
+        "data_type": "timestamp with time zone",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "updated_at",
+      "type": "timestamp",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "updated_at",
+        "group": "group_system",
+        "hidden": true,
+        "interface": "datetime",
+        "note": null,
+        "options": null,
+        "readonly": true,
+        "required": false,
+        "searchable": true,
+        "sort": 4,
+        "special": [
+          "date-updated"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Обновлено"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "half"
+      },
+      "schema": {
+        "name": "updated_at",
+        "table": "seo_work_items",
+        "data_type": "timestamp with time zone",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "group_main",
+      "type": "alias",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "group_main",
+        "group": null,
+        "hidden": false,
+        "interface": "group-detail",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 1,
+        "special": [
+          "alias",
+          "no-data",
+          "group"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Задача"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "group_entity",
+      "type": "alias",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "group_entity",
+        "group": null,
+        "hidden": false,
+        "interface": "group-detail",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 2,
+        "special": [
+          "alias",
+          "no-data",
+          "group"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Сущность"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "group_recommendation",
+      "type": "alias",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "group_recommendation",
+        "group": null,
+        "hidden": false,
+        "interface": "group-detail",
+        "note": null,
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 3,
+        "special": [
+          "alias",
+          "no-data",
+          "group"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Рекомендация"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "group_evidence",
+      "type": "alias",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "group_evidence",
+        "group": null,
+        "hidden": false,
+        "interface": "group-accordion",
+        "note": null,
+        "options": {
+          "start": "closed"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 4,
+        "special": [
+          "alias",
+          "no-data",
+          "group"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Обоснование и источники"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "group_pipeline",
+      "type": "alias",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "group_pipeline",
+        "group": null,
+        "hidden": false,
+        "interface": "group-accordion",
+        "note": null,
+        "options": {
+          "start": "closed"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 5,
+        "special": [
+          "alias",
+          "no-data",
+          "group"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Конвейер и выполнение"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "group_system",
+      "type": "alias",
+      "meta": {
+        "collection": "seo_work_items",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "group_system",
+        "group": null,
+        "hidden": false,
+        "interface": "group-accordion",
+        "note": null,
+        "options": {
+          "start": "closed"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 6,
+        "special": [
+          "alias",
+          "no-data",
+          "group"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "Служебное"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
       }
     },
     {
@@ -23417,6 +25278,31 @@
         "foreign_key_table": "directus_files",
         "foreign_key_column": "id",
         "constraint_name": "recent_supplies_image_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "seo_work_items",
+      "field": "article",
+      "related_collection": "articles",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "seo_work_items",
+        "many_field": "article",
+        "one_allowed_collections": null,
+        "one_collection": "articles",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "seo_work_items",
+        "column": "article",
+        "foreign_key_table": "articles",
+        "foreign_key_column": "id",
+        "constraint_name": "seo_work_items_article_foreign",
         "on_update": "NO ACTION",
         "on_delete": "SET NULL"
       }
