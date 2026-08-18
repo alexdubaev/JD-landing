@@ -2523,6 +2523,59 @@
       }
     },
     {
+      "collection": "articles",
+      "field": "seo",
+      "type": "json",
+      "meta": {
+        "collection": "articles",
+        "conditions": null,
+        "display": "seo-display",
+        "display_options": null,
+        "field": "seo",
+        "group": "group_seo",
+        "hidden": false,
+        "interface": "seo-interface",
+        "note": "Приоритетное JSON-поле SEO (R11). Пока JSON пуст, сайт читает скалярные поля выше; миграция заполняет JSON из скаляров и никогда не изменяет их.",
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 4,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "SEO-панель (плагин)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "seo",
+        "table": "articles",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
       "collection": "articles_editor_nodes",
       "field": "id",
       "type": "uuid",
@@ -4022,7 +4075,7 @@
         "readonly": false,
         "required": false,
         "searchable": true,
-        "sort": 6,
+        "sort": 7,
         "special": null,
         "translations": [
           {
@@ -4230,6 +4283,59 @@
         "validation": null,
         "validation_message": null,
         "width": "full"
+      }
+    },
+    {
+      "collection": "categories",
+      "field": "seo",
+      "type": "json",
+      "meta": {
+        "collection": "categories",
+        "conditions": null,
+        "display": "seo-display",
+        "display_options": null,
+        "field": "seo",
+        "group": "group_seo",
+        "hidden": false,
+        "interface": "seo-interface",
+        "note": "Приоритетное JSON-поле SEO (R11). Пока JSON пуст, сайт читает скалярные поля выше; миграция заполняет JSON из скаляров и никогда не изменяет их.",
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 6,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "SEO-панель (плагин)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "seo",
+        "table": "categories",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
       }
     },
     {
@@ -7458,6 +7564,59 @@
         "validation": null,
         "validation_message": null,
         "width": "full"
+      }
+    },
+    {
+      "collection": "home_page",
+      "field": "seo",
+      "type": "json",
+      "meta": {
+        "collection": "home_page",
+        "conditions": null,
+        "display": "seo-display",
+        "display_options": null,
+        "field": "seo",
+        "group": "group_seo",
+        "hidden": false,
+        "interface": "seo-interface",
+        "note": "Приоритетное JSON-поле SEO (R11). Пока JSON пуст, сайт читает скалярные поля ниже; миграция заполняет JSON из скаляров и никогда не изменяет их.",
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 8,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "SEO-панель (плагин)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "seo",
+        "table": "home_page",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
       }
     },
     {
@@ -13824,6 +13983,59 @@
       }
     },
     {
+      "collection": "pages",
+      "field": "seo",
+      "type": "json",
+      "meta": {
+        "collection": "pages",
+        "conditions": null,
+        "display": "seo-display",
+        "display_options": null,
+        "field": "seo",
+        "group": "group_seo",
+        "hidden": false,
+        "interface": "seo-interface",
+        "note": "Приоритетное JSON-поле SEO (R11). Пока JSON пуст, сайт читает скалярные поля выше; миграция заполняет JSON из скаляров и никогда не изменяет их.",
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 6,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "SEO-панель (плагин)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "seo",
+        "table": "pages",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
+      }
+    },
+    {
       "collection": "product_codes",
       "field": "id",
       "type": "uuid",
@@ -14464,8 +14676,8 @@
         "is_generated": false,
         "generation_expression": null,
         "has_auto_increment": false,
-        "foreign_key_table": "products",
-        "foreign_key_column": "id"
+        "foreign_key_table": null,
+        "foreign_key_column": null
       }
     },
     {
@@ -14934,8 +15146,8 @@
         "is_generated": false,
         "generation_expression": null,
         "has_auto_increment": false,
-        "foreign_key_table": "products",
-        "foreign_key_column": "id"
+        "foreign_key_table": null,
+        "foreign_key_column": null
       }
     },
     {
@@ -15404,8 +15616,8 @@
         "is_generated": false,
         "generation_expression": null,
         "has_auto_increment": false,
-        "foreign_key_table": "products",
-        "foreign_key_column": "id"
+        "foreign_key_table": null,
+        "foreign_key_column": null
       }
     },
     {
@@ -18699,6 +18911,59 @@
         "validation": null,
         "validation_message": null,
         "width": "full"
+      }
+    },
+    {
+      "collection": "products",
+      "field": "seo",
+      "type": "json",
+      "meta": {
+        "collection": "products",
+        "conditions": null,
+        "display": "seo-display",
+        "display_options": null,
+        "field": "seo",
+        "group": "group_seo",
+        "hidden": false,
+        "interface": "seo-interface",
+        "note": "Приоритетное JSON-поле SEO (R11). Пока JSON пуст, сайт читает скалярные поля ниже; миграция заполняет JSON из скаляров и никогда не изменяет их.",
+        "options": {
+          "language": "json"
+        },
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 7,
+        "special": [
+          "cast-json"
+        ],
+        "translations": [
+          {
+            "language": "ru-RU",
+            "translation": "SEO-панель (плагин)"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "seo",
+        "table": "products",
+        "data_type": "json",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": null,
+        "foreign_key_column": null
       }
     },
     {
@@ -24994,17 +25259,8 @@
         "one_collection": "products",
         "one_collection_field": null,
         "one_deselect_action": "nullify",
-        "one_field": null,
+        "one_field": "document_items",
         "sort_field": null
-      },
-      "schema": {
-        "table": "product_documents",
-        "column": "product",
-        "foreign_key_table": "products",
-        "foreign_key_column": "id",
-        "constraint_name": "product_documents_product_foreign",
-        "on_update": "NO ACTION",
-        "on_delete": "CASCADE"
       }
     },
     {
@@ -25044,17 +25300,8 @@
         "one_collection": "products",
         "one_collection_field": null,
         "one_deselect_action": "nullify",
-        "one_field": null,
+        "one_field": "image_items",
         "sort_field": null
-      },
-      "schema": {
-        "table": "product_images",
-        "column": "product",
-        "foreign_key_table": "products",
-        "foreign_key_column": "id",
-        "constraint_name": "product_images_product_foreign",
-        "on_update": "NO ACTION",
-        "on_delete": "CASCADE"
       }
     },
     {
@@ -25094,17 +25341,8 @@
         "one_collection": "products",
         "one_collection_field": null,
         "one_deselect_action": "nullify",
-        "one_field": null,
+        "one_field": "specification_items",
         "sort_field": null
-      },
-      "schema": {
-        "table": "product_specifications",
-        "column": "product",
-        "foreign_key_table": "products",
-        "foreign_key_column": "id",
-        "constraint_name": "product_specifications_product_foreign",
-        "on_update": "NO ACTION",
-        "on_delete": "CASCADE"
       }
     },
     {
