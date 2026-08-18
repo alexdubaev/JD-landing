@@ -44,6 +44,14 @@ const decommissionedCollections = [
   "testimonials",
 ];
 
+const SEO_JSON_COLLECTIONS = [
+  "home_page",
+  "pages",
+  "categories",
+  "products",
+  "articles",
+];
+
 const requiredProductFields = [
   "id",
   "status",
@@ -74,6 +82,7 @@ const requiredProductFields = [
   "brand",
   "part_type",
   "delivery_status",
+  "seo",
   "created_at",
   "updated_at",
 ];
@@ -114,7 +123,8 @@ test("defines task folders and an editable homepage singleton", () => {
     "hero_search_button_text", "hero_bulk_prompt", "hero_bulk_link_text",
     "hero_bulk_link_url", "hero_excel_link_text", "hero_excel_link_url",
     "hero_photo_link_text", "hero_photo_link_url", "seo_title", "seo_description",
-    "canonical_url", "og_title", "og_description", "og_image", "is_indexable", "sections",
+    "canonical_url", "og_title", "og_description", "og_image", "is_indexable", "seo",
+    "sections",
     "translations", "created_at", "updated_at",
   ]) {
     assert.ok(fields.has(field), `missing home_page.${field}`);
@@ -232,6 +242,7 @@ test("articles contain publishing, cover, content and SEO fields", () => {
     "seo_title",
     "seo_description",
     "og_image",
+    "seo",
     "translations",
     "created_at",
     "updated_at",
@@ -672,9 +683,96 @@ test("SEO data lives with pages, categories, and products", () => {
       "seo_description",
       "seo_text",
       "og_image",
+      "seo",
     ]) {
       if (name === "products" && field === "h1") continue;
       assert.ok(fields.has(field), `missing ${name}.${field}`);
     }
   }
+});
+
+test("the five content collections declare the additive seo-plugin JSON field", () => {
+  for (const name of SEO_JSON_COLLECTIONS) {
+    const collection = schemaBlueprint.collections.find(
+      (item) => item.name === name,
+    );
+    const seo = collection.fields.find((field) => field.name === "seo");
+    assert.ok(seo, `missing ${name}.seo`);
+    assert.equal(seo.type, "json", `${name}.seo is json`);
+    assert.equal(seo.required, undefined, `${name}.seo is nullable`);
+    assert.equal(seo.default, undefined, `${name}.seo defaults to null`);
+    assert.equal(
+      seo.interface,
+      "seo-interface",
+      `${name}.seo uses the vendored plugin interface`,
+    );
+    assert.equal(
+      seo.display,
+      "seo-display",
+      `${name}.seo uses the vendored plugin display`,
+    );
+    // PURELY ADDITIVE: exactly one seo field, nothing renamed away.
+    assert.equal(
+      collection.fields.filter((field) => field.name === "seo").length,
+      1,
+      `${name}.seo is declared exactly once`,
+    );
+  }
+});
+
+test("the legacy scalar SEO sources stay exactly as-is beside the additive seo JSON", () => {
+  const scalarMap = {
+    home_page: ["seo_title", "seo_description", "canonical_url", "og_title", "og_description", "og_image", "is_indexable"],
+    pages: ["seo_title", "seo_description", "seo_text", "canonical_url", "og_image", "is_indexable"],
+    categories: ["seo_title", "seo_description", "seo_text", "og_image", "is_indexable"],
+    products: ["seo_title", "seo_description", "seo_text", "og_image", "is_indexable"],
+    articles: ["seo_title", "seo_description", "og_image"],
+  };
+
+  const scalarTypes = {
+    seo_title: "string",
+    seo_description: "text",
+    seo_text: "text",
+    canonical_url: "text",
+    og_title: "string",
+    og_description: "text",
+    og_image: "uuid",
+    is_indexable: "boolean",
+  };
+
+  for (const [name, scalars] of Object.entries(scalarMap)) {
+    const collection = schemaBlueprint.collections.find(
+      (item) => item.name === name,
+    );
+    const byName = new Map(
+      collection.fields.map((field) => [field.name, field]),
+    );
+    for (const scalar of scalars) {
+      const field = byName.get(scalar);
+      assert.ok(field, `missing ${name}.${scalar}`);
+      assert.equal(field.type, scalarTypes[scalar], `${name}.${scalar} keeps its type`);
+      assert.equal(field.required, undefined, `${name}.${scalar} stays nullable`);
+    }
+  }
+
+  // The migration mapping skips keys with no scalar source: only home_page
+  // and pages carry canonical_url, and only articles lacks is_indexable.
+  for (const name of ["categories", "products", "articles"]) {
+    const collection = schemaBlueprint.collections.find(
+      (item) => item.name === name,
+    );
+    assert.equal(
+      collection.fields.some((field) => field.name === "canonical_url"),
+      false,
+      `${name}.canonical_url must not appear`,
+    );
+  }
+  const articles = schemaBlueprint.collections.find(
+    (item) => item.name === "articles",
+  );
+  assert.equal(
+    articles.fields.some((field) => field.name === "is_indexable"),
+    false,
+    "articles.is_indexable must not appear",
+  );
 });

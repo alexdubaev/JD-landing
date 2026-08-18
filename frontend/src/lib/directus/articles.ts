@@ -10,6 +10,7 @@ import type {
   ArticleCardData,
   ArticlePage,
 } from "@/types/catalog";
+import { parseSeoJson, resolveSeo } from "@/lib/seo/directus-seo";
 
 import { directusEnvelopeRequest, directusRequest } from "./client";
 
@@ -33,6 +34,8 @@ type RawArticle = {
   seo_title?: string | null;
   seo_description?: string | null;
   og_image?: FileRelation;
+  /** R11 additive plugin JSON (null until the CMS migration fills it). */
+  seo?: unknown;
   updated_at?: string | null;
 };
 
@@ -48,7 +51,7 @@ const cardFields =
 // Frontend API role has no read permission on `articles_editor_nodes` yet, and
 // a nested field the role cannot read would fail the whole request. Junction
 // rows are fetched separately (failure-isolated) in resolveArticleRelations.
-const detailFields = `${cardFields},content,content_blocks,author,reviewer,sources,seo_title,seo_description,og_image,updated_at`;
+const detailFields = `${cardFields},content,content_blocks,author,reviewer,sources,seo_title,seo_description,og_image,seo,updated_at`;
 
 const queryString = (parameters: Record<string, string | undefined>) => {
   const search = new URLSearchParams();
@@ -79,18 +82,28 @@ const mapCard = (raw: RawArticle): ArticleCardData => ({
         : null,
 });
 
-const mapArticle = (raw: RawArticle): Article => ({
-  ...mapCard(raw),
-  content: raw.content ?? "",
-  contentBlocks: adaptEditorBlocks(raw.content_blocks ?? null),
-  author: raw.author ?? null,
-  reviewer: raw.reviewer ?? null,
-  sources: sourceList(raw.sources),
-  seoTitle: raw.seo_title ?? null,
-  seoDescription: raw.seo_description ?? null,
-  ogImageId: fileId(raw.og_image),
-  updatedAt: raw.updated_at ?? null,
-});
+const mapArticle = (raw: RawArticle): Article => {
+  // R11 dual-read: plugin JSON first, scalar SEO fields as per-key fallback.
+  // While seo is null this reproduces the previous scalar mapping exactly.
+  const seo = resolveSeo(raw, {
+    title: raw.seo_title ?? null,
+    description: raw.seo_description ?? null,
+    ogImageFileId: fileId(raw.og_image),
+  });
+  return {
+    ...mapCard(raw),
+    content: raw.content ?? "",
+    contentBlocks: adaptEditorBlocks(raw.content_blocks ?? null),
+    author: raw.author ?? null,
+    reviewer: raw.reviewer ?? null,
+    sources: sourceList(raw.sources),
+    seoTitle: seo.title,
+    seoDescription: seo.description,
+    ogImageId: seo.ogImageFileId,
+    seo: parseSeoJson(raw.seo),
+    updatedAt: raw.updated_at ?? null,
+  };
+};
 
 // ---------------------------------------------------------------------------
 // Flexible Editor JSON → renderer contract

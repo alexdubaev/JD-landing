@@ -24,6 +24,7 @@ import {
   directusRequest,
 } from "./client";
 import { getServerEnv } from "./env";
+import { parseSeoJson, resolveSeo } from "@/lib/seo/directus-seo";
 
 type FileRelation = string | { id: string } | null;
 type CategoryRelation = {
@@ -52,6 +53,8 @@ type RawCategory = {
   og_image: FileRelation;
   is_indexable: boolean | null;
   redirect_target: string | null;
+  /** R11 additive plugin JSON (null until the CMS migration fills it). */
+  seo?: unknown;
 };
 
 type RawProduct = {
@@ -88,6 +91,8 @@ type RawProduct = {
   is_indexable?: boolean | null;
   related_products?: unknown;
   cta_text?: string | null;
+  /** R11 additive plugin JSON (null until the CMS migration fills it). */
+  seo?: unknown;
 };
 
 type RawPageSeo = {
@@ -100,6 +105,8 @@ type RawPageSeo = {
   og_image: FileRelation;
   canonical_url: string | null;
   is_indexable: boolean;
+  /** R11 additive plugin JSON (null until the CMS migration fills it). */
+  seo?: unknown;
 };
 
 type RawPublicFile = {
@@ -152,27 +159,39 @@ const asStringArray = (value: unknown) =>
 
 const asUnknownArray = (value: unknown) => (Array.isArray(value) ? value : []);
 
-const mapCategory = (raw: RawCategory): Category => ({
-  id: raw.id,
-  title: raw.title,
-  slug: raw.slug,
-  parentId: relationId(raw.parent),
-  description: raw.description,
-  imageId: fileId(raw.image),
-  imageAlt: raw.image_alt,
-  iconId: fileId(raw.icon),
-  iconAlt: raw.icon_alt,
-  h1: raw.h1,
-  seoTitle: raw.seo_title,
-  seoDescription: raw.seo_description,
-  seoText: raw.seo_text,
-  intro: raw.intro,
-  selectionGuide: asUnknownArray(raw.selection_guide),
-  internalLinks: asUnknownArray(raw.internal_links),
-  ogImageId: fileId(raw.og_image),
-  isIndexable: raw.is_indexable !== false,
-  redirectTarget: raw.redirect_target?.trim() || null,
-});
+const mapCategory = (raw: RawCategory): Category => {
+  // R11 dual-read: plugin JSON first, scalar SEO fields as per-key fallback.
+  // While seo is null this reproduces the previous scalar mapping exactly
+  // (is_indexable !== false).
+  const seo = resolveSeo(raw, {
+    title: raw.seo_title,
+    description: raw.seo_description,
+    ogImageFileId: fileId(raw.og_image),
+    noIndex: raw.is_indexable === false,
+  });
+  return {
+    id: raw.id,
+    title: raw.title,
+    slug: raw.slug,
+    parentId: relationId(raw.parent),
+    description: raw.description,
+    imageId: fileId(raw.image),
+    imageAlt: raw.image_alt,
+    iconId: fileId(raw.icon),
+    iconAlt: raw.icon_alt,
+    h1: raw.h1,
+    seoTitle: seo.title,
+    seoDescription: seo.description,
+    seoText: raw.seo_text,
+    intro: raw.intro,
+    selectionGuide: asUnknownArray(raw.selection_guide),
+    internalLinks: asUnknownArray(raw.internal_links),
+    ogImageId: seo.ogImageFileId,
+    isIndexable: !seo.noIndex,
+    redirectTarget: raw.redirect_target?.trim() || null,
+    seo: parseSeoJson(raw.seo),
+  };
+};
 
 const mapProductCard = (raw: RawProduct): ProductCardData => ({
   id: raw.id,
@@ -197,25 +216,37 @@ const mapProductCard = (raw: RawProduct): ProductCardData => ({
   deliveryStatus: raw.delivery_status?.trim() || null,
 });
 
-const mapProduct = (raw: RawProduct): Product => ({
-  ...mapProductCard(raw),
-  fullDescription: raw.full_description ?? null,
-  seoText: raw.seo_text ?? null,
-  galleryIds: asStringArray(raw.gallery),
-  specifications: asUnknownArray(raw.specifications),
-  documentIds: asStringArray(raw.documents),
-  sourceName: raw.source_name?.trim() || null,
-  sourceUrl: raw.source_url?.trim() || null,
-  verifiedAt: raw.verified_at ?? null,
-  reviewedBy: raw.reviewed_by?.trim() || null,
-  seoTitle: raw.seo_title ?? null,
-  seoDescription: raw.seo_description ?? null,
-  ogImageId: fileId(raw.og_image),
-  seoQualityStatus: raw.seo_quality_status ?? null,
-  isIndexable: raw.is_indexable !== false,
-  relatedProductIds: asStringArray(raw.related_products),
-  ctaText: raw.cta_text ?? null,
-});
+const mapProduct = (raw: RawProduct): Product => {
+  // R11 dual-read: plugin JSON first, scalar SEO fields as per-key fallback.
+  // While seo is null this reproduces the previous scalar mapping exactly
+  // (is_indexable !== false).
+  const seo = resolveSeo(raw, {
+    title: raw.seo_title ?? null,
+    description: raw.seo_description ?? null,
+    ogImageFileId: fileId(raw.og_image),
+    noIndex: raw.is_indexable === false,
+  });
+  return {
+    ...mapProductCard(raw),
+    fullDescription: raw.full_description ?? null,
+    seoText: raw.seo_text ?? null,
+    galleryIds: asStringArray(raw.gallery),
+    specifications: asUnknownArray(raw.specifications),
+    documentIds: asStringArray(raw.documents),
+    sourceName: raw.source_name?.trim() || null,
+    sourceUrl: raw.source_url?.trim() || null,
+    verifiedAt: raw.verified_at ?? null,
+    reviewedBy: raw.reviewed_by?.trim() || null,
+    seoTitle: seo.title,
+    seoDescription: seo.description,
+    ogImageId: seo.ogImageFileId,
+    seoQualityStatus: raw.seo_quality_status ?? null,
+    isIndexable: !seo.noIndex,
+    relatedProductIds: asStringArray(raw.related_products),
+    ctaText: raw.cta_text ?? null,
+    seo: parseSeoJson(raw.seo),
+  };
+};
 
 // ---------------------------------------------------------------------------
 // Product media dual-read (R7A)
@@ -523,6 +554,7 @@ const categoryFields = [
   "og_image",
   "is_indexable",
   "redirect_target",
+  "seo",
 ].join(",");
 
 const cardFields = [
@@ -547,7 +579,7 @@ const cardFields = [
   "delivery_status",
 ].join(",");
 
-const detailFields = `${cardFields},full_description,seo_text,gallery,specifications,documents,source_name,source_url,verified_at,reviewed_by,seo_title,seo_description,og_image,seo_quality_status,is_indexable,related_products,cta_text`;
+const detailFields = `${cardFields},full_description,seo_text,gallery,specifications,documents,source_name,source_url,verified_at,reviewed_by,seo_title,seo_description,og_image,seo,seo_quality_status,is_indexable,related_products,cta_text`;
 
 const queryString = (parameters: Record<string, string | undefined>) => {
   const search = new URLSearchParams();
@@ -805,7 +837,7 @@ export async function getPageSeoBySlug(slug: string): Promise<PageSeo | null> {
     "filter[status][_eq]": "published",
     "filter[slug][_eq]": slug,
     fields:
-      "title,h1,eyebrow,intro,seo_title,seo_description,og_image,canonical_url,is_indexable",
+      "title,h1,eyebrow,intro,seo_title,seo_description,og_image,canonical_url,is_indexable,seo",
     limit: "1",
   });
   const items = await directusRequest<RawPageSeo[]>(
@@ -813,19 +845,31 @@ export async function getPageSeoBySlug(slug: string): Promise<PageSeo | null> {
     { next: { revalidate: 300, tags: ["pages", `page:${slug}`] } },
   );
   const page = items[0];
-  return page
-    ? {
-        title: page.title,
-        h1: page.h1,
-        eyebrow: page.eyebrow,
-        intro: page.intro,
-        seoTitle: page.seo_title,
-        seoDescription: page.seo_description,
-        ogImageId: fileId(page.og_image),
-        canonicalUrl: page.canonical_url,
-        isIndexable: page.is_indexable,
-      }
-    : null;
+  if (!page) return null;
+  // R11 dual-read: plugin JSON first, scalar SEO fields as per-key fallback.
+  // While seo is null, isIndexable passes the raw is_indexable through
+  // unchanged (the pre-R11 behavior); once JSON exists, its no_index wins
+  // with the scalar as fallback.
+  const seo = resolveSeo(page, {
+    title: page.seo_title,
+    description: page.seo_description,
+    canonical: page.canonical_url,
+    ogImageFileId: fileId(page.og_image),
+    noIndex: page.is_indexable === false,
+  });
+  const hasJson = parseSeoJson(page.seo) !== null;
+  return {
+    title: page.title,
+    h1: page.h1,
+    eyebrow: page.eyebrow,
+    intro: page.intro,
+    seoTitle: seo.title,
+    seoDescription: seo.description,
+    ogImageId: seo.ogImageFileId,
+    canonicalUrl: seo.canonical,
+    isIndexable: hasJson ? !seo.noIndex : page.is_indexable,
+    seo: parseSeoJson(page.seo),
+  };
 }
 
 export async function getProductBySlugs(

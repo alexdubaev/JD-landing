@@ -135,6 +135,7 @@ describe("content queries", () => {
         og_description: null,
         og_image: null,
         is_indexable: true,
+        seo: null,
       })
       .mockResolvedValueOnce([
         {
@@ -242,6 +243,7 @@ describe("content queries", () => {
           seo_title: null,
           seo_description: null,
           seo_text: null,
+          seo: null,
         },
       ])
       .mockResolvedValueOnce([
@@ -264,6 +266,113 @@ describe("content queries", () => {
     await expect(getPageBySlug("about")).resolves.toEqual(
       expect.objectContaining({ slug: "about", sections: [] }),
     );
+  });
+
+  it("maps a scalar-only page exactly as before the dual-read and requests seo", async () => {
+    requestMock
+      .mockResolvedValueOnce([
+        {
+          id: "about",
+          title: "О компании",
+          slug: "about",
+          h1: "О компании",
+          seo_title: "О компании — скалярный заголовок",
+          seo_description: "Скалярное описание",
+          seo_text: null,
+          seo: null,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const page = await getPageBySlug("about");
+
+    // The R11 production-safety property: with seo = null the mapped SEO
+    // output is byte-identical to the pre-dual-read scalar mapping.
+    expect(page).toEqual(
+      expect.objectContaining({
+        seoTitle: "О компании — скалярный заголовок",
+        seoDescription: "Скалярное описание",
+        seo: null,
+      }),
+    );
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("fields")).toContain("seo");
+  });
+
+  it("lets the plugin JSON win for an informational page", async () => {
+    requestMock
+      .mockResolvedValueOnce([
+        {
+          id: "about",
+          title: "О компании",
+          slug: "about",
+          h1: "О компании",
+          seo_title: "Скалярный заголовок",
+          seo_description: "Скалярное описание",
+          seo_text: null,
+          seo: {
+            title: "JSON-заголовок",
+            meta_description: "JSON-описание",
+          },
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const page = await getPageBySlug("about");
+
+    expect(page).toEqual(
+      expect.objectContaining({
+        seoTitle: "JSON-заголовок",
+        seoDescription: "JSON-описание",
+        seo: { title: "JSON-заголовок", meta_description: "JSON-описание" },
+      }),
+    );
+  });
+
+  it("lets the plugin JSON win for the homepage singleton", async () => {
+    requestMock
+      .mockResolvedValueOnce({
+        id: "singleton-home",
+        status: "published",
+        source_page: "home",
+        h1: "Запчасти John Deere",
+        hero_title: "Редактируемый hero",
+        hero_text: "Текст из Directus",
+        hero_image: { id: "cms-hero-image" },
+        hero_image_alt: "Склад запчастей John Deere",
+        hero_primary_button_text: null,
+        hero_primary_button_url: null,
+        hero_secondary_button_text: null,
+        hero_secondary_button_url: null,
+        hero_search_label: null,
+        hero_search_placeholder: null,
+        hero_search_button_text: null,
+        hero_bulk_prompt: null,
+        hero_bulk_link_text: null,
+        hero_bulk_link_url: null,
+        hero_excel_link_text: null,
+        hero_excel_link_url: null,
+        hero_photo_link_text: null,
+        hero_photo_link_url: null,
+        seo_title: "Скалярный заголовок",
+        seo_description: "Скалярное описание",
+        seo: { title: "JSON-заголовок главной" },
+      })
+      .mockResolvedValueOnce([]);
+
+    const page = await getHomePage();
+
+    expect(page).toEqual(
+      expect.objectContaining({
+        seoTitle: "JSON-заголовок главной",
+        // Per-key fallback: no meta_description in the JSON.
+        seoDescription: "Скалярное описание",
+        seo: { title: "JSON-заголовок главной" },
+      }),
+    );
+    // The singleton query now also requests the additive seo field.
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("fields")).toContain("seo");
   });
 
   it("loads normalized contact records", async () => {

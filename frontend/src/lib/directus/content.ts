@@ -11,6 +11,7 @@ import type {
   SiteSettings,
 } from "@/types/content";
 import { BRAND_NAME } from "@/lib/brand";
+import { parseSeoJson, resolveSeo } from "@/lib/seo/directus-seo";
 
 import { directusRequest } from "./client";
 
@@ -57,6 +58,8 @@ type RawPage = {
   seo_title: string | null;
   seo_description: string | null;
   seo_text: string | null;
+  /** R11 additive plugin JSON (null until the CMS migration fills it). */
+  seo?: unknown;
 };
 
 type RawHomePage = {
@@ -84,6 +87,8 @@ type RawHomePage = {
   hero_photo_link_url: string | null;
   seo_title: string | null;
   seo_description: string | null;
+  /** R11 additive plugin JSON (null until the CMS migration fills it). */
+  seo?: unknown;
 };
 
 type RawSection = {
@@ -216,7 +221,7 @@ export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
   const pageQuery = queryString({
     "filter[status][_eq]": "published",
     "filter[slug][_eq]": slug,
-    fields: "id,title,slug,h1,seo_title,seo_description,seo_text",
+    fields: "id,title,slug,h1,seo_title,seo_description,seo_text,seo",
     limit: "1",
   });
   const pages = await directusRequest<RawPage[]>(
@@ -240,14 +245,22 @@ export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
     { next: { revalidate: 300, tags: ["page-sections", `page:${slug}`] } },
   );
 
+  // R11 dual-read: plugin JSON first, scalars as per-key fallback. While seo
+  // is null this reproduces the previous scalar mapping exactly.
+  const seo = resolveSeo(page, {
+    title: page.seo_title,
+    description: page.seo_description,
+  });
+
   return {
     id: page.id,
     title: page.title,
     slug: page.slug,
     h1: page.h1,
-    seoTitle: page.seo_title,
-    seoDescription: page.seo_description,
+    seoTitle: seo.title,
+    seoDescription: seo.description,
     seoText: page.seo_text,
+    seo: parseSeoJson(page.seo),
     sections: rawSections
       .map(mapSection)
       .filter((section): section is PageSection => section !== null),
@@ -265,6 +278,7 @@ export async function getHomePage(): Promise<ContentPage | null> {
     "hero_search_button_text", "hero_bulk_prompt", "hero_bulk_link_text",
     "hero_bulk_link_url", "hero_excel_link_text", "hero_excel_link_url",
     "hero_photo_link_text", "hero_photo_link_url", "seo_title", "seo_description",
+    "seo",
   ].join(",");
   const raw = await directusRequest<RawHomePage>(
     `/items/home_page?${queryString({ fields })}`,
@@ -323,14 +337,22 @@ export async function getHomePage(): Promise<ContentPage | null> {
     { next: { revalidate: 300, tags: ["homepage"] } },
   );
 
+  // R11 dual-read: plugin JSON first, scalars as per-key fallback. While seo
+  // is null this reproduces the previous scalar mapping exactly.
+  const seo = resolveSeo(raw, {
+    title: raw.seo_title,
+    description: raw.seo_description,
+  });
+
   return {
     id: sourcePageId,
     title: h1,
     slug: "home",
     h1,
-    seoTitle: raw.seo_title,
-    seoDescription: raw.seo_description,
+    seoTitle: seo.title,
+    seoDescription: seo.description,
     seoText: null,
+    seo: parseSeoJson(raw.seo),
     sections: [
       hero,
       ...rawSections

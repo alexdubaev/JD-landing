@@ -14,6 +14,7 @@ import {
   getCategories,
   getFeaturedProducts,
   getHomepageCategories,
+  getPageSeoBySlug,
   getProductBySlugs,
 } from "./catalog";
 
@@ -349,6 +350,7 @@ const rawDetailProduct = (overrides: Record<string, unknown> = {}) => ({
   seo_title: null,
   seo_description: null,
   og_image: null,
+  seo: null,
   seo_quality_status: null,
   is_indexable: true,
   related_products: [],
@@ -522,6 +524,270 @@ describe("product media dual-read (R7A)", () => {
       specifications: "children",
       documents: "legacy",
     });
+  });
+});
+
+const rawCategory = (overrides: Record<string, unknown> = {}) => ({
+  id: "engine",
+  title: "Двигатель",
+  slug: "engine",
+  parent: null,
+  description: null,
+  image: null,
+  image_alt: null,
+  icon: null,
+  icon_alt: null,
+  h1: null,
+  seo_title: null,
+  seo_description: null,
+  seo_text: null,
+  intro: null,
+  selection_guide: null,
+  internal_links: null,
+  og_image: null,
+  is_indexable: true,
+  redirect_target: null,
+  seo: null,
+  ...overrides,
+});
+
+describe("SEO dual-read (R11)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("maps a scalar-only product exactly as before the dual-read (seo null)", async () => {
+    dualReadMock({
+      detail: [
+        rawDetailProduct({
+          seo_title: "Насос — скалярный заголовок",
+          seo_description: "Скалярное описание",
+          og_image: "scalar-og-file",
+          is_indexable: false,
+        }),
+      ],
+    });
+    const product = await getProductBySlugs("hydraulics", "hydraulic-pump");
+
+    // The R11 production-safety property: with seo = null the mapped SEO
+    // output is byte-identical to the pre-dual-read scalar mapping.
+    expect(product).toEqual(
+      expect.objectContaining({
+        seoTitle: "Насос — скалярный заголовок",
+        seoDescription: "Скалярное описание",
+        ogImageId: "scalar-og-file",
+        isIndexable: false,
+        seo: null,
+      }),
+    );
+
+    // The detail query now also requests the additive seo field.
+    const detailUrl = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(detailUrl.searchParams.get("fields")).toContain("seo");
+  });
+
+  it("lets the plugin JSON win over conflicting product scalars", async () => {
+    dualReadMock({
+      detail: [
+        rawDetailProduct({
+          seo_title: "Скалярный заголовок",
+          seo_description: "Скалярное описание",
+          og_image: "scalar-og-file",
+          is_indexable: true,
+          seo: {
+            title: "JSON-заголовок",
+            meta_description: "JSON-описание",
+            og_image: "json-og-file",
+            no_index: true,
+          },
+        }),
+      ],
+    });
+    const product = await getProductBySlugs("hydraulics", "hydraulic-pump");
+
+    expect(product).toEqual(
+      expect.objectContaining({
+        seoTitle: "JSON-заголовок",
+        seoDescription: "JSON-описание",
+        ogImageId: "json-og-file",
+        isIndexable: false,
+        seo: {
+          title: "JSON-заголовок",
+          meta_description: "JSON-описание",
+          og_image: "json-og-file",
+          no_index: true,
+        },
+      }),
+    );
+  });
+
+  it("merges a partial product JSON per key (missing no_index falls back to the scalar)", async () => {
+    dualReadMock({
+      detail: [
+        rawDetailProduct({
+          seo_title: "Скалярный заголовок",
+          seo_description: null,
+          is_indexable: false,
+          seo: { title: "JSON-заголовок" },
+        }),
+      ],
+    });
+    const product = await getProductBySlugs("hydraulics", "hydraulic-pump");
+
+    expect(product).toEqual(
+      expect.objectContaining({
+        seoTitle: "JSON-заголовок",
+        seoDescription: null,
+        isIndexable: false,
+      }),
+    );
+  });
+
+  it("maps a scalar-only category exactly as before and requests the seo field", async () => {
+    requestMock.mockResolvedValue([
+      rawCategory({
+        seo_title: "Двигатель — запчасти",
+        seo_description: "Скалярное описание",
+        og_image: "scalar-cat-og",
+        is_indexable: false,
+      }),
+    ]);
+    const categories = await getCategories();
+
+    expect(categories[0]).toEqual(
+      expect.objectContaining({
+        seoTitle: "Двигатель — запчасти",
+        seoDescription: "Скалярное описание",
+        ogImageId: "scalar-cat-og",
+        isIndexable: false,
+        seo: null,
+      }),
+    );
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("fields")).toContain("seo");
+  });
+
+  it("lets the plugin JSON win for categories and degrades corrupted JSON", async () => {
+    requestMock
+      .mockResolvedValueOnce([
+        rawCategory({
+          seo_title: "Скалярный заголовок",
+          seo: { title: "JSON-категория", no_index: true },
+        }),
+      ])
+      .mockResolvedValueOnce([
+        rawCategory({
+          id: "engine-2",
+          slug: "engine-2",
+          seo_title: "Скалярный заголовок",
+          seo: "garbage",
+        }),
+      ]);
+    const [jsonCategory] = await getCategories();
+    const [corrupted] = await getCategories();
+
+    expect(jsonCategory).toEqual(
+      expect.objectContaining({
+        seoTitle: "JSON-категория",
+        isIndexable: false,
+        seo: { title: "JSON-категория", no_index: true },
+      }),
+    );
+    expect(corrupted).toEqual(
+      expect.objectContaining({
+        seoTitle: "Скалярный заголовок",
+        isIndexable: true,
+        seo: null,
+      }),
+    );
+  });
+
+  it("maps a scalar-only page exactly as before (getPageSeoBySlug)", async () => {
+    requestMock.mockResolvedValue([
+      {
+        title: "Доставка",
+        h1: "Доставка",
+        eyebrow: null,
+        intro: null,
+        seo_title: "Доставка — скалярный заголовок",
+        seo_description: "Скалярное описание",
+        og_image: "scalar-page-og",
+        canonical_url: "https://deere-shop.test/delivery",
+        is_indexable: true,
+        seo: null,
+      },
+    ]);
+    const pageSeo = await getPageSeoBySlug("delivery");
+
+    expect(pageSeo).toEqual(
+      expect.objectContaining({
+        seoTitle: "Доставка — скалярный заголовок",
+        seoDescription: "Скалярное описание",
+        ogImageId: "scalar-page-og",
+        canonicalUrl: "https://deere-shop.test/delivery",
+        isIndexable: true,
+        seo: null,
+      }),
+    );
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("fields")).toContain("seo");
+  });
+
+  it("lets the plugin JSON win for page SEO including canonical and no_index", async () => {
+    requestMock.mockResolvedValue([
+      {
+        title: "Доставка",
+        h1: "Доставка",
+        eyebrow: null,
+        intro: null,
+        seo_title: "Скалярный заголовок",
+        seo_description: "Скалярное описание",
+        og_image: "scalar-page-og",
+        canonical_url: "https://deere-shop.test/scalar",
+        is_indexable: true,
+        seo: {
+          title: "JSON-заголовок",
+          meta_description: "JSON-описание",
+          og_image: "json-page-og",
+          additional_fields: { canonical_url: "https://deere-shop.test/json" },
+          no_index: true,
+        },
+      },
+    ]);
+    const pageSeo = await getPageSeoBySlug("delivery");
+
+    expect(pageSeo).toEqual(
+      expect.objectContaining({
+        seoTitle: "JSON-заголовок",
+        seoDescription: "JSON-описание",
+        ogImageId: "json-page-og",
+        canonicalUrl: "https://deere-shop.test/json",
+        isIndexable: false,
+      }),
+    );
+  });
+
+  it("an empty-object page JSON keeps the scalar indexability per key", async () => {
+    requestMock.mockResolvedValue([
+      {
+        title: "Доставка",
+        h1: "Доставка",
+        eyebrow: null,
+        intro: null,
+        seo_title: null,
+        seo_description: null,
+        og_image: null,
+        canonical_url: null,
+        is_indexable: false,
+        seo: {},
+      },
+    ]);
+    const pageSeo = await getPageSeoBySlug("delivery");
+
+    // JSON is present (so it drives indexability) but no_index is missing —
+    // the scalar is_indexable=false falls back per key.
+    expect(pageSeo?.isIndexable).toBe(false);
+    expect(pageSeo?.seo).toEqual({});
   });
 });
 

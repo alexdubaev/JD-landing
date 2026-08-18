@@ -42,6 +42,20 @@ const translations = () =>
     note: "Future translations keyed by locale, for example ru-RU.",
   });
 
+/**
+ * R11 additive JSON field of the vendored @directus-labs/seo-plugin 1.1.1
+ * (directus/extensions/directus-labs-seo-plugin). PURELY ADDITIVE: nullable,
+ * default null, no relation. The frontend reads it JSON-first with the legacy
+ * scalar SEO fields as per-key fallback; the scalars stay untouched read-only
+ * sources until a separate cleanup release.
+ */
+const seoPluginField = () =>
+  field("seo", "json", {
+    interface: "seo-interface",
+    display: "seo-display",
+    note: "R11 SEO-plugin JSON (title, meta_description, og_image, additional_fields.canonical_url, no_index, no_follow). JSON-first on the frontend; the scalar SEO fields stay the fallback and are never cleared by the migration.",
+  });
+
 export const schemaBlueprint = {
   version: 3,
   collections: [
@@ -142,6 +156,7 @@ export const schemaBlueprint = {
         field("og_description", "text"),
         field("og_image", "uuid", { relatedCollection: "directus_files" }),
         field("is_indexable", "boolean", { default: true }),
+        seoPluginField(),
         field("sections", "alias", {
           interface: "list-o2m",
           special: ["o2m"],
@@ -179,6 +194,7 @@ export const schemaBlueprint = {
         field("og_image", "uuid", { relatedCollection: "directus_files" }),
         field("canonical_url", "text"),
         field("is_indexable", "boolean", { default: true }),
+        seoPluginField(),
         translations(),
       ),
     },
@@ -278,6 +294,7 @@ export const schemaBlueprint = {
         field("og_image", "uuid", { relatedCollection: "directus_files" }),
         field("faq", "json"),
         field("is_indexable", "boolean", { default: true, index: true }),
+        seoPluginField(),
         field("redirect_target", "string"),
         field("sort_order", "integer", { default: 0, index: true }),
         field("show_on_homepage", "boolean", { default: false }),
@@ -356,6 +373,7 @@ export const schemaBlueprint = {
         field("seo_title", "string"),
         field("seo_description", "text"),
         field("og_image", "uuid", { relatedCollection: "directus_files" }),
+        seoPluginField(),
         translations(),
       ),
     },
@@ -490,6 +508,7 @@ export const schemaBlueprint = {
           index: true,
         }),
         field("is_indexable", "boolean", { default: true, index: true }),
+        seoPluginField(),
         field("sort_order", "integer", { default: 0, index: true }),
         field("popularity_score", "integer", { default: 0, index: true }),
         field("is_featured", "boolean", { default: false, index: true }),

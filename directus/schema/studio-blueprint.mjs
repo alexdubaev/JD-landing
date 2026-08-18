@@ -12,10 +12,24 @@ const input = (label, groupName, sort, options = {}) => ({
   width: options.width ?? "full",
   ...(options.note ? { note: options.note } : {}),
   ...(options.interface ? { interface: options.interface } : {}),
+  ...(options.display ? { display: options.display } : {}),
   ...(options.options ? { options: options.options } : {}),
   ...(options.hidden !== undefined ? { hidden: options.hidden } : {}),
   ...(options.readonly !== undefined ? { readonly: options.readonly } : {}),
 });
+
+/**
+ * R11 SEO-plugin panel (@directus-labs/seo-plugin 1.1.1): the JSON-first
+ * editing surface next to the legacy scalar fields. The scalars stay editable
+ * in the same group — they remain the frontend fallback and the migration
+ * source until a separate cleanup release.
+ */
+const seoPluginInput = (sort) =>
+  input("SEO-панель (плагин)", "group_seo", sort, {
+    interface: "seo-interface",
+    display: "seo-display",
+    note: "Приоритетное JSON-поле SEO (R11). Пока JSON пуст, сайт читает скалярные поля ниже; миграция заполняет JSON из скаляров и никогда не изменяет их.",
+  });
 
 const repeater = (template, fields) => ({
   interface: "list",
@@ -89,6 +103,7 @@ const homepageFields = {
   og_description: input("Описание Open Graph", "group_seo", 5),
   og_image: input("Изображение Open Graph", "group_seo", 6, { interface: "file-image" }),
   is_indexable: input("Разрешить индексацию", "group_seo", 7, { width: "half" }),
+  seo: seoPluginInput(8),
   source_page: input("Связанная системная страница", "group_system", 1, { readonly: true }),
   translations: input("Переводы", "group_system", 2, { hidden: true }),
   created_at: input("Создано", "group_system", 3, { width: "half", readonly: true }),
@@ -175,6 +190,11 @@ const pagesForm = form(
       ["og_image", "Изображение Open Graph"],
       ["canonical_url", "Канонический URL"],
       ["is_indexable", "Разрешить индексацию", { width: "half" }],
+      ["seo", "SEO-панель (плагин)", {
+        interface: "seo-interface",
+        display: "seo-display",
+        note: "Приоритетное JSON-поле SEO (R11). Пока JSON пуст, сайт читает скалярные поля выше; миграция заполняет JSON из скаляров и никогда не изменяет их.",
+      }],
     ],
     group_system: standardSystemFields,
   },
@@ -217,6 +237,11 @@ const categoriesForm = form(
       ["seo_text", "SEO-текст"],
       ["og_image", "Изображение Open Graph"],
       ["is_indexable", "Разрешить индексацию", { width: "half" }],
+      ["seo", "SEO-панель (плагин)", {
+        interface: "seo-interface",
+        display: "seo-display",
+        note: "Приоритетное JSON-поле SEO (R11). Пока JSON пуст, сайт читает скалярные поля выше; миграция заполняет JSON из скаляров и никогда не изменяет их.",
+      }],
       ["redirect_target", "Цель перенаправления"],
     ],
     group_system: standardSystemFields,
@@ -298,6 +323,11 @@ const articlesForm = form(
       ["seo_title", "SEO-заголовок"],
       ["seo_description", "SEO-описание"],
       ["og_image", "Изображение Open Graph"],
+      ["seo", "SEO-панель (плагин)", {
+        interface: "seo-interface",
+        display: "seo-display",
+        note: "Приоритетное JSON-поле SEO (R11). Пока JSON пуст, сайт читает скалярные поля выше; миграция заполняет JSON из скаляров и никогда не изменяет их.",
+      }],
     ],
     group_system: standardSystemFields,
   },
@@ -538,6 +568,7 @@ export const studioBlueprint = {
         og_image: input("Изображение Open Graph", "group_seo", 4, { interface: "file-image" }),
         seo_quality_status: input("Статус SEO-проверки", "group_seo", 5, { width: "half" }),
         is_indexable: input("Разрешить индексацию", "group_seo", 6, { width: "half" }),
+        seo: seoPluginInput(7),
         source_name: input("Название источника", "group_source", 1),
         source_url: input("Ссылка на источник", "group_source", 2),
         verified_at: input("Проверено", "group_source", 3, { width: "half" }),

@@ -231,6 +231,29 @@ test("seo_work_items is a visible SEO-grouped collection with a complete grouped
   }
 });
 
+test("wires the seo-plugin JSON panel into the SEO group of the five content collections", () => {
+  for (const collection of ["home_page", "pages", "categories", "products", "articles"]) {
+    const layout = studioBlueprint.fields[collection];
+    const field = layout.fields.seo;
+    assert.ok(field, `missing ${collection} form entry seo`);
+    assert.equal(field.group, "group_seo", `${collection}.seo group`);
+    assert.equal(field.interface, "seo-interface", `${collection}.seo interface`);
+    assert.equal(field.display, "seo-display", `${collection}.seo display`);
+    assert.equal(field.width, "full", `${collection}.seo width`);
+    assert.match(
+      field.note ?? "",
+      /JSON/i,
+      `${collection}.seo documents the JSON-first/scalar-fallback rule`,
+    );
+    // The legacy scalar fields stay editable in the SAME group — the plugin
+    // panel only adds a surface, it never replaces the scalars.
+    for (const scalar of ["seo_title", "seo_description", "og_image"]) {
+      assert.ok(layout.fields[scalar], `missing ${collection}.${scalar}`);
+      assert.equal(layout.fields[scalar].group, "group_seo");
+    }
+  }
+});
+
 test("articles form wires the flexible editor with a hidden M2A alias in the same group", () => {
   const articles = studioBlueprint.fields.articles.fields;
 

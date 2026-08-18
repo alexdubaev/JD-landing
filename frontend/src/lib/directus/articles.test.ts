@@ -86,6 +86,7 @@ const rawDetailArticle = {
   seo_title: null,
   seo_description: null,
   og_image: null,
+  seo: null,
   updated_at: null,
 };
 
@@ -111,6 +112,101 @@ describe("article detail structured content", () => {
     requestMock.mockResolvedValue([{ ...rawDetailArticle, content_blocks: null }]);
     const article = await getArticleBySlug("parts-selection");
     expect(article?.contentBlocks).toBeNull();
+  });
+
+  it("requests the additive seo field in the detail query", async () => {
+    requestMock.mockResolvedValue([{ ...rawDetailArticle }]);
+    await getArticleBySlug("parts-selection");
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    const fields = url.searchParams.get("fields") ?? "";
+    expect(fields).toContain("seo");
+    expect(fields).toContain("og_image");
+  });
+
+  it("maps a scalar-only article exactly as before the dual-read (seo null)", async () => {
+    requestMock.mockResolvedValue([
+      {
+        ...rawDetailArticle,
+        seo_title: "Скалярный заголовок статьи",
+        seo_description: "Скалярное описание",
+        og_image: "scalar-og-file",
+      },
+    ]);
+    const article = await getArticleBySlug("parts-selection");
+
+    // The R11 production-safety property: with seo = null the mapped SEO
+    // output is byte-identical to the pre-dual-read scalar mapping.
+    expect(article).toEqual(
+      expect.objectContaining({
+        seoTitle: "Скалярный заголовок статьи",
+        seoDescription: "Скалярное описание",
+        ogImageId: "scalar-og-file",
+        seo: null,
+      }),
+    );
+  });
+
+  it("lets the plugin JSON win over conflicting article scalars", async () => {
+    requestMock.mockResolvedValue([
+      {
+        ...rawDetailArticle,
+        seo_title: "Скалярный заголовок",
+        seo_description: "Скалярное описание",
+        og_image: "scalar-og-file",
+        seo: {
+          title: "JSON-заголовок",
+          meta_description: "JSON-описание",
+          og_image: "json-og-file",
+        },
+      },
+    ]);
+    const article = await getArticleBySlug("parts-selection");
+
+    expect(article).toEqual(
+      expect.objectContaining({
+        seoTitle: "JSON-заголовок",
+        seoDescription: "JSON-описание",
+        ogImageId: "json-og-file",
+        seo: { title: "JSON-заголовок", meta_description: "JSON-описание", og_image: "json-og-file" },
+      }),
+    );
+  });
+
+  it("merges a partial article JSON with the scalars per key and degrades corrupted JSON", async () => {
+    requestMock.mockResolvedValueOnce([
+      {
+        ...rawDetailArticle,
+        seo_title: "Скалярный заголовок",
+        seo_description: "Скалярное описание",
+        // Only the description key is usable in the JSON.
+        seo: { title: "   ", meta_description: "JSON-описание" },
+      },
+    ]);
+    const partial = await getArticleBySlug("parts-selection");
+    expect(partial).toEqual(
+      expect.objectContaining({
+        seoTitle: "Скалярный заголовок",
+        seoDescription: "JSON-описание",
+      }),
+    );
+
+    // A corrupted string seo degrades entirely to the scalars.
+    requestMock.mockResolvedValueOnce([
+      {
+        ...rawDetailArticle,
+        seo_title: "Скалярный заголовок",
+        seo_description: "Скалярное описание",
+        seo: "garbage",
+      },
+    ]);
+    const corrupted = await getArticleBySlug("parts-selection");
+    expect(corrupted).toEqual(
+      expect.objectContaining({
+        seoTitle: "Скалярный заголовок",
+        seoDescription: "Скалярное описание",
+        seo: null,
+      }),
+    );
   });
 
   it("adapts flexible-editor relation nodes to the renderer contract", async () => {

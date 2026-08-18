@@ -1,3 +1,5 @@
+import type { DirectusSeoJson } from "@/lib/seo/directus-seo";
+
 export type AvailabilityStatus = "in_stock" | "on_request" | "out_of_stock";
 export type PriceStatus = "fixed" | "on_request" | "hidden";
 export type PartType = "original" | "oem" | "analog";
@@ -38,6 +40,14 @@ export type Category = {
   ogImageId: string | null;
   isIndexable: boolean;
   redirectTarget: string | null;
+  /**
+   * R11 dual-read: the additive @directus-labs/seo-plugin JSON. The mapped
+   * seoTitle/seoDescription/ogImageId/isIndexable above are already resolved
+   * JSON-first with the scalars as per-key fallback; the raw JSON is carried
+   * for keys with no scalar counterpart (sitemap priority etc.). Null while
+   * the CMS-side migration has not filled the field.
+   */
+  seo?: DirectusSeoJson | null;
 };
 
 export type ProductCardData = {
@@ -173,6 +183,8 @@ export type Product = ProductCardData & {
   isIndexable?: boolean;
   relatedProductIds: string[];
   ctaText: string | null;
+  /** R11 dual-read raw plugin JSON (see Category.seo). */
+  seo?: DirectusSeoJson | null;
 };
 
 /**
@@ -218,6 +230,8 @@ export type PageSeo = {
   ogImageId: string | null;
   canonicalUrl: string | null;
   isIndexable: boolean;
+  /** R11 dual-read raw plugin JSON (see Category.seo). */
+  seo?: DirectusSeoJson | null;
 };
 
 export type ArticleCardData = {
@@ -252,6 +266,8 @@ export type Article = ArticleCardData & {
   seoDescription: string | null;
   ogImageId: string | null;
   updatedAt: string | null;
+  /** R11 dual-read raw plugin JSON (see Category.seo). */
+  seo?: DirectusSeoJson | null;
 };
 
 export type ArticlePage = {

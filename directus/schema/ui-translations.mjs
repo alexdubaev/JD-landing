@@ -104,6 +104,7 @@ export const fieldTranslations = {
   og_image: "Изображение Open Graph",
   canonical_url: "Канонический URL",
   is_indexable: "Индексировать страницу",
+  seo: "SEO-панель (плагин)",
   page: "Страница",
   section_type: "Тип секции",
   subtitle: "Подзаголовок",
