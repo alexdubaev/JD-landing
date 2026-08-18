@@ -29,7 +29,9 @@
     "migrations:product-search": "node migrations/backfill-product-search.mjs",
     "migrations:product-gallery": "node migrations/migrate-product-gallery.mjs",
     "migrations:product-gallery-reconcile": "node migrations/reconcile-product-gallery.mjs",
-    "migrations:product-analogs-reconcile": "node migrations/reconcile-product-analogs.mjs"
+    "migrations:product-analogs-reconcile": "node migrations/reconcile-product-analogs.mjs",
+    "importer": "node importer/cli.mjs",
+    "importer:rollback": "node importer/cli.mjs --rollback"
   },
   "engines": {
     "node": ">=20"

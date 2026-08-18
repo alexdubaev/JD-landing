@@ -1,0 +1,5 @@
+{"sku": "SYN-0001", "price": 1111.11, "analogs": [{"sku": "SYN-0002", "relation_type": "analog"}]}
+{"sku": "SYN-0002", "price": 2222.22, "analogs": [{"sku": "SYN-0001", "relation_type": "analog"}]}
+{"sku": "SYN-0003", "price": 3333.33, "analogs": [{"sku": "SYN-0001", "relation_type": "oem_cross"}]}
+{"sku": "SYN-0004", "price": 4444.44, "analogs": [{"sku": "SYN-0004", "relation_type": "analog"}]}
+{"sku": "SYN-0005", "price": 5555.55, "analogs": [{"sku": "SYN-0002", "relation_type": "superseded_by"}, {"sku": "SYN-0003", "relation_type": "bogus_type"}]}

@@ -88,3 +88,20 @@ test("validates duplicate SKUs and missing image files", async () => {
   assert.deepEqual(result.duplicateSkus, ["19M7866"]);
   assert.deepEqual(result.missingImages, ["images/06/19M7866_2.jpg"]);
 });
+
+test("the legacy production update path is retired (R9 guard)", async () => {
+  const main = (await import("./products.mjs")).main;
+  const original = process.env.DIRECTUS_URL;
+  const originalArgv = process.argv;
+
+  process.env.DIRECTUS_URL = "https://cms.deere-shop.ru";
+  process.argv = [...originalArgv, "--dry-run"];
+  await assert.rejects(() => main(), /retired for production writes/);
+
+  process.env.DIRECTUS_URL = "https://staging.example";
+  process.argv = [...originalArgv]; // no --dry-run
+  await assert.rejects(() => main(), /retired for production writes/);
+
+  process.env.DIRECTUS_URL = original;
+  process.argv = originalArgv;
+});
