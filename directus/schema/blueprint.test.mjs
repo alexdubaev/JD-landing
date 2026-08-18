@@ -9,6 +9,7 @@ const requiredCollections = [
   "group_content",
   "group_sales",
   "group_settings",
+  "group_seo",
   "site_settings",
   "home_page",
   "pages",
@@ -29,6 +30,7 @@ const requiredCollections = [
   "product_codes",
   "products_analogs",
   "seo_redirects",
+  "seo_work_items",
   "orders",
   "order_items",
 ];
@@ -79,11 +81,11 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 27);
+  assert.equal(names.length, 29);
   assert.equal(
     schemaBlueprint.collections.filter(({ folder }) => !folder).length,
-    22,
-    "20 data collections plus the editor junction, product_codes and products_analogs",
+    23,
+    "20 data collections plus the editor junction, product_codes, products_analogs and seo_work_items (Core limit 25)",
   );
 });
 
@@ -98,7 +100,7 @@ test("defines task folders and an editable homepage singleton", () => {
   const folders = schemaBlueprint.collections.filter(({ folder }) => folder);
   assert.deepEqual(
     folders.map(({ name }) => name),
-    ["group_site", "group_catalog", "group_content", "group_sales", "group_settings"],
+    ["group_site", "group_catalog", "group_content", "group_sales", "group_settings", "group_seo"],
   );
 
   const homepage = schemaBlueprint.collections.find(({ name }) => name === "home_page");
@@ -519,6 +521,100 @@ test("products declare hidden R8 analog aliases without touching related_product
   const legacy = products.fields.find(({ name }) => name === "related_products");
   assert.equal(legacy.type, "json", "products.related_products stays json");
   assert.equal(legacy.required, undefined, "products.related_products stays nullable");
+});
+
+test("seo_work_items stores the control-plane queue behind a SQL-owned unique dedupe key", () => {
+  const workItems = schemaBlueprint.collections.find(
+    ({ name }) => name === "seo_work_items",
+  );
+
+  // The exact architecture-spec field list, in spec order.
+  assert.deepEqual(
+    workItems.fields.map(({ name }) => name),
+    [
+      "id",
+      "type",
+      "subtype",
+      "status",
+      "severity",
+      "priority_score",
+      "confidence",
+      "entity_type",
+      "entity_id",
+      "entity_key",
+      "url",
+      "title",
+      "summary",
+      "recommendation",
+      "current_value_json",
+      "proposed_value_json",
+      "patch_json",
+      "evidence_json",
+      "sources_json",
+      "metrics_json",
+      "dedupe_key",
+      "before_hash",
+      "article",
+      "worker_run_id",
+      "claimed_at",
+      "expires_at",
+      "applied_at",
+      "rolled_back_at",
+      "last_error",
+      "created_at",
+      "updated_at",
+    ],
+  );
+
+  // Status lifecycle is Directus choices, never a SQL enum (Task 14 spec).
+  const status = workItems.fields.find(({ name }) => name === "status");
+  assert.equal(status.required, true);
+  assert.equal(status.default, "draft", "items start as draft");
+  assert.deepEqual(status.choices, [
+    "draft",
+    "ready",
+    "review",
+    "applied",
+    "rolled_back",
+    "rejected",
+  ]);
+
+  // dedupe_key: required + indexed, but the PHYSICAL unique constraint is owned
+  // by the operator-run SQL file (product_codes/products_analogs precedent) —
+  // declaring `unique` here would make Directus create a second constraint on
+  // top of the guarded one.
+  const dedupeKey = workItems.fields.find(({ name }) => name === "dedupe_key");
+  assert.equal(dedupeKey.required, true);
+  assert.equal(dedupeKey.index, true);
+  assert.equal(dedupeKey.unique, undefined, "the unique constraint is owned by the SQL file");
+  assert.match(
+    workItems.note ?? "",
+    /sql\/seo-work-items-constraints-up\.sql/,
+    "the collection documents the SQL constraints file",
+  );
+
+  // article is a junction-side-only nullable M2O: no one_field, so no O2M alias
+  // is ever declared on articles (production R7 alias lesson).
+  const article = workItems.fields.find(({ name }) => name === "article");
+  assert.equal(article.type, "uuid");
+  assert.equal(article.relatedCollection, "articles");
+  assert.equal(article.required, undefined, "article is nullable");
+  assert.equal(article.oneField, undefined, "never posts an alias side");
+  assert.equal(article.onDelete, undefined, "non-required M2O defaults to SET NULL");
+
+  // Control-plane internals: no editorial translations field is needed.
+  assert.equal(
+    workItems.fields.some(({ name }) => name === "translations"),
+    false,
+  );
+
+  // Claim/execution bookkeeping fields exist for the W1 claim/expiry contract.
+  for (const name of ["worker_run_id", "claimed_at", "expires_at", "applied_at", "rolled_back_at", "last_error"]) {
+    assert.ok(
+      workItems.fields.some((field) => field.name === name),
+      `missing seo_work_items.${name}`,
+    );
+  }
 });
 
 test("all declared relation targets exist", () => {

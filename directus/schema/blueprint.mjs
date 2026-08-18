@@ -50,6 +50,7 @@ export const schemaBlueprint = {
     { name: "group_content", folder: true, icon: "article", sort: 3, fields: [] },
     { name: "group_sales", folder: true, icon: "request_quote", sort: 4, fields: [] },
     { name: "group_settings", folder: true, icon: "settings", sort: 5, fields: [] },
+    { name: "group_seo", folder: true, icon: "travel_explore", sort: 6, fields: [] },
     {
       name: "site_settings",
       icon: "settings",
@@ -757,6 +758,95 @@ export const schemaBlueprint = {
           choices: [301, 302],
         }),
         field("is_active", "boolean", { default: true, index: true }),
+        ...timestamps(),
+      ],
+    },
+    {
+      name: "seo_work_items",
+      icon: "checklist",
+      note: "Control-plane queue of the SEO content factory (R10A, Task 14): one row per worker recommendation with evidence, sources and a draft-only patch. The W1 worker only ever writes status=draft; ready/review/applied/rolled_back/rejected are human lifecycle transitions. status is Directus choices, NOT a SQL enum. dedupe_key (sha256 of entity+type+subtype+patch) is physically UNIQUE via migrations/sql/seo-work-items-constraints-up.sql — the Directus REST API cannot express the constraint without creating a duplicate of its own. High-volume crawl telemetry is never written here.",
+      fields: [
+        id(),
+        field("type", "string", {
+          index: true,
+          note: "Recommendation type, for example missing_meta or title_rewrite.",
+        }),
+        field("subtype", "string", {
+          index: true,
+          note: "Optional refinement of type.",
+        }),
+        field("status", "string", {
+          required: true,
+          default: "draft",
+          choices: ["draft", "ready", "review", "applied", "rolled_back", "rejected"],
+          index: true,
+        }),
+        field("severity", "string", {
+          default: "minor",
+          index: true,
+          note: "Impact label of the recommendation (minor/major/...).",
+        }),
+        field("priority_score", "integer", { default: 0, index: true }),
+        field("confidence", "decimal", {
+          precision: 5,
+          scale: 4,
+          default: 0,
+          note: "Model/analysis confidence 0..1.",
+        }),
+        field("entity_type", "string", {
+          index: true,
+          note: "Target collection of the recommendation: articles, categories, products, pages or home_page.",
+        }),
+        field("entity_id", "uuid"),
+        field("entity_key", "string", {
+          index: true,
+          note: "Stable human key of the target (slug/sku) — survives re-imports that change entity_id.",
+        }),
+        field("url", "string"),
+        field("title", "string"),
+        field("summary", "text"),
+        field("recommendation", "text"),
+        field("current_value_json", "json", {
+          note: "Snapshot of the target field values at analysis time.",
+        }),
+        field("proposed_value_json", "json"),
+        field("patch_json", "json", {
+          note: "Allowlisted field patch the worker proposes; applied only after human approval.",
+        }),
+        field("evidence_json", "json", {
+          note: "Claim-to-source evidence tiers backing the recommendation.",
+        }),
+        field("sources_json", "json"),
+        field("metrics_json", "json", {
+          note: "Compact decision metrics only — crawl telemetry lives outside this collection.",
+        }),
+        field("dedupe_key", "string", {
+          required: true,
+          index: true,
+          note: "Deterministic sha256 of entity_type+entity_key+type+subtype+patch (seo-worker computeDedupeKey). Physically UNIQUE via migrations/sql/seo-work-items-constraints-up.sql, the product_codes/analogs precedent.",
+        }),
+        field("before_hash", "string", {
+          note: "sha256 of the target field values at analysis time; a mismatch means the entity changed and the proposal is stale.",
+        }),
+        field("article", "uuid", {
+          relatedCollection: "articles",
+          index: true,
+          note: "Nullable M2O to the draft article created from an approved work item. Junction side only — articles carries no O2M alias (production R7 lesson).",
+        }),
+        field("worker_run_id", "string", {
+          index: true,
+          note: "Run identifier of the W1 worker that produced or claimed the item.",
+        }),
+        field("claimed_at", "timestamp", {
+          note: "When a worker run claimed the item for execution.",
+        }),
+        field("expires_at", "timestamp", {
+          index: true,
+          note: "Claim expiry; an expired claim may be taken over by another run.",
+        }),
+        field("applied_at", "timestamp"),
+        field("rolled_back_at", "timestamp"),
+        field("last_error", "text"),
         ...timestamps(),
       ],
     },

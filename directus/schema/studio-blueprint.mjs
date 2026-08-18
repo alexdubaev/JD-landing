@@ -36,6 +36,7 @@ const collections = {
   recent_supplies: { label: "Недавние поставки", group: "group_content", icon: "local_shipping", sort: 3, hidden: false, displayTemplate: "{{equipment_type}} · {{region}} · {{status}}" },
   leads: { label: "Заявки", group: "group_sales", icon: "inbox", sort: 1, hidden: false, displayTemplate: "{{name}} · {{phone}} · {{status}} · {{created_at}}" },
   orders: { label: "Заказы", group: "group_sales", icon: "shopping_cart", sort: 2, hidden: false, displayTemplate: "{{customer_name}} · {{total}} · {{status}} · {{created_at}}" },
+  seo_work_items: { label: "SEO-задачи", group: "group_seo", icon: "checklist", sort: 1, hidden: false, displayTemplate: "{{type}} · {{title}} · {{status}} · {{severity}}" },
   page_sections: { label: "Секции страниц", hidden: true, icon: "view_quilt" },
   articles_editor_nodes: { label: "Узлы редактора статей", hidden: true, icon: "account_tree" },
   product_images: { label: "Изображения товаров", hidden: true, icon: "photo_library" },
@@ -398,6 +399,60 @@ const ordersForm = form(
   },
 );
 
+const seoWorkItemsForm = form(
+  {
+    group_main: group("Задача", 1, { interface: "group-detail" }),
+    group_entity: group("Сущность", 2, { interface: "group-detail" }),
+    group_recommendation: group("Рекомендация", 3, { interface: "group-detail" }),
+    group_evidence: group("Обоснование и источники", 4, { closed: true }),
+    group_pipeline: group("Конвейер и выполнение", 5, { closed: true }),
+    group_system: group("Служебное", 6, { closed: true }),
+  },
+  {
+    group_main: [
+      ["type", "Тип задачи", { width: "half" }],
+      ["subtype", "Подтип", { width: "half" }],
+      ["status", "Статус", { width: "half" }],
+      ["severity", "Критичность", { width: "half" }],
+      ["priority_score", "Приоритет", { width: "half" }],
+      ["confidence", "Уверенность", { width: "half" }],
+      ["title", "Заголовок"],
+      ["summary", "Краткое описание"],
+    ],
+    group_entity: [
+      ["entity_type", "Тип сущности", { width: "half" }],
+      ["entity_id", "ID сущности", { width: "half" }],
+      ["entity_key", "Ключ сущности (slug/sku)", { width: "half" }],
+      ["url", "URL страницы", { width: "half" }],
+      ["article", "Статья (черновик)", { note: "Заполняется только после одобрения задачи; публикует человек, не воркер." }],
+    ],
+    group_recommendation: [
+      ["recommendation", "Рекомендация"],
+      ["current_value_json", "Текущее значение (JSON)"],
+      ["proposed_value_json", "Предлагаемое значение (JSON)"],
+      ["patch_json", "Патч полей (JSON)"],
+    ],
+    group_evidence: [
+      ["evidence_json", "Обоснование (JSON)"],
+      ["sources_json", "Источники (JSON)"],
+      ["metrics_json", "Метрики (JSON)"],
+    ],
+    group_pipeline: [
+      ["worker_run_id", "Прогон воркера", { width: "half" }],
+      ["claimed_at", "Захвачено", { width: "half", readonly: true }],
+      ["expires_at", "Захват истекает", { width: "half", readonly: true }],
+      ["applied_at", "Применено", { width: "half", readonly: true }],
+      ["rolled_back_at", "Откатено", { width: "half", readonly: true }],
+      ["last_error", "Последняя ошибка", { readonly: true }],
+    ],
+    group_system: [
+      ["dedupe_key", "Ключ дедупликации", { readonly: true, note: "Вычисляет воркер (sha256 сущность+тип+подтип+патч); уникален физически, через SQL-констрейнт." }],
+      ["before_hash", "Хеш до изменения", { readonly: true }],
+      ...transactionalSystemFields,
+    ],
+  },
+);
+
 export const studioBlueprint = {
   defaultLanguage: "ru-RU",
   folders: {
@@ -406,6 +461,7 @@ export const studioBlueprint = {
     group_content: { label: "Контент", icon: "article", sort: 3 },
     group_sales: { label: "Продажи", icon: "request_quote", sort: 4 },
     group_settings: { label: "Настройки", icon: "settings", sort: 5 },
+    group_seo: { label: "SEO", icon: "travel_explore", sort: 6 },
   },
   collections,
   fields: {
@@ -416,6 +472,7 @@ export const studioBlueprint = {
     faq_items: faqForm,
     leads: leadsForm,
     orders: ordersForm,
+    seo_work_items: seoWorkItemsForm,
     products: {
       groups: {
         group_main: group("Основное", 1, { interface: "group-detail" }),

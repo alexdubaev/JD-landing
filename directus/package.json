@@ -31,7 +31,8 @@
     "migrations:product-gallery-reconcile": "node migrations/reconcile-product-gallery.mjs",
     "migrations:product-analogs-reconcile": "node migrations/reconcile-product-analogs.mjs",
     "importer": "node importer/cli.mjs",
-    "importer:rollback": "node importer/cli.mjs --rollback"
+    "importer:rollback": "node importer/cli.mjs --rollback",
+    "migrations:seo-work-items": "node migrations/setup-seo-work-items.mjs"
   },
   "engines": {
     "node": ">=20"

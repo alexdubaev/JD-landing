@@ -4,13 +4,14 @@ import assert from "node:assert/strict";
 import { schemaBlueprint } from "./blueprint.mjs";
 import { studioBlueprint } from "./studio-blueprint.mjs";
 
-test("organizes visible collections into five Russian task folders", () => {
+test("organizes visible collections into six Russian task folders", () => {
   assert.deepEqual(studioBlueprint.folders, {
     group_site: { label: "Сайт", icon: "web", sort: 1 },
     group_catalog: { label: "Каталог", icon: "inventory_2", sort: 2 },
     group_content: { label: "Контент", icon: "article", sort: 3 },
     group_sales: { label: "Продажи", icon: "request_quote", sort: 4 },
     group_settings: { label: "Настройки", icon: "settings", sort: 5 },
+    group_seo: { label: "SEO", icon: "travel_explore", sort: 6 },
   });
 
   assert.deepEqual(studioBlueprint.collections.home_page, {
@@ -182,6 +183,52 @@ test("wires the R8 analog aliases hidden in a dedicated products group", () => {
   // gated cutover re-confirms it is empty.
   assert.equal(productFields.related_products.hidden, undefined);
   assert.equal(productFields.related_products.interface, undefined);
+});
+
+test("seo_work_items is a visible SEO-grouped collection with a complete grouped form", () => {
+  assert.deepEqual(studioBlueprint.collections.seo_work_items, {
+    label: "SEO-задачи",
+    group: "group_seo",
+    icon: "checklist",
+    sort: 1,
+    hidden: false,
+    displayTemplate: "{{type}} · {{title}} · {{status}} · {{severity}}",
+  });
+
+  const layout = studioBlueprint.fields.seo_work_items;
+  const schemaCollection = schemaBlueprint.collections.find(
+    ({ name }) => name === "seo_work_items",
+  );
+
+  // The form covers the complete schema — same completeness contract as the
+  // owner workflows above.
+  assert.deepEqual(
+    Object.keys(layout.fields).sort(),
+    schemaCollection.fields.map(({ name }) => name).sort(),
+    "seo_work_items form covers its complete schema",
+  );
+  for (const [field, config] of Object.entries(layout.fields)) {
+    assert.ok(config.group, `seo_work_items.${field} is ungrouped`);
+    assert.ok(layout.groups[config.group], `seo_work_items.${field} group exists`);
+    assert.ok(config.width, `seo_work_items.${field} width`);
+  }
+
+  // Reviewers triage the queue from the first group; worker bookkeeping is
+  // closed away and read-only.
+  assert.equal(layout.fields.status.group, "group_main");
+  assert.equal(layout.fields.severity.group, "group_main");
+  assert.equal(layout.fields.article.group, "group_entity");
+  assert.equal(layout.fields.patch_json.group, "group_recommendation");
+  assert.equal(layout.fields.evidence_json.group, "group_evidence");
+  for (const field of ["claimed_at", "expires_at", "applied_at", "rolled_back_at", "last_error"]) {
+    assert.equal(layout.fields[field].group, "group_pipeline", `${field} group`);
+    assert.equal(layout.fields[field].readonly, true, `${field} stays read-only for humans`);
+  }
+
+  // Worker-computed keys are visible for debugging but never hand-edited.
+  for (const field of ["dedupe_key", "before_hash"]) {
+    assert.equal(layout.fields[field].readonly, true, `${field} stays read-only`);
+  }
 });
 
 test("articles form wires the flexible editor with a hidden M2A alias in the same group", () => {
