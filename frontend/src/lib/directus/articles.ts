@@ -12,7 +12,7 @@ import type {
 } from "@/types/catalog";
 import { parseSeoJson, resolveSeo } from "@/lib/seo/directus-seo";
 
-import { directusEnvelopeRequest, directusRequest } from "./client";
+import { directusEnvelopeRequest, directusRequest, directusVersionedRequest, readPreviewContext } from "./client";
 
 type FileRelation = string | { id: string } | null;
 
@@ -394,6 +394,20 @@ export async function getArticlesPage(page: number): Promise<ArticlePage> {
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  // Task 16 preview: with a valid draft context the article is read through
+  // its version overlay. The version's own slug must match the requested one,
+  // so a preview cookie for one article can never render on another URL.
+  // Without a preview context the published fetch below stays byte-identical
+  // to the pre-preview behaviour.
+  const preview = await readPreviewContext();
+  if (preview?.collection === "articles") {
+    const raw = await directusVersionedRequest<RawArticle>(
+      `/items/articles/${preview.id}?${queryString({ fields: detailFields })}`,
+      { version: preview.version },
+    );
+    if (raw?.slug === slug) return mapArticle(raw);
+  }
+
   const query = queryString({
     "filter[status][_eq]": "published",
     "filter[published_at][_lte]": "$NOW",

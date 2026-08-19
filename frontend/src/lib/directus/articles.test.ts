@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ContentDocument } from "@/lib/articles/structured-content";
 
-import { directusEnvelopeRequest, directusRequest } from "./client";
+import {
+  directusEnvelopeRequest,
+  directusRequest,
+  directusVersionedRequest,
+  readPreviewContext,
+} from "./client";
 import {
   getArticleBySlug,
   getArticlesPage,
@@ -13,13 +18,20 @@ import {
 vi.mock("./client", () => ({
   directusRequest: vi.fn(),
   directusEnvelopeRequest: vi.fn(),
+  directusVersionedRequest: vi.fn(),
+  readPreviewContext: vi.fn(),
 }));
 
 const requestMock = vi.mocked(directusRequest);
 const envelopeRequestMock = vi.mocked(directusEnvelopeRequest);
+const versionedRequestMock = vi.mocked(directusVersionedRequest);
+const readPreviewContextMock = vi.mocked(readPreviewContext);
 
 describe("article queries", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    readPreviewContextMock.mockResolvedValue(null);
+  });
 
   it("loads three featured published articles in editorial order", async () => {
     requestMock.mockResolvedValue([]);
@@ -91,7 +103,10 @@ const rawDetailArticle = {
 };
 
 describe("article detail structured content", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    readPreviewContextMock.mockResolvedValue(null);
+  });
 
   it("requests content_blocks in the detail query with bounded fields and no junction expansion", async () => {
     requestMock.mockResolvedValue([{ ...rawDetailArticle, content_blocks: null }]);
@@ -433,5 +448,73 @@ describe("resolveArticleRelations", () => {
     expect(requested).toHaveLength(50);
     expect(productsUrl.searchParams.get("limit")).toBe("50");
     expect(productsUrl.searchParams.get("limit")).not.toBe("-1");
+  });
+});
+
+const previewContext = {
+  collection: "articles" as const,
+  id: "1f0a7c92-33b1-4a1e-9c64-7089bb6c0000",
+  version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+};
+
+describe("article version preview reads", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    readPreviewContextMock.mockResolvedValue(null);
+  });
+
+  it("keeps the published detail fetch byte-identical without a preview context", async () => {
+    requestMock.mockResolvedValue([{ ...rawDetailArticle }]);
+    await getArticleBySlug("parts-selection");
+
+    expect(versionedRequestMock).not.toHaveBeenCalled();
+    // Byte-identical regression: the exact arguments of the pre-preview call,
+    // serialized through the same URLSearchParams mechanism as production.
+    const expectedQuery = new URLSearchParams({
+      "filter[status][_eq]": "published",
+      "filter[published_at][_lte]": "$NOW",
+      "filter[slug][_eq]": "parts-selection",
+      fields:
+        "id,title,slug,excerpt,cover_image,image_alt,published_at,category_label,reading_time_minutes,content,content_blocks,author,reviewer,sources,seo_title,seo_description,og_image,seo,updated_at",
+      limit: "1",
+    }).toString();
+    expect(requestMock.mock.calls[0]).toEqual([
+      `/items/articles?${expectedQuery}`,
+      { next: { revalidate: 300, tags: ["articles", "article:parts-selection"] } },
+    ]);
+  });
+
+  it("reads the article through its version overlay when the draft context matches", async () => {
+    readPreviewContextMock.mockResolvedValue(previewContext);
+    versionedRequestMock.mockResolvedValue({
+      ...rawDetailArticle,
+      title: "Черновик статьи",
+      status: "draft",
+    });
+
+    const article = await getArticleBySlug("parts-selection");
+
+    expect(versionedRequestMock.mock.calls[0][0]).toContain(
+      `/items/articles/${previewContext.id}?`,
+    );
+    expect(versionedRequestMock.mock.calls[0][1]).toEqual({
+      version: previewContext.version,
+    });
+    expect(article).toEqual(expect.objectContaining({ title: "Черновик статьи" }));
+    expect(requestMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the published fetch when the version slug does not match the URL", async () => {
+    readPreviewContextMock.mockResolvedValue(previewContext);
+    versionedRequestMock.mockResolvedValue({
+      ...rawDetailArticle,
+      slug: "another-article",
+    });
+    requestMock.mockResolvedValue([{ ...rawDetailArticle }]);
+
+    const article = await getArticleBySlug("parts-selection");
+
+    expect(article).toEqual(expect.objectContaining({ slug: "parts-selection" }));
+    expect(requestMock).toHaveBeenCalledTimes(1);
   });
 });

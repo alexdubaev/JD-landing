@@ -13,7 +13,7 @@ import type {
 import { BRAND_NAME } from "@/lib/brand";
 import { parseSeoJson, resolveSeo } from "@/lib/seo/directus-seo";
 
-import { directusRequest } from "./client";
+import { directusRequest, directusVersionedRequest, readPreviewContext } from "./client";
 
 type FileRelation = string | { id: string } | null;
 
@@ -218,17 +218,35 @@ const mapSection = (raw: RawSection): PageSection | null => {
 };
 
 export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
-  const pageQuery = queryString({
-    "filter[status][_eq]": "published",
-    "filter[slug][_eq]": slug,
-    fields: "id,title,slug,h1,seo_title,seo_description,seo_text,seo",
-    limit: "1",
-  });
-  const pages = await directusRequest<RawPage[]>(
-    `/items/pages?${pageQuery}`,
-    { next: { revalidate: 300, tags: ["pages", `page:${slug}`] } },
-  );
-  const page = pages[0];
+  // Task 16 preview: with a valid draft context the page row is read through
+  // its version overlay; the version's own slug must match the request so a
+  // preview cookie cannot leak onto another page's URL. Sections stay on the
+  // published fetch (page_sections are separate items, outside versioning).
+  // Without a preview context the published fetches stay byte-identical.
+  let page: RawPage | null = null;
+  const preview = await readPreviewContext();
+  if (preview?.collection === "pages") {
+    const raw = await directusVersionedRequest<RawPage>(
+      `/items/pages/${preview.id}?${queryString({
+        fields: "id,title,slug,h1,seo_title,seo_description,seo_text,seo",
+      })}`,
+      { version: preview.version },
+    ).catch(() => null);
+    if (raw?.slug === slug) page = raw;
+  }
+  if (!page) {
+    const pageQuery = queryString({
+      "filter[status][_eq]": "published",
+      "filter[slug][_eq]": slug,
+      fields: "id,title,slug,h1,seo_title,seo_description,seo_text,seo",
+      limit: "1",
+    });
+    const pages = await directusRequest<RawPage[]>(
+      `/items/pages?${pageQuery}`,
+      { next: { revalidate: 300, tags: ["pages", `page:${slug}`] } },
+    );
+    page = pages[0];
+  }
   if (!page) return null;
 
   const sectionQuery = queryString({
@@ -280,11 +298,23 @@ export async function getHomePage(): Promise<ContentPage | null> {
     "hero_photo_link_text", "hero_photo_link_url", "seo_title", "seo_description",
     "seo",
   ].join(",");
-  const raw = await directusRequest<RawHomePage>(
-    `/items/home_page?${queryString({ fields })}`,
-    { next: { revalidate: 300, tags: ["homepage"] } },
-  );
-  if (!raw || raw.status !== "published") return null;
+  // Task 16 preview: the singleton is read through its version overlay when a
+  // valid draft context exists; the published status gate only applies to the
+  // published fetch so a draft main item can still be previewed. Sections stay
+  // on the published fetch (page_sections are outside versioning). Without a
+  // preview context the published fetch stays byte-identical.
+  const preview = await readPreviewContext();
+  const versionedPreview = preview?.collection === "home_page" ? preview : null;
+  const raw = versionedPreview
+    ? await directusVersionedRequest<RawHomePage>(
+        `/items/home_page?${queryString({ fields })}`,
+        { version: versionedPreview.version },
+      )
+    : await directusRequest<RawHomePage>(
+        `/items/home_page?${queryString({ fields })}`,
+        { next: { revalidate: 300, tags: ["homepage"] } },
+      );
+  if (!raw || (!versionedPreview && raw.status !== "published")) return null;
 
   const title = requiredText(raw.hero_title);
   const text = requiredText(raw.hero_text);

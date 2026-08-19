@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { directusRequest } from "./client";
+import { directusRequest, directusVersionedRequest, readPreviewContext } from "./client";
 import {
   getFaqItems,
   getContacts,
@@ -13,13 +13,18 @@ import {
 
 vi.mock("./client", () => ({
   directusRequest: vi.fn(),
+  directusVersionedRequest: vi.fn(),
+  readPreviewContext: vi.fn(),
 }));
 
 const requestMock = vi.mocked(directusRequest);
+const versionedRequestMock = vi.mocked(directusVersionedRequest);
+const readPreviewContextMock = vi.mocked(readPreviewContext);
 
 describe("content queries", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    readPreviewContextMock.mockResolvedValue(null);
   });
 
   it("maps site settings without exposing raw Directus field names", async () => {
@@ -388,5 +393,196 @@ describe("content queries", () => {
     ]);
 
     await expect(getContacts()).resolves.toHaveLength(1);
+  });
+});
+
+const pagesPreviewContext = {
+  collection: "pages" as const,
+  id: "0c1d4b8e-6f7a-4b0c-9f55-3b2a87c90000",
+  version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+};
+
+const homePreviewContext = {
+  collection: "home_page" as const,
+  id: "0c1d4b8e-6f7a-4b0c-9f55-3b2a87c90000",
+  version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+};
+
+const rawPreviewHomePage = {
+  id: "singleton-home",
+  status: "draft",
+  source_page: "home",
+  h1: "Черновик главной",
+  hero_title: "Hero из версии",
+  hero_text: "Текст черновика",
+  hero_image: { id: "draft-hero-image" },
+  hero_image_alt: "Черновик alt",
+  hero_primary_button_text: null,
+  hero_primary_button_url: null,
+  hero_secondary_button_text: null,
+  hero_secondary_button_url: null,
+  hero_search_label: null,
+  hero_search_placeholder: null,
+  hero_search_button_text: null,
+  hero_bulk_prompt: null,
+  hero_bulk_link_text: null,
+  hero_bulk_link_url: null,
+  hero_excel_link_text: null,
+  hero_excel_link_url: null,
+  hero_photo_link_text: null,
+  hero_photo_link_url: null,
+  seo_title: null,
+  seo_description: null,
+  seo: null,
+};
+
+describe("content version preview reads", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    readPreviewContextMock.mockResolvedValue(null);
+  });
+
+  it("reads the page through its version overlay when the draft context matches", async () => {
+    readPreviewContextMock.mockResolvedValue(pagesPreviewContext);
+    versionedRequestMock.mockResolvedValue({
+      id: "about",
+      title: "О компании (черновик)",
+      slug: "about",
+      h1: "О компании (черновик)",
+      seo_title: null,
+      seo_description: null,
+      seo_text: null,
+      seo: null,
+    });
+    requestMock.mockResolvedValueOnce([]);
+
+    const page = await getPageBySlug("about");
+
+    expect(versionedRequestMock.mock.calls[0][0]).toContain(
+      `/items/pages/${pagesPreviewContext.id}?`,
+    );
+    expect(versionedRequestMock.mock.calls[0][1]).toEqual({
+      version: pagesPreviewContext.version,
+    });
+    expect(page).toEqual(
+      expect.objectContaining({ title: "О компании (черновик)" }),
+    );
+    // Sections stay on the published fetch.
+    expect(requestMock).toHaveBeenCalledTimes(1);
+    expect(requestMock.mock.calls[0][0]).toContain("/items/page_sections?");
+  });
+
+  it("falls back to the published page when the version slug does not match the URL", async () => {
+    readPreviewContextMock.mockResolvedValue(pagesPreviewContext);
+    versionedRequestMock.mockResolvedValue({
+      id: "delivery",
+      title: "Доставка",
+      slug: "delivery",
+      h1: "Доставка",
+      seo_title: null,
+      seo_description: null,
+      seo_text: null,
+      seo: null,
+    });
+    requestMock
+      .mockResolvedValueOnce([
+        {
+          id: "about",
+          title: "О компании",
+          slug: "about",
+          h1: "О компании",
+          seo_title: null,
+          seo_description: null,
+          seo_text: null,
+          seo: null,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const page = await getPageBySlug("about");
+
+    expect(page).toEqual(expect.objectContaining({ title: "О компании" }));
+    expect(requestMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the published page fetch byte-identical without a preview context", async () => {
+    requestMock
+      .mockResolvedValueOnce([
+        {
+          id: "about",
+          title: "О компании",
+          slug: "about",
+          h1: "О компании",
+          seo_title: null,
+          seo_description: null,
+          seo_text: null,
+          seo: null,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    await getPageBySlug("about");
+
+    expect(versionedRequestMock).not.toHaveBeenCalled();
+    const expectedQuery = new URLSearchParams({
+      "filter[status][_eq]": "published",
+      "filter[slug][_eq]": "about",
+      fields: "id,title,slug,h1,seo_title,seo_description,seo_text,seo",
+      limit: "1",
+    }).toString();
+    expect(requestMock.mock.calls[0]).toEqual([
+      `/items/pages?${expectedQuery}`,
+      { next: { revalidate: 300, tags: ["pages", "page:about"] } },
+    ]);
+  });
+
+  it("reads the homepage singleton through its version overlay, even in draft status", async () => {
+    readPreviewContextMock.mockResolvedValue(homePreviewContext);
+    versionedRequestMock.mockResolvedValue(rawPreviewHomePage);
+    requestMock.mockResolvedValueOnce([]);
+
+    const page = await getHomePage();
+
+    expect(versionedRequestMock.mock.calls[0][0]).toContain("/items/home_page?");
+    expect(versionedRequestMock.mock.calls[0][1]).toEqual({
+      version: homePreviewContext.version,
+    });
+    expect(page).toEqual(
+      expect.objectContaining({
+        h1: "Черновик главной",
+        sections: expect.arrayContaining([
+          expect.objectContaining({
+            type: "hero",
+            title: "Hero из версии",
+            imageId: "draft-hero-image",
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it("keeps the published homepage fetch byte-identical without a preview context", async () => {
+    requestMock
+      .mockResolvedValueOnce({
+        id: "singleton-home",
+        status: "published",
+        source_page: "home",
+        h1: "Главная",
+        hero_title: "Hero",
+        hero_text: "Текст",
+        hero_image: "hero-file",
+        hero_image_alt: "Alt",
+      })
+      .mockResolvedValueOnce([]);
+
+    await getHomePage();
+
+    expect(versionedRequestMock).not.toHaveBeenCalled();
+    expect(requestMock.mock.calls[0][1]).toEqual({
+      next: { revalidate: 300, tags: ["homepage"] },
+    });
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.pathname).toBe("/items/home_page");
+    expect(url.searchParams.has("version")).toBe(false);
   });
 });

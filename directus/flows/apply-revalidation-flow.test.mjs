@@ -43,9 +43,14 @@ test("creates an active non-blocking event flow and request operation", async ()
   assert.deepEqual(flow.options.scope, ["items.create", "items.update", "items.delete"]);
   assert.ok(flow.options.collections.includes("home_page"));
   assert.ok(flow.options.collections.includes("page_sections"));
+  assert.ok(flow.options.collections.includes("pages"));
   assert.equal(operation.type, "request");
   assert.equal(operation.options.method, "POST");
-  assert.deepEqual(operation.options.body, { collection: "{{$trigger.collection}}" });
+  assert.deepEqual(operation.options.body, {
+    collection: "{{$trigger.collection}}",
+    id: "{{$trigger.keys[0]}}",
+    newSlug: "{{$trigger.payload.slug}}",
+  });
   assert.deepEqual(operation.options.headers, [
     { header: "x-revalidate-secret", value: config.secret },
   ]);

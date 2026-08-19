@@ -8,6 +8,7 @@ export const REVALIDATION_COLLECTIONS = [
   "categories",
   "products",
   "articles",
+  "pages",
   "faq_items",
   "recent_supplies",
 ];
@@ -77,7 +78,18 @@ export function buildRevalidationBlueprint(config) {
           header: "x-revalidate-secret",
           value: config.secret.trim(),
         }],
-        body: { collection: "{{$trigger.collection}}" },
+        // Task 16 item-aware revalidation: the trigger's event meta (verified
+        // against Directus 12.1.1) carries `key` on items.create and `keys`
+        // plus the changed-field `payload` on items.update/items.delete.
+        // Missing values render as the literal string "undefined", which the
+        // webhook treats as "not provided". Pre-save values are unavailable,
+        // so oldSlug stays reserved for callers that know it (slug
+        // migrations); the current path is resolved from the item id.
+        body: {
+          collection: "{{$trigger.collection}}",
+          id: "{{$trigger.keys[0]}}",
+          newSlug: "{{$trigger.payload.slug}}",
+        },
       },
       resolve: null,
       reject: null,
