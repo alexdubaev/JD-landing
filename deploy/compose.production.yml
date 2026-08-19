@@ -41,8 +41,9 @@ services:
       WEBSOCKETS_ENABLED: "true"
       TELEMETRY: "false"
       MAX_PAYLOAD_SIZE: 50mb
-      # Studio Live Preview may load only the trusted public site in its iframe.
-      CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: https://deere-shop.ru
+      # Studio Live Preview starts at the CMS bridge, then loads only the trusted
+      # public site in that same iframe.
+      CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: "'self' https://deere-shop.ru"
       NEXT_REVALIDATE_URL: http://frontend:3000/api/revalidate
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
       # Directus server signs short-lived Studio preview forms. The secret is

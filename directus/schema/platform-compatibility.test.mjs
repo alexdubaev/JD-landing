@@ -22,7 +22,7 @@ test("deployment stays within the Directus 12 Core collection limit", async () =
   assert.match(productionCompose, /directus\/directus:12\.1\.1/);
   assert.match(
     productionCompose,
-    /CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: https:\/\/deere-shop\.ru/,
+    /CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: "'self' https:\/\/deere-shop\.ru"/,
   );
   assert.match(localExample, /DIRECTUS_VERSION=12\.1\.1/);
 });
