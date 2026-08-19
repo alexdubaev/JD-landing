@@ -8,7 +8,12 @@ export const PRODUCT_GALLERY_PATCHES = {
     options: { crop: false },
   },
   "products.gallery": {
-    hidden: true,
+    interface: "deere-shop-product-gallery-preview",
+    hidden: false,
+    readonly: true,
+    width: "full",
+    translations: [{ language: "ru-RU", translation: "Предпросмотр галереи" }],
+    note: "Автоматический предпросмотр всех изображений из канонической связи product_images. Изменения выполняются в поле «Управление галереей» ниже.",
   },
   "products.image_items": {
     interface: "list-o2m",
@@ -21,7 +26,7 @@ export const PRODUCT_GALLERY_PATCHES = {
     },
     hidden: false,
     width: "full",
-    translations: [{ language: "ru-RU", translation: "Галерея" }],
+    translations: [{ language: "ru-RU", translation: "Управление галереей" }],
     note: "Все изображения галереи из канонической связи product_images. Нажмите изображение, чтобы изменить файл, alt-текст или порядок.",
   },
   "product_images.image": {

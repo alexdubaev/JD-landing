@@ -535,12 +535,14 @@ export const studioBlueprint = {
           options: { crop: false },
         }),
         image_alt: input("Alt-текст основного изображения", "group_media", 2),
-        gallery: input("Галерея (устаревший JSON)", "group_media", 3, {
-          ...galleryRepeater,
-          hidden: true,
+        gallery: input("Предпросмотр галереи", "group_media", 3, {
+          interface: "deere-shop-product-gallery-preview",
+          hidden: false,
+          readonly: true,
+          note: "Автоматический предпросмотр всех изображений из канонической связи product_images. Изменения выполняются в поле «Управление галереей» ниже.",
         }),
         documents: input("Документы", "group_media", 4, documentRepeater),
-        image_items: input("Галерея", "group_media", 5, {
+        image_items: input("Управление галереей", "group_media", 5, {
           interface: "list-o2m",
           options: {
             layout: "list",

@@ -1,0 +1,24 @@
+{
+  "name": "deere-shop-product-gallery-preview",
+  "version": "1.0.0",
+  "description": "Directus interface that previews the canonical product gallery without cropping.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "directus:extension": {
+    "type": "interface",
+    "path": "dist/index.js",
+    "source": "src/index.js",
+    "host": "^12.0.0"
+  },
+  "devDependencies": {
+    "@directus/extensions-sdk": "13.0.1",
+    "vue": "3.5.13"
+  },
+  "scripts": {
+    "build": "directus-extension build"
+  }
+}

@@ -127,8 +127,9 @@ test("defines task-oriented forms for every owner workflow", () => {
 
 test("cuts product gallery editing over to the canonical image relation", () => {
   const productFields = studioBlueprint.fields.products.fields;
-  assert.equal(productFields.gallery.interface, "list");
-  assert.equal(productFields.gallery.hidden, true);
+  assert.equal(productFields.gallery.interface, "deere-shop-product-gallery-preview");
+  assert.equal(productFields.gallery.hidden, false);
+  assert.equal(productFields.gallery.readonly, true);
   assert.deepEqual(productFields.main_image.options, { crop: false });
   assert.equal(productFields.image_items.interface, "list-o2m");
   assert.equal(productFields.image_items.hidden, false);

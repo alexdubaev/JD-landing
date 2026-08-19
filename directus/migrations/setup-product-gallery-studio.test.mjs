@@ -20,12 +20,14 @@ const currentFields = ({ ready = false } = {}) => ({
     },
     {
       field: "gallery",
-      meta: {
-        interface: "list",
-        options: { template: "{{alt_text}}", fields: [] },
-        hidden: ready,
-        readonly: false,
-      },
+      meta: ready
+        ? PRODUCT_GALLERY_PATCHES["products.gallery"]
+        : {
+            interface: "list",
+            options: { template: "{{alt_text}}", fields: [] },
+            hidden: false,
+            readonly: false,
+          },
     },
     {
       field: "image_items",
@@ -101,7 +103,12 @@ test("declares only the four product-media presentation patches", () => {
     interface: "file-image",
     options: { crop: false },
   });
-  assert.equal(PRODUCT_GALLERY_PATCHES["products.gallery"].hidden, true);
+  assert.equal(
+    PRODUCT_GALLERY_PATCHES["products.gallery"].interface,
+    "deere-shop-product-gallery-preview",
+  );
+  assert.equal(PRODUCT_GALLERY_PATCHES["products.gallery"].hidden, false);
+  assert.equal(PRODUCT_GALLERY_PATCHES["products.gallery"].readonly, true);
   assert.deepEqual(PRODUCT_GALLERY_PATCHES["products.image_items"].options, {
     layout: "list",
     template: "{{image}} {{alt_text}}",
