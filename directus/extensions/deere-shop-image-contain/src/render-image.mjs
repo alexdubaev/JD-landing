@@ -27,14 +27,11 @@ export function createContainImageVNode(h, value) {
     {
       style: {
         display: "flex",
-        flexDirection: "column",
-        gap: "8px",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: "12px",
         width: "100%",
         margin: "0",
-        padding: "12px",
-        background: "var(--theme--background-normal, #fff)",
-        border: "1px solid var(--theme--border-color-subdued, #e2e8e4)",
-        borderRadius: "var(--theme--border-radius, 6px)",
       },
     },
     [
@@ -44,8 +41,9 @@ export function createContainImageVNode(h, value) {
         loading: "lazy",
         style: {
           display: "block",
-          width: "100%",
-          height: "240px",
+          flex: "0 0 56px",
+          width: "56px",
+          height: "32px",
           objectFit: "contain",
           background: "var(--theme--background-subdued, #f4f6f5)",
           borderRadius: "var(--theme--border-radius, 6px)",
