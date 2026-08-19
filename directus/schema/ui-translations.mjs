@@ -160,6 +160,7 @@ export const fieldTranslations = {
   full_description: "Полное описание товара",
   main_image: "Основное изображение",
   gallery: "Галерея",
+  gallery_files: "Галерея",
   image_items: "Изображения галереи (структурные)",
   specification_items: "Характеристики (структурные)",
   document_items: "Документы (структурные)",

@@ -125,32 +125,38 @@ test("defines task-oriented forms for every owner workflow", () => {
   assert.equal(studioBlueprint.fields.orders.fields.manager_comment.group, "group_workflow");
 });
 
-test("keeps legacy product JSON interfaces until the dual-read migration", () => {
+test("keeps legacy product JSON fields for frontend compatibility", () => {
   const productFields = studioBlueprint.fields.products.fields;
   assert.equal(productFields.gallery.interface, "list");
   assert.equal(productFields.specifications.interface, "list");
   assert.equal(productFields.documents.interface, "list");
 });
 
-test("wires the R7C child-collection aliases hidden until the cutover gate", () => {
+test("exposes the migrated product gallery as editable Directus file cards", () => {
   const productFields = studioBlueprint.fields.products.fields;
 
-  const aliases = {
-    image_items: "group_media",
+  const galleryFiles = productFields.gallery_files;
+  assert.ok(galleryFiles, "missing products.gallery_files");
+  assert.equal(galleryFiles.interface, "files");
+  assert.equal(galleryFiles.hidden, undefined);
+  assert.equal(galleryFiles.group, "group_media");
+  assert.match(galleryFiles.note ?? "", /product_images/);
+
+  // `gallery` remains stored for the frontend's dual-read compatibility, but
+  // must no longer offer a second JSON editing surface in Studio.
+  assert.equal(productFields.gallery.hidden, true);
+  assert.equal(productFields.gallery.readonly, true);
+
+  for (const [field, group] of Object.entries({
     document_items: "group_media",
     specification_items: "group_specs",
-  };
-  for (const [field, group] of Object.entries(aliases)) {
+  })) {
     assert.ok(productFields[field], `missing products form entry ${field}`);
     assert.equal(productFields[field].interface, "list-o2m", `${field} is an O2M list`);
-    assert.equal(productFields[field].hidden, true, `${field} stays hidden until R7C`);
+    assert.equal(productFields[field].hidden, true, `${field} stays hidden`);
     assert.equal(productFields[field].group, group, `${field} group`);
-    assert.match(productFields[field].note ?? "", /R7C/, `${field} documents the gate`);
+    assert.match(productFields[field].note ?? "", /R7C/, `${field} documents the relation`);
   }
-
-  // Legacy JSON interfaces stay editable "list" repeaters until the gate
-  // (asserted above) — the aliases only ADD the canonical editing surface.
-  assert.equal(productFields.gallery.readonly, undefined);
 });
 
 test("products_analogs is an editable catalog collection", () => {

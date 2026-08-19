@@ -348,13 +348,13 @@ test("products gain hidden indexed normalized code copies without touching sku/m
   assert.equal(mpn.index, true);
 });
 
-test("products declare the R7C child-collection aliases as alias-type only", () => {
+test("products declare the R7C file-gallery alias and child-collection aliases as alias-type only", () => {
   const products = schemaBlueprint.collections.find(
     ({ name }) => name === "products",
   );
 
   const aliases = {
-    image_items: "product_images",
+    gallery_files: "directus_files",
     specification_items: "product_specifications",
     document_items: "product_documents",
   };
@@ -364,15 +364,35 @@ test("products declare the R7C child-collection aliases as alias-type only", () 
     // Alias type => apply-schema posts schema: null, so a future apply can
     // never try to create a physical column for these fields.
     assert.equal(alias.type, "alias", `products.${name} is an alias`);
-    assert.deepEqual(alias.special, ["o2m"], `products.${name} is a special o2m`);
+    assert.deepEqual(
+      alias.special,
+      [name === "gallery_files" ? "m2m" : "o2m"],
+      `products.${name} relation type`,
+    );
     assert.equal(alias.relatedCollection, relatedCollection);
-    assert.equal(alias.hidden, true, `products.${name} is hidden until the R7C gate`);
+    assert.equal(
+      alias.hidden,
+      name === "gallery_files" ? false : true,
+      `products.${name} visibility`,
+    );
     assert.match(
       alias.note ?? "",
-      /R7C/,
-      `products.${name} documents the gated cutover`,
+      name === "gallery_files" ? /product_images/ : /R7C/,
+      `products.${name} documents its relation`,
     );
   }
+
+  const galleryFiles = products.fields.find(({ name }) => name === "gallery_files");
+  assert.deepEqual(galleryFiles.special, ["m2m"]);
+  assert.equal(galleryFiles.interface, "files");
+  assert.match(galleryFiles.note ?? "", /product_images/);
+
+  const productImages = schemaBlueprint.collections.find(
+    ({ name }) => name === "product_images",
+  );
+  const productRelation = productImages.fields.find(({ name }) => name === "product");
+  assert.equal(productRelation.oneField, "gallery_files");
+  assert.equal(productRelation.junctionField, "image");
 
   // The legacy JSON fields stay exactly as they were until the R7C gate.
   for (const name of ["gallery", "specifications", "documents"]) {
