@@ -44,9 +44,12 @@ const SAFE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/iu;
 
 type VersionRecord = {
   id: string;
+  key: string | null;
   collection: string;
   item: string | null;
 };
+
+const SAFE_VERSION_KEY = /^[\w][\w.-]*$/u;
 
 const forbidden = () =>
   Response.json({ ok: false, error: "Forbidden" }, { status: 403 });
@@ -64,11 +67,11 @@ const versionNotFound = () =>
 async function versionedSlug(
   collection: "articles" | "pages",
   item: string,
-  version: string,
+  versionKey: string,
 ): Promise<string | null> {
   const itemData = await directusVersionedRequest<{ slug?: unknown }>(
     `/items/${collection}/${item}?fields=slug`,
-    { version },
+    { version: versionKey },
   );
   const slug = itemData?.slug;
   return typeof slug === "string" && SAFE_SLUG.test(slug) ? slug : null;
@@ -76,7 +79,7 @@ async function versionedSlug(
 
 async function buildPreviewPath(
   record: VersionRecord,
-  version: string,
+  versionKey: string,
 ): Promise<string | null> {
   if (record.collection === "home_page") return "/";
   if (
@@ -85,7 +88,7 @@ async function buildPreviewPath(
   ) {
     return null;
   }
-  const slug = await versionedSlug(record.collection, record.item, version);
+  const slug = await versionedSlug(record.collection, record.item, versionKey);
   if (!slug) return null;
   if (record.collection === "articles") {
     return `/articles/${encodeURIComponent(slug)}`;
@@ -113,7 +116,7 @@ export async function POST(request: Request) {
   let record: VersionRecord | null;
   try {
     record = await directusPreviewRequest<VersionRecord>(
-      `/versions/${version}?fields=id,collection,item`,
+      `/versions/${version}?fields=id,key,collection,item`,
     );
   } catch (error) {
     if (
@@ -130,10 +133,16 @@ export async function POST(request: Request) {
   if (record.collection !== "home_page" && !isUuid(record.item)) {
     return versionNotFound();
   }
+  // Directus item reads resolve `?version=` by KEY, not by uuid — the key is
+  // what the render layer and versionedSlug must send.
+  const versionKey = record.key ?? "";
+  if (!SAFE_VERSION_KEY.test(versionKey)) {
+    return versionNotFound();
+  }
 
   let path: string | null;
   try {
-    path = await buildPreviewPath(record, version);
+    path = await buildPreviewPath(record, versionKey);
   } catch (error) {
     if (error instanceof DirectusRequestError) {
       return versionNotFound();
@@ -146,6 +155,7 @@ export async function POST(request: Request) {
     collection: record.collection as PreviewContext["collection"],
     id: record.item ?? record.id,
     version,
+    versionKey,
   };
 
   const draft = await draftMode();

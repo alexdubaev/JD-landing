@@ -455,6 +455,7 @@ const previewContext = {
   collection: "articles" as const,
   id: "1f0a7c92-33b1-4a1e-9c64-7089bb6c0000",
   version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+  versionKey: "r12-draft",
 };
 
 describe("article version preview reads", () => {
@@ -498,7 +499,7 @@ describe("article version preview reads", () => {
       `/items/articles/${previewContext.id}?`,
     );
     expect(versionedRequestMock.mock.calls[0][1]).toEqual({
-      version: previewContext.version,
+      version: previewContext.versionKey,
     });
     expect(article).toEqual(expect.objectContaining({ title: "Черновик статьи" }));
     expect(requestMock).not.toHaveBeenCalled();

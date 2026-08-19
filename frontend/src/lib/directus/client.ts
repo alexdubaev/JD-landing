@@ -93,7 +93,13 @@ export type PreviewCollection = "articles" | "pages" | "home_page";
 export type PreviewContext = {
   collection: PreviewCollection;
   id: string;
+  /** Version uuid — identity of the validated Directus version. */
   version: string;
+  /**
+   * Version KEY (e.g. "draft"): Directus 12 `?version=` item reads resolve by
+   * key, NOT by uuid — getVersionSaves filters `directus_versions.key`.
+   */
+  versionKey: string;
 };
 
 const previewCollections = new Set<PreviewCollection>([
@@ -149,18 +155,28 @@ export function verifyPreviewToken(
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return null;
   }
-  const { collection, id, version, exp } = payload as Record<string, unknown>;
+  const { collection, id, version, versionKey, exp } = payload as Record<
+    string,
+    unknown
+  >;
   if (
     typeof collection !== "string" ||
     !previewCollections.has(collection as PreviewCollection) ||
     !isUuid(id) ||
     !isUuid(version) ||
+    typeof versionKey !== "string" ||
+    !/^[\w][\w.-]*$/u.test(versionKey) ||
     typeof exp !== "number" ||
     exp <= Math.floor(now / 1000)
   ) {
     return null;
   }
-  return { collection: collection as PreviewCollection, id, version };
+  return {
+    collection: collection as PreviewCollection,
+    id,
+    version,
+    versionKey,
+  };
 }
 
 /**
@@ -244,8 +260,11 @@ export async function directusVersionedRequest<T>(
   { version, ...init }: DirectusVersionedRequestInit,
 ): Promise<T> {
   assertRelativeApiPath(path);
-  if (!isUuid(version)) {
-    throw new TypeError("Expected a version uuid for a versioned Directus request");
+  // `version` here is the Directus version KEY (verified by
+  // /api/preview against /versions/{uuid}); keys are editor-chosen
+  // strings like "draft", not uuids.
+  if (typeof version !== "string" || !/^[\w][\w.-]*$/u.test(version)) {
+    throw new TypeError("Expected a version key for a versioned Directus request");
   }
   const [pathname, search = ""] = path.split("?");
   const parameters = new URLSearchParams(search);

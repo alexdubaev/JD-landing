@@ -27,6 +27,7 @@ import {
 
 const PREVIEW_SECRET = "preview-secret-value-for-tests";
 const VERSION_ID = "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000";
+const VERSION_KEY = "r12-draft";
 const ARTICLE_ITEM = "1f0a7c92-33b1-4a1e-9c64-7089bb6c0000";
 
 const stubEnv = () => {
@@ -68,6 +69,7 @@ describe("POST /api/preview", () => {
       .mockResolvedValueOnce(
         versionsResponse({
           id: VERSION_ID,
+          key: VERSION_KEY,
           collection: "articles",
           item: ARTICLE_ITEM,
         }),
@@ -91,7 +93,7 @@ describe("POST /api/preview", () => {
     // The version lookup runs with the preview token, never the public one.
     const [firstUrl, firstInit] = fetchMock.mock.calls[0];
     expect(String(firstUrl)).toBe(
-      `https://cms.example.test/versions/${VERSION_ID}?fields=id,collection,item`,
+      `https://cms.example.test/versions/${VERSION_ID}?fields=id,key,collection,item`,
     );
     expect(new Headers(firstInit?.headers).get("Authorization")).toBe(
       "Bearer preview-token-for-tests-only",
@@ -99,7 +101,7 @@ describe("POST /api/preview", () => {
     // The draft slug is read through the version-aware overlay.
     const [secondUrl] = fetchMock.mock.calls[1];
     expect(String(secondUrl)).toContain(
-      `/items/articles/${ARTICLE_ITEM}?fields=slug&version=${VERSION_ID}&versionRaw=true`,
+      `/items/articles/${ARTICLE_ITEM}?fields=slug&version=${VERSION_KEY}&versionRaw=true`,
     );
 
     const cookie = headersMock.store.set.mock.calls[0][0];
@@ -113,6 +115,7 @@ describe("POST /api/preview", () => {
       collection: "articles",
       id: ARTICLE_ITEM,
       version: VERSION_ID,
+      versionKey: VERSION_KEY,
     });
   });
 
@@ -121,6 +124,7 @@ describe("POST /api/preview", () => {
       .mockResolvedValueOnce(
         versionsResponse({
           id: VERSION_ID,
+          key: VERSION_KEY,
           collection: "pages",
           item: ARTICLE_ITEM,
         }),
@@ -146,6 +150,7 @@ describe("POST /api/preview", () => {
       .mockResolvedValueOnce(
         versionsResponse({
           id: VERSION_ID,
+          key: VERSION_KEY,
           collection: "pages",
           item: ARTICLE_ITEM,
         }),
@@ -169,6 +174,7 @@ describe("POST /api/preview", () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       versionsResponse({
         id: VERSION_ID,
+        key: VERSION_KEY,
         collection: "home_page",
         item: ARTICLE_ITEM,
       }),
@@ -189,6 +195,7 @@ describe("POST /api/preview", () => {
       collection: "home_page",
       id: ARTICLE_ITEM,
       version: VERSION_ID,
+      versionKey: VERSION_KEY,
     });
   });
 
@@ -215,6 +222,7 @@ describe("POST /api/preview", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       versionsResponse({
         id: VERSION_ID,
+        key: VERSION_KEY,
         collection: "products",
         item: ARTICLE_ITEM,
       }),
@@ -267,6 +275,7 @@ describe("POST /api/preview", () => {
       .mockResolvedValueOnce(
         versionsResponse({
           id: VERSION_ID,
+          key: VERSION_KEY,
           collection: "articles",
           item: ARTICLE_ITEM,
         }),

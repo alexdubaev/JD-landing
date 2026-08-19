@@ -230,7 +230,7 @@ export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
       `/items/pages/${preview.id}?${queryString({
         fields: "id,title,slug,h1,seo_title,seo_description,seo_text,seo",
       })}`,
-      { version: preview.version },
+      { version: preview.versionKey },
     ).catch(() => null);
     if (raw?.slug === slug) page = raw;
   }
@@ -308,7 +308,7 @@ export async function getHomePage(): Promise<ContentPage | null> {
   const raw = versionedPreview
     ? await directusVersionedRequest<RawHomePage>(
         `/items/home_page?${queryString({ fields })}`,
-        { version: versionedPreview.version },
+        { version: versionedPreview.versionKey },
       )
     : await directusRequest<RawHomePage>(
         `/items/home_page?${queryString({ fields })}`,

@@ -118,14 +118,14 @@ describe("directusVersionedRequest", () => {
 
     const result = await directusVersionedRequest<{ slug: string }>(
       "/items/articles/1f0a7c92-33b1-4a1e-9c64-7089bb6c0000?fields=slug",
-      { version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000" },
+      { version: "r12-draft" },
     );
 
     expect(result).toEqual({ slug: "draft-slug" });
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toBe(
       "https://cms.example.test/items/articles/1f0a7c92-33b1-4a1e-9c64-7089bb6c0000" +
-        "?fields=slug&version=6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000&versionRaw=true",
+        "?fields=slug&version=r12-draft&versionRaw=true",
     );
     expect(new Headers(init?.headers).get("Authorization")).toBe(
       "Bearer preview-token-for-tests-only",
@@ -140,21 +140,24 @@ describe("directusVersionedRequest", () => {
 
     await expect(
       directusVersionedRequest("/items/articles/1f0a7c92-33b1-4a1e-9c64-7089bb6c0000", {
-        version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+        version: "r12-draft",
       }),
     ).rejects.toThrow(/DIRECTUS_PREVIEW_TOKEN/u);
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("rejects a non-uuid version before any request", async () => {
+  it("rejects an unsafe version key before any request", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch");
 
     await expect(
       directusVersionedRequest("/items/articles/some-id", {
-        version: "not-a-uuid",
+        version: "../versions/other",
       }),
-    ).rejects.toThrow(/version uuid/u);
+    ).rejects.toThrow(/version key/u);
+    await expect(
+      directusVersionedRequest("/items/articles/some-id", { version: "" }),
+    ).rejects.toThrow(/version key/u);
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -164,6 +167,7 @@ const previewContext: PreviewContext = {
   collection: "articles",
   id: "1f0a7c92-33b1-4a1e-9c64-7089bb6c0000",
   version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+  versionKey: "r12-draft",
 };
 
 describe("preview cookie tokens", () => {

@@ -400,12 +400,14 @@ const pagesPreviewContext = {
   collection: "pages" as const,
   id: "0c1d4b8e-6f7a-4b0c-9f55-3b2a87c90000",
   version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+  versionKey: "r12-draft",
 };
 
 const homePreviewContext = {
   collection: "home_page" as const,
   id: "0c1d4b8e-6f7a-4b0c-9f55-3b2a87c90000",
   version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+  versionKey: "r12-draft",
 };
 
 const rawPreviewHomePage = {
@@ -462,7 +464,7 @@ describe("content version preview reads", () => {
       `/items/pages/${pagesPreviewContext.id}?`,
     );
     expect(versionedRequestMock.mock.calls[0][1]).toEqual({
-      version: pagesPreviewContext.version,
+      version: pagesPreviewContext.versionKey,
     });
     expect(page).toEqual(
       expect.objectContaining({ title: "О компании (черновик)" }),
@@ -545,7 +547,7 @@ describe("content version preview reads", () => {
 
     expect(versionedRequestMock.mock.calls[0][0]).toContain("/items/home_page?");
     expect(versionedRequestMock.mock.calls[0][1]).toEqual({
-      version: homePreviewContext.version,
+      version: homePreviewContext.versionKey,
     });
     expect(page).toEqual(
       expect.objectContaining({

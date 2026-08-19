@@ -403,7 +403,7 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
   if (preview?.collection === "articles") {
     const raw = await directusVersionedRequest<RawArticle>(
       `/items/articles/${preview.id}?${queryString({ fields: detailFields })}`,
-      { version: preview.version },
+      { version: preview.versionKey },
     );
     if (raw?.slug === slug) return mapArticle(raw);
   }
