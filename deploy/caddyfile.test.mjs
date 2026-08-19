@@ -32,3 +32,14 @@ test("public preview framing strips the frontend X-Frame-Options response header
     /deere-shop\.ru\s*\{[\s\S]*import security_headers_public[\s\S]*reverse_proxy frontend:3000\s*\{[\s\S]*header_down -X-Frame-Options[\s\S]*\}/u,
   );
 });
+
+test("Directus preview bridge alone may post its signed form to the public site", () => {
+  assert.match(
+    caddyfile,
+    /\(security_headers_preview_bridge\)\s*\{[\s\S]*form-action https:\/\/deere-shop\.ru[\s\S]*frame-ancestors 'self'[\s\S]*\}/u,
+  );
+  assert.match(
+    caddyfile,
+    /cms\.deere-shop\.ru\s*\{[\s\S]*@preview_bridge path \/deere-shop\/preview\/\*[\s\S]*handle @preview_bridge\s*\{[\s\S]*import security_headers_preview_bridge[\s\S]*reverse_proxy directus:8055[\s\S]*\}[\s\S]*handle\s*\{[\s\S]*import security_headers[\s\S]*reverse_proxy directus:8055[\s\S]*\}/u,
+  );
+});
