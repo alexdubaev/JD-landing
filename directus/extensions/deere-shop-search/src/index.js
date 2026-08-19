@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 // deere-shop-search — Directus endpoint extension (zero dependencies).
 //
 // Registers GET /deere-shop/search (the extension mounts at /deere-shop,
@@ -21,6 +23,13 @@
 //   degrades to normalized-only results instead of breaking the search.
 
 export const ROUTE_PATH = "/search";
+export const PREVIEW_ROUTE_PATH = "/preview/:collection/:item";
+
+const PREVIEW_COLLECTIONS = new Set(["articles", "pages", "home_page"]);
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+const SAFE_VERSION_KEY = /^[\w][\w.-]*$/u;
+const PREVIEW_TTL_SECONDS = 15 * 60;
 
 export const DEFAULT_PAGE_LIMIT = 10;
 export const MAX_PAGE_LIMIT = 20;
@@ -232,6 +241,114 @@ export function mapSuggestion(item) {
 
 const EMPTY_ACCOUNTABILITY = { role: null, user: null, admin: false, app: false };
 
+const isUuid = (value) => typeof value === "string" && UUID_PATTERN.test(value);
+
+const escapeHtml = (value) => String(value)
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replaceAll('"', "&quot;")
+  .replaceAll("'", "&#39;");
+
+const signPreviewToken = (context, secret, now = Date.now()) => {
+  const encoded = Buffer.from(JSON.stringify({
+    ...context,
+    exp: Math.floor(now / 1000) + PREVIEW_TTL_SECONDS,
+  }), "utf8").toString("base64url");
+  const signature = createHmac("sha256", secret).update(encoded).digest("base64url");
+  return `${encoded}.${signature}`;
+};
+
+const previewForm = (consumeUrl, token) => `<!doctype html>
+<html><head><meta charset="utf-8"><title>Live Preview</title></head>
+<body><form method="post" action="${escapeHtml(consumeUrl)}"><input type="hidden" name="token" value="${escapeHtml(token)}"></form><script>document.forms[0].submit()</script></body></html>`;
+
+/**
+ * Returns an auto-posting form for an authenticated Studio user. Directus
+ * validates the current user's access before the signature is minted; Next.js
+ * validates it again before it sets the httpOnly draft cookie.
+ */
+export function createPreviewHandler(context) {
+  const { services, database, getSchema, logger, env = process.env } = context ?? {};
+
+  return async function previewHandler(req, res) {
+    if (!req?.accountability?.user) {
+      res.status(403).send("Forbidden");
+      return;
+    }
+    const collection = req.params?.collection;
+    const item = req.params?.item;
+    const versionKey = req.query?.version;
+    if (
+      !PREVIEW_COLLECTIONS.has(collection) ||
+      !isUuid(item) ||
+      typeof versionKey !== "string" ||
+      !SAFE_VERSION_KEY.test(versionKey)
+    ) {
+      res.status(404).send("Not found");
+      return;
+    }
+    const secret = env.PREVIEW_SECRET;
+    const consumeUrl = env.NEXT_PREVIEW_CONSUME_URL;
+    let destination;
+    try {
+      destination = new URL(consumeUrl);
+    } catch {
+      res.status(503).send("Preview unavailable");
+      return;
+    }
+    const loopbackHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+    const isLoopbackHttp =
+      destination.protocol === "http:" && loopbackHosts.has(destination.hostname);
+    if ((destination.protocol !== "https:" && !isLoopbackHttp) || !secret) {
+      res.status(503).send("Preview unavailable");
+      return;
+    }
+
+    try {
+      const schema = await getSchema();
+      const versions = new services.ItemsService("directus_versions", {
+        schema,
+        accountability: req.accountability,
+        knex: database,
+      });
+      const rows = await versions.readByQuery({
+        filter: {
+          collection: { _eq: collection },
+          item: { _eq: item },
+          key: { _eq: versionKey },
+        },
+        fields: ["id", "key", "collection", "item"],
+        limit: 1,
+      });
+      const version = rows?.[0];
+      if (
+        !isUuid(version?.id) ||
+        version?.key !== versionKey ||
+        version?.collection !== collection ||
+        version?.item !== item
+      ) {
+        res.status(404).send("Not found");
+        return;
+      }
+      const token = signPreviewToken({
+        collection,
+        id: item,
+        version: version.id,
+        versionKey,
+      }, secret);
+      res.set({
+        "Cache-Control": "no-store",
+        "Referrer-Policy": "no-referrer",
+        "Content-Security-Policy": `default-src 'none'; script-src 'unsafe-inline'; form-action ${destination.origin}; base-uri 'none'; frame-ancestors 'self'`,
+      }).status(200).send(previewForm(destination.toString(), token));
+    } catch (error) {
+      logger?.error?.(`deere-shop preview bridge failed: ${error?.message ?? error}`);
+      res.status(503).send("Preview unavailable");
+    }
+  };
+}
+
 /**
  * Builds the Express route handler from the Directus endpoint context
  * ({ services, database, getSchema, logger }). Separated from the register
@@ -343,4 +460,5 @@ export function createSearchHandler(context) {
  */
 export default function registerSearchEndpoint(router, context) {
   router.get(ROUTE_PATH, createSearchHandler(context));
+  router.get(PREVIEW_ROUTE_PATH, createPreviewHandler(context));
 }

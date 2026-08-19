@@ -20,7 +20,7 @@
         "icon": "article",
         "item_duplication_fields": null,
         "note": null,
-        "preview_url": null,
+        "preview_url": "https://cms.deere-shop.ru/deere-shop/preview/articles/{{id}}?version={{$version}}",
         "singleton": false,
         "sort": 1,
         "sort_field": "sort_order",
@@ -32,7 +32,7 @@
           }
         ],
         "unarchive_value": "draft",
-        "versioning": false
+        "versioning": true
       },
       "schema": {
         "name": "articles"
@@ -387,7 +387,7 @@
         "icon": "home",
         "item_duplication_fields": null,
         "note": null,
-        "preview_url": null,
+        "preview_url": "https://cms.deere-shop.ru/deere-shop/preview/home_page/{{id}}?version={{$version}}",
         "singleton": true,
         "sort": 1,
         "sort_field": null,
@@ -399,7 +399,7 @@
           }
         ],
         "unarchive_value": null,
-        "versioning": false
+        "versioning": true
       },
       "schema": {
         "name": "home_page"
@@ -632,7 +632,7 @@
         "icon": "web",
         "item_duplication_fields": null,
         "note": null,
-        "preview_url": null,
+        "preview_url": "https://cms.deere-shop.ru/deere-shop/preview/pages/{{id}}?version={{$version}}",
         "singleton": false,
         "sort": 2,
         "sort_field": null,
@@ -644,7 +644,7 @@
           }
         ],
         "unarchive_value": "draft",
-        "versioning": false
+        "versioning": true
       },
       "schema": {
         "name": "pages"
@@ -25458,7 +25458,7 @@
         "one_collection_field": null,
         "one_deselect_action": "nullify",
         "one_field": "analogs_from",
-        "sort_field": "sort_order"
+        "sort_field": null
       },
       "schema": {
         "table": "products_analogs",
@@ -25483,7 +25483,7 @@
         "one_collection_field": null,
         "one_deselect_action": "nullify",
         "one_field": "analogs_to",
-        "sort_field": "sort_order"
+        "sort_field": null
       },
       "schema": {
         "table": "products_analogs",

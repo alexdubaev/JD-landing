@@ -12,3 +12,9 @@ ALTER TABLE products_analogs
 
 ALTER TABLE products_analogs
   DROP CONSTRAINT IF EXISTS products_analogs_no_self_check;
+
+ALTER TABLE products_analogs
+  DROP CONSTRAINT IF EXISTS products_analogs_product_from_foreign;
+
+ALTER TABLE products_analogs
+  DROP CONSTRAINT IF EXISTS products_analogs_product_to_foreign;

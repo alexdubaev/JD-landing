@@ -43,6 +43,10 @@ services:
       MAX_PAYLOAD_SIZE: 50mb
       NEXT_REVALIDATE_URL: http://frontend:3000/api/revalidate
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      # Directus server signs short-lived Studio preview forms. The secret is
+      # never exposed to a browser and matches the frontend verifier.
+      PREVIEW_SECRET: ${PREVIEW_SECRET:-}
+      NEXT_PREVIEW_CONSUME_URL: ${NEXT_PREVIEW_CONSUME_URL:-https://deere-shop.ru/api/preview/consume}
     volumes:
       - directus_uploads:/directus/uploads
       - directus_extensions:/directus/extensions

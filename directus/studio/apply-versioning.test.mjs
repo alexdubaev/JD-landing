@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { applyVersioning } from "./apply-versioning.mjs";
-import { versioningBlueprint } from "./versioning-blueprint.mjs";
+import {
+  buildVersioningBlueprint,
+  versioningBlueprint,
+} from "./versioning-blueprint.mjs";
 
 const collectionRow = (name, meta = {}) => ({ collection: name, meta });
 
@@ -124,5 +127,34 @@ test("can disable versioning again for the rollback path", async () => {
   assert.deepEqual(
     JSON.parse(requests.find(({ method }) => method === "PATCH").body),
     { meta: { versioning: false } },
+  );
+});
+
+test("adds a preview URL without overwriting unrelated collection metadata", async () => {
+  const requests = [];
+  const client = {
+    async request(path, options = {}) {
+      requests.push({ path, method: options.method ?? "GET", body: options.body });
+      if (path === "/collections") {
+        return [collectionRow("articles", { versioning: true, preview_url: null, sort: 1 })];
+      }
+      return {};
+    },
+  };
+  const blueprint = buildVersioningBlueprint(
+    "https://cms.example.test/deere-shop/preview",
+  );
+
+  assert.deepEqual(await applyVersioning(client, { collections: { articles: blueprint.collections.articles } }), [
+    "configure preview articles",
+  ]);
+  assert.deepEqual(
+    JSON.parse(requests.find(({ method }) => method === "PATCH").body),
+    {
+      meta: {
+        preview_url:
+          "https://cms.example.test/deere-shop/preview/articles/{{id}}?version={{$version}}",
+      },
+    },
   );
 });

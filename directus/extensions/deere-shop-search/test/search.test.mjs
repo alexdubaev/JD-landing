@@ -415,6 +415,7 @@ test("registers GET /search on the scoped router", async () => {
 
   assert.deepEqual(routes.map(({ method, path }) => ({ method, path })), [
     { method: "get", path: "/search" },
+    { method: "get", path: "/preview/:collection/:item" },
   ]);
   assert.equal(routes[0].handler.name, "searchHandler");
   assert.equal(ROUTE_PATH, "/search");

@@ -86,7 +86,7 @@ describe("POST /api/preview", () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe(
-      `/articles/draft-slug?version=${VERSION_ID}`,
+      "/articles/draft-slug",
     );
     expect(headersMock.draft.enable).toHaveBeenCalledTimes(1);
 
@@ -141,7 +141,7 @@ describe("POST /api/preview", () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe(
-      `/delivery?version=${VERSION_ID}`,
+      "/delivery",
     );
   });
 
@@ -187,7 +187,7 @@ describe("POST /api/preview", () => {
     );
 
     expect(response.status).toBe(302);
-    expect(response.headers.get("Location")).toBe(`/?version=${VERSION_ID}`);
+    expect(response.headers.get("Location")).toBe("/");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(
       verifyPreviewToken(headersMock.store.set.mock.calls[0][0].value, PREVIEW_SECRET),
@@ -299,7 +299,7 @@ describe("POST /api/preview", () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe(
-      `/articles/draft-slug?version=${VERSION_ID}`,
+      "/articles/draft-slug",
     );
   });
 

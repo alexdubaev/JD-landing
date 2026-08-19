@@ -26,8 +26,8 @@ import {
  *   ignored, which closes open redirects by construction.
  * - On success: Next.js draft mode is enabled, a short-lived HMAC-signed
  *   preview cookie ({ collection, id, version }) is set, and the response
- *   redirects (302) to the constructed path with `?version=` preserved for
- *   the render layer.
+ *   redirects (302) to the constructed path. The signed cookie alone carries
+ *   the render context, so version identifiers never enter public URLs.
  */
 
 // Mirrors the [infoSlug] route segment allowlist: a pages version may only be
@@ -173,6 +173,6 @@ export async function POST(request: Request) {
 
   return new Response(null, {
     status: 302,
-    headers: { Location: `${path}?version=${version}` },
+    headers: { Location: path },
   });
 }

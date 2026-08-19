@@ -24,14 +24,25 @@ export async function applyVersioning(
       actions.push(`skip missing collection ${name}`);
       continue;
     }
-    if ((current.meta?.versioning ?? false) === config.versioning) continue;
-    actions.push(
-      `${config.versioning ? "enable" : "disable"} versioning ${name}`,
-    );
+    const meta = {};
+    if ((current.meta?.versioning ?? false) !== config.versioning) {
+      meta.versioning = config.versioning;
+      actions.push(
+        `${config.versioning ? "enable" : "disable"} versioning ${name}`,
+      );
+    }
+    if (
+      config.previewUrl !== undefined &&
+      current.meta?.preview_url !== config.previewUrl
+    ) {
+      meta.preview_url = config.previewUrl;
+      actions.push(`configure preview ${name}`);
+    }
+    if (Object.keys(meta).length === 0) continue;
     if (!dryRun) {
       await client.request(`/collections/${encodeURIComponent(name)}`, {
         method: "PATCH",
-        body: JSON.stringify({ meta: { versioning: config.versioning } }),
+        body: JSON.stringify({ meta }),
       });
     }
   }
@@ -44,7 +55,13 @@ async function main() {
   // mirroring the migration scripts' safety convention.
   const apply = process.argv.includes("--apply");
   const client = await DirectusAdminClient.connectFromEnvironment();
-  const actions = await applyVersioning(client, versioningBlueprint, {
+  const publicUrl = process.env.PUBLIC_URL;
+  if (!publicUrl) {
+    throw new Error("PUBLIC_URL is required to configure Directus Live Preview");
+  }
+  const { buildVersioningBlueprint } = await import("./versioning-blueprint.mjs");
+  const previewBridgeUrl = new URL("/deere-shop/preview", publicUrl).toString();
+  const actions = await applyVersioning(client, buildVersioningBlueprint(previewBridgeUrl), {
     dryRun: !apply,
   });
   if (actions.length === 0) {

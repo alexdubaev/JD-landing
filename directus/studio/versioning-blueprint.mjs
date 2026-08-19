@@ -17,3 +17,29 @@ export const versioningBlueprint = {
     home_page: { versioning: true },
   },
 };
+
+/**
+ * Adds Directus Live Preview URLs without baking a deployment host into the
+ * source tree. Directus replaces {{id}} with the edited item's UUID and
+ * {{$version}} with the selected native version key.
+ */
+export function buildVersioningBlueprint(previewBridgeUrl) {
+  const base = new URL(previewBridgeUrl);
+  const loopbackHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  const isLoopbackHttp = base.protocol === "http:" && loopbackHosts.has(base.hostname);
+  if (base.protocol !== "https:" && !isLoopbackHttp) {
+    throw new TypeError("Preview bridge URL must use HTTPS");
+  }
+  const prefix = base.toString().replace(/\/$/u, "");
+  return {
+    collections: Object.fromEntries(
+      Object.entries(versioningBlueprint.collections).map(([name, config]) => [
+        name,
+        {
+          ...config,
+          previewUrl: `${prefix}/${name}/{{id}}?version={{$version}}`,
+        },
+      ]),
+    ),
+  };
+}
