@@ -1,6 +1,6 @@
 import { access, readFile } from "node:fs/promises";
 import { constants } from "node:fs";
-import { basename, isAbsolute, relative, resolve } from "node:path";
+import { basename, extname, isAbsolute, relative, resolve } from "node:path";
 
 import {
   DirectusAdminClient,
@@ -173,13 +173,27 @@ const safePackagePath = (packageRoot, relativePath) => {
 
 const query = (parameters) => new URLSearchParams(parameters).toString();
 
+export const mimeForImagePath = (filename) => {
+  switch (extname(filename).toLowerCase()) {
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".png":
+      return "image/png";
+    case ".webp":
+      return "image/webp";
+    default:
+      return "application/octet-stream";
+  }
+};
+
 async function uploadFile(client, absolutePath, title, folderId) {
   const form = new FormData();
   form.set("title", title);
   form.set("folder", folderId);
   form.set(
     "file",
-    new Blob([await readFile(absolutePath)]),
+    new Blob([await readFile(absolutePath)], { type: mimeForImagePath(absolutePath) }),
     basename(absolutePath),
   );
 
