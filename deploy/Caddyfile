@@ -13,6 +13,18 @@
 	}
 }
 
+# The public site is the sole exception to SAMEORIGIN framing: Directus Studio
+# may embed an authenticated preview, but only from the configured CMS origin.
+(security_headers_public) {
+	header {
+		-Server
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "frame-ancestors 'self' https://cms.deere-shop.ru"
+	}
+}
+
 # HTTP→HTTPS redirect for apex and www (preserves path + query)
 http://deere-shop.ru, http://www.deere-shop.ru {
 	redir https://deere-shop.ru{uri} permanent
@@ -35,14 +47,8 @@ http://91.227.68.176 {
 }
 
 deere-shop.ru {
-	import security_headers
-	# Directus Live Preview is embedded only by the trusted CMS origin. The
-	# generic X-Frame-Options: SAMEORIGIN header conflicts with this explicit
-	# cross-origin allowlist, so replace it only for the public site.
-	header {
-		-X-Frame-Options
-		Content-Security-Policy "frame-ancestors 'self' https://cms.deere-shop.ru"
-	}
+	import security_headers_public
+	# Directus Live Preview is embedded only by the trusted CMS origin.
 	encode zstd gzip
 	request_body {
 		max_size 20MB

@@ -21,6 +21,14 @@ test("deploy refreshes Caddy after the release checkout changes", () => {
 test("public preview framing strips the frontend X-Frame-Options response header", () => {
   assert.match(
     caddyfile,
-    /deere-shop\.ru\s*\{[\s\S]*reverse_proxy frontend:3000\s*\{[\s\S]*header_down -X-Frame-Options[\s\S]*\}/u,
+    /\(security_headers_public\)\s*\{[\s\S]*Content-Security-Policy "frame-ancestors 'self' https:\/\/cms\.deere-shop\.ru"[\s\S]*\}/u,
+  );
+  assert.doesNotMatch(
+    caddyfile.match(/deere-shop\.ru\s*\{[\s\S]*?\n\}/u)?.[0] ?? "",
+    /import security_headers\b/u,
+  );
+  assert.match(
+    caddyfile,
+    /deere-shop\.ru\s*\{[\s\S]*import security_headers_public[\s\S]*reverse_proxy frontend:3000\s*\{[\s\S]*header_down -X-Frame-Options[\s\S]*\}/u,
   );
 });
