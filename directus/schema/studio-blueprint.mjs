@@ -532,17 +532,14 @@ export const studioBlueprint = {
         lead_form: input("Форма заявки", "group_main", 14),
         main_image: input("Основное изображение", "group_media", 1, { interface: "file-image" }),
         image_alt: input("Alt-текст основного изображения", "group_media", 2),
-        gallery: input("Галерея (устаревший JSON)", "group_media", 3, {
-          ...galleryRepeater,
+        gallery: input("Галерея", "group_media", 3, galleryRepeater),
+        documents: input("Документы", "group_media", 4, documentRepeater),
+        image_items: input("Изображения галереи (структурные)", "group_media", 5, {
+          interface: "list-o2m",
+          options: { template: "{{alt_text}}", enableCreate: true, enableSelect: false },
           hidden: true,
-          readonly: true,
-          note: "Совместимый legacy-слепок для frontend dual-read. Редактируйте файловые карточки «Галерея» ниже.",
+          note: "Канонические изображения товара (product_images). Скрыто до перехода R7C — до него редактируется галерея JSON.",
         }),
-        gallery_files: input("Галерея", "group_media", 4, {
-          interface: "files",
-          note: "Канонические изображения товара из product_images. Добавляйте и упорядочивайте файловые карточки; щелчок по карточке открывает изображение полностью.",
-        }),
-        documents: input("Документы", "group_media", 5, documentRepeater),
         document_items: input("Документы (структурные)", "group_media", 6, {
           interface: "list-o2m",
           options: { template: "{{title}}", enableCreate: true, enableSelect: false },

@@ -123,7 +123,7 @@ test("maps aliases without creating a database column", () => {
   assert.equal(payload.meta.interface, "translations");
 });
 
-test("builds translation, one-to-many, and files-junction relation metadata", () => {
+test("builds translation and regular one-to-many relation metadata", () => {
   const translation = buildRelationPayload(
     "articles_translations",
     {
@@ -140,25 +140,11 @@ test("builds translation, one-to-many, and files-junction relation metadata", ()
     relatedCollection: "products",
     oneField: "gallery",
   });
-  const galleryFiles = buildRelationPayload(
-    "product_images",
-    {
-      name: "product",
-      type: "uuid",
-      relatedCollection: "products",
-      oneField: "gallery_files",
-      junctionField: "image",
-    },
-    ["id", "product", "image", "sort_order"],
-  );
 
   assert.equal(translation.meta.one_field, "translations");
   assert.equal(translation.meta.one_deselect_action, "delete");
   assert.equal(gallery.meta.one_field, "gallery");
   assert.equal(gallery.meta.one_deselect_action, "nullify");
-  assert.equal(galleryFiles.meta.one_field, "gallery_files");
-  assert.equal(galleryFiles.meta.junction_field, "image");
-  assert.equal(galleryFiles.meta.sort_field, "sort_order");
 });
 
 test("recognizes a relative command path as the current main module", () => {

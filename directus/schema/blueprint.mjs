@@ -451,16 +451,16 @@ export const schemaBlueprint = {
         field("delivery_status", "string"),
         field("specifications", "json"),
         field("documents", "json"),
-        // R7C cutover: the legacy JSON gallery remains in the database for
-        // frontend dual-read compatibility, while Studio edits the existing
-        // product_images junction through Directus' native file-card UI.
-        // Alias fields have no physical DB column (schema: null).
-        field("gallery_files", "alias", {
-          special: ["m2m"],
-          interface: "files",
-          hidden: false,
-          relatedCollection: "directus_files",
-          note: "Каноническая галерея товара через product_images. Файловые карточки позволяют добавлять, менять порядок и открывать изображения полностью; legacy JSON products.gallery не редактируется в Studio.",
+        // R7C DECLARATION ONLY — not applied in the R7A/R7B releases. Alias
+        // fields have no DB column (schema: null in apply-schema), so a
+        // future schema:apply creates metadata only. The legacy JSON fields
+        // above keep their list interfaces until the gated R7C cutover.
+        field("image_items", "alias", {
+          special: ["o2m"],
+          interface: null,
+          hidden: true,
+          relatedCollection: "product_images",
+          note: "R7C declaration: hidden O2M alias over product_images. products.gallery JSON stays the editable interface until the R7C gate (after the R7B gallery migration and reconcile).",
         }),
         field("specification_items", "alias", {
           special: ["o2m"],
@@ -631,8 +631,7 @@ export const schemaBlueprint = {
         field("product", "uuid", {
           required: true,
           relatedCollection: "products",
-          oneField: "gallery_files",
-          junctionField: "image",
+          oneField: "image_items",
           index: true,
           onDelete: "CASCADE",
         }),
