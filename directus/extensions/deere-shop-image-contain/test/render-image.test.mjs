@@ -24,6 +24,7 @@ test("renders the complete Directus image with contain instead of cover", () => 
   assert.equal(image.props.style.height, "32px");
   assert.equal(image.props.style.width, "56px");
   assert.equal(vnode.props.style.flexDirection, "row");
+  assert.equal(vnode.props.style.width, "320px");
   assert.equal(image.props.alt, "R130753 — вид сбоку");
   assert.equal(vnode.children[1].children, "R130753_2.jpg");
 });
