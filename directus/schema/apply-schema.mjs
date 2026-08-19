@@ -117,7 +117,7 @@ export function buildCollectionPayload(collection) {
   };
 }
 
-export function buildRelationPayload(collectionName, field) {
+export function buildRelationPayload(collectionName, field, junctionFields = []) {
   if (!field.relatedCollection) {
     throw new Error(`${collectionName}.${field.name} is not relational`);
   }
@@ -130,7 +130,14 @@ export function buildRelationPayload(collectionName, field) {
       one_field: field.oneField ?? null,
       one_deselect_action: field.translationRelation ? "delete" : "nullify",
       junction_field: field.junctionField ?? null,
-      sort_field: field.oneField ? "sort_order" : null,
+      // A dangling sort_field (column absent from the junction, e.g.
+      // products_analogs) breaks every fields=* read of the parent with a
+      // 403 "field does not exist" — only reference sort_order when the
+      // junction collection actually declares it.
+      sort_field:
+        field.oneField && junctionFields.includes("sort_order")
+          ? "sort_order"
+          : null,
     },
     schema: {
       on_update: "NO ACTION",
@@ -276,7 +283,13 @@ export async function applyBlueprint(client, blueprint, { dryRun = false } = {})
       if (!dryRun) {
         await client.request("/relations", {
           method: "POST",
-          body: JSON.stringify(buildRelationPayload(collection.name, field)),
+          body: JSON.stringify(
+            buildRelationPayload(
+              collection.name,
+              field,
+              collection.fields.map(({ name }) => name),
+            ),
+          ),
         });
       }
     }
