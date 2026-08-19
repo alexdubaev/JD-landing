@@ -79,6 +79,12 @@ services:
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      # Secure Live Preview (Task 16/R12). PREVIEW_SECRET signs the preview
+      # cookie and authenticates /api/preview; DIRECTUS_PREVIEW_TOKEN is the
+      # server-only Directus static token for versioned reads. Both optional;
+      # when unset, preview endpoints refuse to work but the site is unaffected.
+      PREVIEW_SECRET: ${PREVIEW_SECRET:-}
+      DIRECTUS_PREVIEW_TOKEN: ${DIRECTUS_PREVIEW_TOKEN:-}
       # Manager lead notifications (SMTP). All optional; when unset,
       # notifications are silently disabled and leads are still stored.
       SMTP_HOST: ${SMTP_HOST:-}
