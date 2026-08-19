@@ -51,7 +51,12 @@ deere-shop.ru {
 	redir /index.php / permanent
 	redir /index / permanent
 
-	reverse_proxy frontend:3000
+	reverse_proxy frontend:3000 {
+		# Next.js emits its own SAMEORIGIN value, after the generic response
+		# header handler has run. Remove that upstream value at the proxy
+		# boundary so the explicit CSP frame-ancestors policy takes effect.
+		header_down -X-Frame-Options
+	}
 }
 
 cms.deere-shop.ru {
