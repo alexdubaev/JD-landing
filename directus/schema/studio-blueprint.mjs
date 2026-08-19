@@ -530,15 +530,27 @@ export const studioBlueprint = {
         cta_text: input("Текст кнопки заявки", "group_main", 12),
         related_products: input("Связанные товары", "group_main", 13),
         lead_form: input("Форма заявки", "group_main", 14),
-        main_image: input("Основное изображение", "group_media", 1, { interface: "file-image" }),
+        main_image: input("Основное изображение", "group_media", 1, {
+          interface: "file-image",
+          options: { crop: false },
+        }),
         image_alt: input("Alt-текст основного изображения", "group_media", 2),
-        gallery: input("Галерея", "group_media", 3, galleryRepeater),
-        documents: input("Документы", "group_media", 4, documentRepeater),
-        image_items: input("Изображения галереи (структурные)", "group_media", 5, {
-          interface: "list-o2m",
-          options: { template: "{{alt_text}}", enableCreate: true, enableSelect: false },
+        gallery: input("Галерея (устаревший JSON)", "group_media", 3, {
+          ...galleryRepeater,
           hidden: true,
-          note: "Канонические изображения товара (product_images). Скрыто до перехода R7C — до него редактируется галерея JSON.",
+        }),
+        documents: input("Документы", "group_media", 4, documentRepeater),
+        image_items: input("Галерея", "group_media", 5, {
+          interface: "list-o2m",
+          options: {
+            layout: "list",
+            template: "{{image}} {{alt_text}}",
+            enableCreate: true,
+            enableSelect: false,
+            limit: 15,
+          },
+          hidden: false,
+          note: "Все изображения галереи из канонической связи product_images. Нажмите изображение, чтобы изменить файл, alt-текст или порядок.",
         }),
         document_items: input("Документы (структурные)", "group_media", 6, {
           interface: "list-o2m",

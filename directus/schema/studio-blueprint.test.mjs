@@ -125,18 +125,28 @@ test("defines task-oriented forms for every owner workflow", () => {
   assert.equal(studioBlueprint.fields.orders.fields.manager_comment.group, "group_workflow");
 });
 
-test("keeps legacy product JSON interfaces until the dual-read migration", () => {
+test("cuts product gallery editing over to the canonical image relation", () => {
   const productFields = studioBlueprint.fields.products.fields;
   assert.equal(productFields.gallery.interface, "list");
+  assert.equal(productFields.gallery.hidden, true);
+  assert.deepEqual(productFields.main_image.options, { crop: false });
+  assert.equal(productFields.image_items.interface, "list-o2m");
+  assert.equal(productFields.image_items.hidden, false);
+  assert.deepEqual(productFields.image_items.options, {
+    layout: "list",
+    template: "{{image}} {{alt_text}}",
+    enableCreate: true,
+    enableSelect: false,
+    limit: 15,
+  });
   assert.equal(productFields.specifications.interface, "list");
   assert.equal(productFields.documents.interface, "list");
 });
 
-test("wires the R7C child-collection aliases hidden until the cutover gate", () => {
+test("keeps the non-gallery R7C child-collection aliases hidden", () => {
   const productFields = studioBlueprint.fields.products.fields;
 
   const aliases = {
-    image_items: "group_media",
     document_items: "group_media",
     specification_items: "group_specs",
   };
@@ -148,9 +158,8 @@ test("wires the R7C child-collection aliases hidden until the cutover gate", () 
     assert.match(productFields[field].note ?? "", /R7C/, `${field} documents the gate`);
   }
 
-  // Legacy JSON interfaces stay editable "list" repeaters until the gate
-  // (asserted above) — the aliases only ADD the canonical editing surface.
-  assert.equal(productFields.gallery.readonly, undefined);
+  assert.equal(productFields.image_items.group, "group_media");
+  assert.match(productFields.image_items.note ?? "", /product_images/);
 });
 
 test("products_analogs is an editable catalog collection", () => {
