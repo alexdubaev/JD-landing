@@ -86,3 +86,13 @@ test("defines one deterministic operational dashboard with native panels", () =>
   assert.ok(panels.some(({ key }) => key === "deere-shop:leads:unprocessed"));
   assert.ok(panels.some(({ key }) => key === "deere-shop:products:missing-image"));
 });
+
+test("filters empty product images through the related file primary key", () => {
+  const panel = workspaceBlueprint.panels.find(
+    ({ key }) => key === "deere-shop:products:missing-image",
+  );
+
+  assert.deepEqual(panel.options.filter, {
+    main_image: { id: { _null: true } },
+  });
+});

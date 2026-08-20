@@ -187,7 +187,7 @@ export const workspaceBlueprint = {
         sortField: "title",
         sortDirection: "asc",
         limit: 10,
-        filter: { main_image: { _null: true } },
+        filter: { main_image: { id: { _null: true } } },
       },
     }),
     panel({
