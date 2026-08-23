@@ -140,6 +140,7 @@ const categories: Category[] = [
     id: "engine",
     title: "Двигатель",
     slug: "engine",
+    sortOrder: 0,
     parentId: null,
     description: "Компоненты двигателя",
     imageId: null,

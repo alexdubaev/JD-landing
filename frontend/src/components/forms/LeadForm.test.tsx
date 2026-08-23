@@ -7,12 +7,14 @@ describe("LeadForm", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     delete window.dataLayer;
+    window.localStorage.clear();
   });
 
   it("submits the lead and announces success", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), { status: 201 }),
     );
+    window.localStorage.setItem("deere-shop:cookie-consent", "accepted");
     window.dataLayer = [];
     render(<LeadForm />);
 

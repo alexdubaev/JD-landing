@@ -28,7 +28,10 @@ const product = {
 } as ProductCardData;
 
 describe("ProductCard", () => {
-  afterEach(() => delete window.dataLayer);
+  afterEach(() => {
+    delete window.dataLayer;
+    window.localStorage.clear();
+  });
   it("renders a fixed price, SKU, image, and catalog links", () => {
     render(<ProductCard product={product} />);
 
@@ -72,6 +75,7 @@ describe("ProductCard", () => {
   });
 
   it("tracks opening a product card", () => {
+    window.localStorage.setItem("deere-shop:cookie-consent", "accepted");
     window.dataLayer = [];
     render(<ProductCard product={product} />);
     const details = screen.getByRole("link", { name: "Подробнее" });

@@ -175,6 +175,33 @@ describe("article page", () => {
       `/articles/${article.slug}`,
     );
     expect(metadata.openGraph).toMatchObject({ type: "article" });
+    expect(metadata.twitter).toMatchObject({
+      card: "summary",
+      title: article.seoTitle,
+      description: article.seoDescription,
+    });
+  });
+
+  it("emits optional author and reviewer in Article JSON-LD", async () => {
+    getArticleBySlugMock.mockResolvedValue({
+      ...article,
+      author: "Редакция DEERE-SHOP",
+      reviewer: "Технический специалист",
+    });
+
+    const { container } = render(
+      await ArticlePage({
+        params: Promise.resolve({ slug: article.slug }),
+      }),
+    );
+    const articleSchema = [...container.querySelectorAll("script[type='application/ld+json']")]
+      .map((node) => JSON.parse(node.textContent ?? "{}"))
+      .find((schema) => schema["@type"] === "Article");
+
+    expect(articleSchema).toMatchObject({
+      author: { "@type": "Person", name: "Редакция DEERE-SHOP" },
+      reviewedBy: { "@type": "Person", name: "Технический специалист" },
+    });
   });
 
   it("uses the not-found boundary for unknown or draft slugs", async () => {

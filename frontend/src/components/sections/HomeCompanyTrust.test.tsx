@@ -59,6 +59,7 @@ describe("HomeCompanyTrust", () => {
   });
 
   it("renders only available factual company details and document links", () => {
+    window.localStorage.setItem("deere-shop:cookie-consent", "accepted");
     window.dataLayer = [];
     render(
       <HomeCompanyTrust

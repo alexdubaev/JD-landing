@@ -41,6 +41,7 @@ describe("catalog queries", () => {
         id: "engine",
         title: "Двигатель",
         slug: "engine",
+        sort_order: 4,
         parent: null,
         description: null,
         image: null,
@@ -65,6 +66,7 @@ describe("catalog queries", () => {
     expect(categories[0]).toMatchObject({
       iconId: "icon-file",
       iconAlt: "Поршень и коленвал",
+      sortOrder: 4,
     });
   });
 
@@ -531,6 +533,7 @@ const rawCategory = (overrides: Record<string, unknown> = {}) => ({
   id: "engine",
   title: "Двигатель",
   slug: "engine",
+  sort_order: 0,
   parent: null,
   description: null,
   image: null,

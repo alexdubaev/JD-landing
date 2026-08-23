@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { Pagination } from "@/components/catalog/Pagination";
 import { Container } from "@/components/ui/Container";
 import { getArticlesPage } from "@/lib/directus/articles";
+import { buildSocialMetadata } from "@/lib/seo/social-metadata";
 import { absoluteUrl } from "@/lib/seo/url";
 
 export const metadata: Metadata = {
@@ -13,13 +14,12 @@ export const metadata: Metadata = {
   description:
     "Практические материалы о подготовке данных, поиске артикула и проверке комплектующих перед заказом.",
   alternates: { canonical: "/articles" },
-  openGraph: {
+  ...buildSocialMetadata({
     title: "Статьи о подборе комплектующих John Deere",
     description:
-      "Практические материалы для подготовки запроса и проверки исходных данных.",
-    type: "website",
-    url: absoluteUrl("/articles"),
-  },
+      "Практические материалы о подготовке данных, поиске артикула и проверке комплектующих перед заказом.",
+    path: absoluteUrl("/articles"),
+  }),
 };
 
 export default async function ArticlesPage({

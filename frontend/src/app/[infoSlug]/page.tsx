@@ -9,6 +9,7 @@ import {
   getSiteSettings,
 } from "@/lib/directus/content";
 import { absoluteUrl } from "@/lib/seo/url";
+import { buildSocialMetadata } from "@/lib/seo/social-metadata";
 import { buildBreadcrumbSchema } from "@/lib/seo/schema";
 import {
   getTrustPageFallback,
@@ -46,11 +47,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const fallbackMetadata = getTrustPageMetadata(infoSlug);
   if (!page && !fallbackMetadata) return {};
   const isNoindex = noindexSlugs.has(infoSlug);
+  const title = page?.seoTitle ?? fallbackMetadata?.title ?? page?.title;
+  const description = page?.seoDescription ?? fallbackMetadata?.description;
+  if (!title) return {};
   return {
-    title: page?.seoTitle ?? fallbackMetadata?.title ?? page?.title,
-    description: page?.seoDescription ?? fallbackMetadata?.description,
+    title,
+    description,
     alternates: { canonical: `/${infoSlug}` },
     ...(isNoindex ? { robots: { index: false, follow: true } } : {}),
+    ...buildSocialMetadata({
+      title,
+      description,
+      path: absoluteUrl(`/${infoSlug}`),
+    }),
   };
 }
 

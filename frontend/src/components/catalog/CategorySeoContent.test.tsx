@@ -22,3 +22,25 @@ it("renders selection guidance and a descriptive internal link", () => {
     "/catalog",
   );
 });
+
+it("renders non-empty CMS SEO text once and does not execute HTML", () => {
+  render(
+    <CategorySeoContent
+      seoText={"Первый абзац\n\n<b>Второй</b>"}
+      content={content}
+    />,
+  );
+
+  expect(screen.getByText("Первый абзац")).toBeInTheDocument();
+  expect(screen.getByText("<b>Второй</b>")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("heading", { name: /как подобрать/i }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText("Перейти в каталог")).not.toBeInTheDocument();
+});
+
+it("renders CMS SEO text without a fallback object", () => {
+  render(<CategorySeoContent seoText="Текст из Directus" />);
+
+  expect(screen.getByText("Текст из Directus")).toBeInTheDocument();
+});

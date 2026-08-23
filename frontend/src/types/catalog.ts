@@ -24,6 +24,7 @@ export type Category = {
   id: string;
   title: string;
   slug: string;
+  sortOrder: number;
   parentId: string | null;
   description: string | null;
   imageId: string | null;

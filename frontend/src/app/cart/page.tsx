@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Корзина",
   description: "Выбранные товары и оформление заказа.",
   alternates: { canonical: "/cart" },
+  robots: { index: false, follow: true },
 };
 
 export default function CartPage() {

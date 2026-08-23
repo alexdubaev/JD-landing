@@ -8,4 +8,5 @@ it("excludes noindex-only routes from sitemap", async () => {
 
   expect(urls).not.toContain("https://deere-shop.ru/thank-you");
   expect(urls).not.toContain("https://deere-shop.ru/parts-request");
+  expect(urls).not.toContain("https://deere-shop.ru/cart");
 });

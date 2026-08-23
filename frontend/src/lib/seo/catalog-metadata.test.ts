@@ -38,6 +38,17 @@ describe("buildCatalogMetadata", () => {
 
     expect(meta.robots).toBeUndefined();
     expect(meta.alternates?.canonical).toBe("https://deere-shop.ru/catalog");
+    expect(meta.openGraph).toMatchObject({
+      title: "Каталог продукции",
+      description: "Описание каталога.",
+      type: "website",
+      url: "https://deere-shop.ru/catalog",
+    });
+    expect(meta.twitter).toMatchObject({
+      card: "summary",
+      title: "Каталог продукции",
+      description: "Описание каталога.",
+    });
   });
 
   it("applies noindex,follow for search queries and canonicalizes to the base", () => {

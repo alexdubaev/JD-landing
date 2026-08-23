@@ -4,12 +4,14 @@ import Link from "next/link";
 import Script from "next/script";
 import { useEffect, useState } from "react";
 
+import { COOKIE_CONSENT_STORAGE_KEY } from "@/lib/analytics";
+
+export { COOKIE_CONSENT_STORAGE_KEY } from "@/lib/analytics";
+
 type AnalyticsProps = {
   yandexMetricaId?: string | null;
   gtmId?: string | null;
 };
-
-export const COOKIE_CONSENT_STORAGE_KEY = "deere-shop:cookie-consent";
 
 type CookieConsentChoice = "accepted" | "declined";
 type ConsentState = CookieConsentChoice | "unknown";
