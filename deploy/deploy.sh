@@ -52,8 +52,11 @@ require_env_value() {
 
 preflight() {
   local cms_auth_enabled restic_enabled
-  cms_auth_enabled="$(read_env ENABLE_DIRECTUS_CMS_BASIC_AUTH)"
-  restic_enabled="$(read_env ENABLE_RESTIC_BACKUP)"
+  # These controls are opt-in. Older production env files predate the flags;
+  # under `set -euo pipefail` a missing grep match must therefore mean false,
+  # not an early script exit.
+  cms_auth_enabled="$(read_env ENABLE_DIRECTUS_CMS_BASIC_AUTH || true)"
+  restic_enabled="$(read_env ENABLE_RESTIC_BACKUP || true)"
 
   if [[ "$cms_auth_enabled" == "true" ]]; then
     if [[ ! -f "$CADDYFILE" ]] || ! grep -Eq '^[[:space:]]*basic_auth([[:space:]]|\{|$)' "$CADDYFILE"; then

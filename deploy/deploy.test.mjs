@@ -35,5 +35,7 @@ test("deploy runs optional security preflight before any compose mutation", () =
   assert.match(script, /ENABLE_RESTIC_BACKUP/u);
   assert.match(script, /RESTIC_REPOSITORY/u);
   assert.match(script, /RESTIC_PASSWORD_FILE/u);
+  assert.match(script, /read_env ENABLE_DIRECTUS_CMS_BASIC_AUTH \|\| true/u);
+  assert.match(script, /read_env ENABLE_RESTIC_BACKUP \|\| true/u);
   assert.doesNotMatch(script, /echo\s+.*\$DIRECTUS_CMS_AUTH_HASH/u);
 });
