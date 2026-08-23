@@ -361,8 +361,9 @@ const leadsForm = form(
     group_contact: group("Контакт", 1, { interface: "group-detail" }),
     group_request: group("Запрос", 2, { interface: "group-detail" }),
     group_attribution: group("Источник обращения", 3, { closed: true }),
-    group_workflow: group("Работа с заявкой", 4),
-    group_system: group("Служебное", 5, { closed: true }),
+    group_consent: group("Согласие на рекламу", 4, { closed: true }),
+    group_workflow: group("Работа с заявкой", 5),
+    group_system: group("Служебное", 6, { closed: true }),
   },
   {
     group_contact: [
@@ -386,6 +387,11 @@ const leadsForm = form(
       ["utm_content", "UTM content", { width: "half" }],
       ["utm_term", "UTM term", { width: "half" }],
     ],
+    group_consent: [
+      ["marketing_consent", "Согласие на рекламу", { width: "half", readonly: true }],
+      ["marketing_consent_at", "Дата согласия", { width: "half", readonly: true }],
+      ["marketing_consent_version", "Версия текста", { width: "half", readonly: true }],
+    ],
     group_workflow: [
       ["status", "Статус", { width: "half" }],
       ["manager_comment", "Комментарий менеджера"],
@@ -399,8 +405,9 @@ const ordersForm = form(
     group_contact: group("Покупатель", 1, { interface: "group-detail" }),
     group_order: group("Заказ", 2, { interface: "group-detail" }),
     group_attribution: group("Источник заказа", 3, { closed: true }),
-    group_workflow: group("Обработка заказа", 4),
-    group_system: group("Служебное", 5, { closed: true }),
+    group_consent: group("Согласие на рекламу", 4, { closed: true }),
+    group_workflow: group("Обработка заказа", 5),
+    group_system: group("Служебное", 6, { closed: true }),
   },
   {
     group_contact: [
@@ -420,6 +427,11 @@ const ordersForm = form(
       ["utm_campaign", "UTM campaign", { width: "half" }],
       ["utm_content", "UTM content", { width: "half" }],
       ["utm_term", "UTM term", { width: "half" }],
+    ],
+    group_consent: [
+      ["marketing_consent", "Согласие на рекламу", { width: "half", readonly: true }],
+      ["marketing_consent_at", "Дата согласия", { width: "half", readonly: true }],
+      ["marketing_consent_version", "Версия текста", { width: "half", readonly: true }],
     ],
     group_workflow: [
       ["status", "Статус", { width: "half" }],

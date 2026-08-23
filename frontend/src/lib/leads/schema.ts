@@ -36,6 +36,7 @@ export const leadSchema = z
     utm_campaign: optionalText(200),
     utm_content: optionalText(200),
     utm_term: optionalText(200),
+    marketing_consent: z.boolean().optional().default(false),
     turnstile_token: optionalText(2048),
     request_items: z
       .array(requestItemSchema)

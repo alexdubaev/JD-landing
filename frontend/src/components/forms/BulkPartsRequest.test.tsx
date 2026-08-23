@@ -129,7 +129,7 @@ describe("BulkPartsRequest", () => {
     fireEvent.change(screen.getByLabelText("Телефон"), {
       target: { value: "+7 900 000-00-00" },
     });
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("checkbox", { name: /политикой конфиденциальности/i }));
     fireEvent.click(screen.getByRole("button", { name: "Отправить список на расчёт" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -155,7 +155,7 @@ describe("BulkPartsRequest", () => {
     fireEvent.change(screen.getByLabelText("Телефон"), {
       target: { value: "+7 900 000-00-00" },
     });
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("checkbox", { name: /политикой конфиденциальности/i }));
     fireEvent.click(screen.getByRole("button", { name: "Отправить список на расчёт" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -177,7 +177,7 @@ describe("BulkPartsRequest", () => {
     fireEvent.change(screen.getByLabelText("Телефон"), {
       target: { value: "+7 900 000-00-00" },
     });
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("checkbox", { name: /политикой конфиденциальности/i }));
     fireEvent.click(screen.getByRole("button", { name: "Отправить список на расчёт" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));

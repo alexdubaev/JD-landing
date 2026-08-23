@@ -103,6 +103,7 @@ export async function POST(request: Request) {
           utm_campaign: stringValue(form, "utm_campaign"),
           utm_content: stringValue(form, "utm_content"),
           utm_term: stringValue(form, "utm_term"),
+          marketing_consent: form.has("marketing_consent"),
           turnstile_token: stringValue(form, "turnstile_token"),
           website: stringValue(form, "website"),
           request_items: parseRequestItems(stringValue(form, "request_items")),

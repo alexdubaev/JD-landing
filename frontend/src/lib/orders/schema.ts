@@ -37,6 +37,7 @@ export const orderSchema = z
     utm_campaign: optionalText(200),
     utm_content: optionalText(200),
     utm_term: optionalText(200),
+    marketing_consent: z.boolean().optional().default(false),
     turnstile_token: optionalText(2048),
     items: z.array(orderItemSchema).min(1).max(MAX_ORDER_ITEMS),
     website: z.string().max(0).optional().default(""),

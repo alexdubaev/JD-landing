@@ -661,6 +661,9 @@ test("leads capture contact, context, attribution, and sales workflow fields", (
     "utm_term",
     "request_items",
     "attachments",
+    "marketing_consent",
+    "marketing_consent_at",
+    "marketing_consent_version",
     "created_at",
     "status",
     "manager_comment",
@@ -668,6 +671,15 @@ test("leads capture contact, context, attribution, and sales workflow fields", (
 
   for (const name of required) {
     assert.ok(fields.has(name), `missing leads.${name}`);
+  }
+});
+
+test("orders retain the marketing consent audit fields", () => {
+  const orders = schemaBlueprint.collections.find(({ name }) => name === "orders");
+  const fields = new Set(orders.fields.map(({ name }) => name));
+
+  for (const name of ["marketing_consent", "marketing_consent_at", "marketing_consent_version"]) {
+    assert.ok(fields.has(name), `missing orders.${name}`);
   }
 });
 

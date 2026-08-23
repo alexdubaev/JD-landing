@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
 
 import { trackEvent } from "@/lib/analytics";
+import { MarketingConsent } from "./MarketingConsent";
 import { TurnstileField, type TurnstileFieldHandle } from "./TurnstileField";
 
 export function LeadForm({
@@ -32,6 +33,7 @@ export function LeadForm({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         ...payload,
+        marketing_consent: form.has("marketing_consent"),
         product: productId,
         category: categoryId,
         page_url: window.location.href,
@@ -100,6 +102,7 @@ export function LeadForm({
           <Link href="/privacy-policy">политикой конфиденциальности</Link>
         </span>
       </label>
+      <MarketingConsent />
       <TurnstileField ref={turnstile} />
       <button
         className="button button--primary"

@@ -2,6 +2,7 @@ import "server-only";
 
 import type { PartsRequestItem } from "@/lib/leads/parts-request";
 import type { LeadInput } from "@/lib/leads/schema";
+import { MARKETING_CONSENT_VERSION } from "@/lib/marketing/consent";
 
 import { directusRequest } from "./client";
 
@@ -63,6 +64,10 @@ export async function createLead(
     requestItems?: PartsRequestItem[];
   } = {},
 ): Promise<void> {
+  const marketingConsentAt = input.marketing_consent
+    ? new Date().toISOString()
+    : null;
+
   await directusRequest<{ id: string }>("/items/leads", {
     method: "POST",
     body: JSON.stringify({
@@ -78,6 +83,11 @@ export async function createLead(
       utm_campaign: input.utm_campaign ?? null,
       utm_content: input.utm_content ?? null,
       utm_term: input.utm_term ?? null,
+      marketing_consent: input.marketing_consent,
+      marketing_consent_at: marketingConsentAt,
+      marketing_consent_version: input.marketing_consent
+        ? MARKETING_CONSENT_VERSION
+        : null,
       request_items: options.requestItems ?? input.request_items ?? null,
       attachments: options.attachments ?? null,
       status: "new",
