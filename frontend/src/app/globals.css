@@ -5607,6 +5607,31 @@ p {
   line-height: 1.7;
 }
 
+.article-content a:not(.article-content__relation):not(.article-content__cta) {
+  color: var(--primary-hover, #3f7923);
+  text-decoration-line: underline;
+  text-decoration-color: var(--primary, #4c8f2b);
+  text-decoration-thickness: 0.09em;
+  text-underline-offset: 0.16em;
+  border-radius: 0.15rem;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    text-decoration-color 160ms ease;
+}
+
+.article-content a:not(.article-content__relation):not(.article-content__cta):hover {
+  color: var(--header, #1e2a16);
+  text-decoration-color: var(--accent, #ffc107);
+  background-color: rgb(255 193 7 / 18%);
+}
+
+.article-content a:not(.article-content__relation):not(.article-content__cta):focus-visible {
+  outline: 2px solid var(--focus, #b18500);
+  outline-offset: 3px;
+  background-color: rgb(255 193 7 / 18%);
+}
+
 .article-content h2 {
   margin: 2rem 0 0.75rem;
   font-size: clamp(1.75rem, 3vw, 2.5rem);

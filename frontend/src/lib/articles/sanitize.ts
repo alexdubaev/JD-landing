@@ -27,9 +27,23 @@ export function sanitizeArticleHtml(html: string): string {
         tagName: "a",
         attribs: {
           href: attribs.href,
-          rel: "nofollow noopener noreferrer",
+          ...(isExternalHttpLink(attribs.href)
+            ? { rel: "nofollow noopener noreferrer" }
+            : {}),
         },
       }),
     },
   }).trim();
+}
+
+function isExternalHttpLink(href: string | undefined): boolean {
+  const value = href?.trim();
+  if (!value || !/^https?:\/\//iu.test(value)) return false;
+
+  try {
+    const hostname = new URL(value).hostname.toLowerCase();
+    return hostname !== "deere-shop.ru" && hostname !== "www.deere-shop.ru";
+  } catch {
+    return true;
+  }
 }
