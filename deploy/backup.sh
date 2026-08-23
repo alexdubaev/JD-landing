@@ -13,6 +13,11 @@ set -a
 . ./.env
 set +a
 
+if [ "${ENABLE_RESTIC_BACKUP:-false}" = "true" ]; then
+  echo "Restic backup requires a separate reviewed restore-tested release." >&2
+  exit 1
+fi
+
 docker compose --env-file .env -f compose.production.yml exec -T database \
   pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -Fc \
   > "${backup_dir}/directus-${timestamp}.dump"

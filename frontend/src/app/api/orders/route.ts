@@ -2,54 +2,49 @@ import { NextResponse } from "next/server";
 
 import { createOrder, deleteOrder } from "@/lib/directus/orders";
 import { orderSchema } from "@/lib/orders/schema";
+import {
+  RequestTooLargeError,
+  getTrustedClientIp,
+  readBodyWithinLimit,
+} from "@/lib/security/request";
+import { verifyTurnstile } from "@/lib/security/turnstile";
 
 const MAX_ORDER_REQUEST_BYTES = 1 * 1024 * 1024; // 1 MB is plenty for JSON line items.
 
 class OrderValidationError extends Error {}
 
-async function isHuman(token: string | undefined, remoteIp: string | null) {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
-  if (!token) return false;
-
-  const form = new FormData();
-  form.set("secret", secret);
-  form.set("response", token);
-  if (remoteIp) form.set("remoteip", remoteIp);
-  const response = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    { method: "POST", body: form, cache: "no-store" },
-  );
-  if (!response.ok) return false;
-  const result = (await response.json()) as { success?: boolean };
-  return result.success === true;
-}
-
 export async function POST(request: Request) {
   let createdOrderId: string | null = null;
   try {
-    const contentLength = Number(request.headers.get("content-length"));
-    if (
-      Number.isFinite(contentLength) &&
-      contentLength > MAX_ORDER_REQUEST_BYTES
-    ) {
-      return NextResponse.json(
-        { error: "Размер запроса превышает допустимый лимит." },
-        { status: 413 },
-      );
-    }
-
-    const input: unknown = await request.json();
+    const boundedBody = await readBodyWithinLimit(
+      request,
+      MAX_ORDER_REQUEST_BYTES,
+    );
+    const boundedRequest = request.body
+      ? new Request(request.url, {
+          method: request.method,
+          headers: (() => {
+            const headers = new Headers(request.headers);
+            headers.delete("content-length");
+            return headers;
+          })(),
+          body: boundedBody.buffer.slice(
+            boundedBody.byteOffset,
+            boundedBody.byteOffset + boundedBody.byteLength,
+          ) as ArrayBuffer,
+        })
+      : request;
+    const input: unknown = await boundedRequest.json();
     const parsed = orderSchema.safeParse(input);
     if (!parsed.success) {
       throw new OrderValidationError();
     }
 
     if (
-      !(await isHuman(
-        parsed.data.turnstile_token,
-        request.headers.get("x-forwarded-for"),
-      ))
+      !(await verifyTurnstile({
+        token: parsed.data.turnstile_token,
+        remoteIp: getTrustedClientIp(request.headers),
+      }))
     ) {
       return NextResponse.json(
         { error: "Не удалось подтвердить отправку" },
@@ -62,6 +57,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, order_id: order.id }, { status: 201 });
   } catch (error) {
+    if (error instanceof RequestTooLargeError) {
+      return NextResponse.json(
+        { error: "Размер запроса превышает допустимый лимит." },
+        { status: 413 },
+      );
+    }
     if (createdOrderId) {
       // Compensating delete: if line items failed mid-way, drop the order
       // entirely so no orphaned half-orders remain.

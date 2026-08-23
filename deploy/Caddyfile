@@ -72,6 +72,8 @@ deere-shop.ru {
 	redir /index / permanent
 
 	reverse_proxy frontend:3000 {
+		header_up -X-Forwarded-For
+		header_up X-Forwarded-For {http.request.remote.host}
 		# Next.js emits its own SAMEORIGIN value, after the generic response
 		# header handler has run. Remove that upstream value at the proxy
 		# boundary so the explicit CSP frame-ancestors policy takes effect.
@@ -89,11 +91,17 @@ cms.deere-shop.ru {
 	@preview_bridge path /deere-shop/preview/*
 	handle @preview_bridge {
 		import security_headers_preview_bridge
-		reverse_proxy directus:8055
+		reverse_proxy directus:8055 {
+			header_up -X-Forwarded-For
+			header_up X-Forwarded-For {http.request.remote.host}
+		}
 	}
 
 	handle {
 		import security_headers
-		reverse_proxy directus:8055
+		reverse_proxy directus:8055 {
+			header_up -X-Forwarded-For
+			header_up X-Forwarded-For {http.request.remote.host}
+		}
 	}
 }
