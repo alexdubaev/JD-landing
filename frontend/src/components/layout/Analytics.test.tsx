@@ -40,4 +40,26 @@ describe("Analytics consent", () => {
     );
     expect(document.querySelector("#yandex-metrica")).not.toBeInTheDocument();
   });
+
+  it("restores accepted consent without showing the banner", async () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+
+    render(<Analytics yandexMetricaId="222222222" />);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Настройки cookie" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("does not load a provider script when its CMS identifier is absent", async () => {
+    render(<Analytics />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Принять аналитику" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Настройки cookie" })).not.toBeInTheDocument(),
+    );
+    expect(document.querySelector("#yandex-metrica")).not.toBeInTheDocument();
+    expect(document.querySelector("#gtm-base")).not.toBeInTheDocument();
+  });
 });

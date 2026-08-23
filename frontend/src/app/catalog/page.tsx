@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { CatalogControls } from "@/components/catalog/CatalogControls";
+import { CategoryTree } from "@/components/catalog/CategoryTree";
 import { EmptyCatalog } from "@/components/catalog/EmptyCatalog";
 import { Pagination } from "@/components/catalog/Pagination";
 import { ProductGrid } from "@/components/catalog/ProductGrid";
@@ -13,6 +14,7 @@ import {
   type CatalogSearchParams,
   parseCatalogSearchParams,
 } from "@/lib/catalog/search-params";
+import { buildCategoryTree } from "@/lib/catalog/category-tree";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import {
   getCatalogPage,
@@ -73,6 +75,7 @@ export default async function CatalogPage({
 
   // 404 for out-of-range page numbers
   if (isPageOutOfRange(query, catalog.total)) notFound();
+  const categoryTree = buildCategoryTree(categories);
 
   return (
     <main className="catalog-page" id="main-content">
@@ -106,6 +109,7 @@ export default async function CatalogPage({
         <Suspense fallback={<div className="catalog-controls-skeleton" />}>
           <CatalogControls categories={categories} />
         </Suspense>
+        <CategoryTree nodes={categoryTree} />
         <div className="catalog-results">
           <p aria-live="polite">
             Найдено позиций: <strong>{catalog.total}</strong>

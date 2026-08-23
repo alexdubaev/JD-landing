@@ -37,6 +37,7 @@ type RawCategory = {
   id: string;
   title: string;
   slug: string;
+  sort_order: number | null;
   parent: string | { id: string } | null;
   description: string | null;
   image: FileRelation;
@@ -173,6 +174,7 @@ const mapCategory = (raw: RawCategory): Category => {
     id: raw.id,
     title: raw.title,
     slug: raw.slug,
+    sortOrder: raw.sort_order ?? 0,
     parentId: relationId(raw.parent),
     description: raw.description,
     imageId: fileId(raw.image),
@@ -538,6 +540,7 @@ const categoryFields = [
   "id",
   "title",
   "slug",
+  "sort_order",
   "parent",
   "description",
   "image",

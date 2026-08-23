@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import type { CatalogQuery } from "@/types/catalog";
 
+import { buildSocialMetadata } from "./social-metadata";
 import { absoluteUrl, absoluteUrlWithQuery } from "./url";
 
 export type CatalogMetadataInput = {
@@ -68,20 +69,16 @@ export function buildCatalogMetadata({
     title: pageTitle,
     description: resolvedDescription,
     alternates: { canonical: canonicalPath },
+    ...buildSocialMetadata({
+      title: pageTitle,
+      description: resolvedDescription,
+      path: canonicalPath,
+      image: image ? { url: image } : null,
+    }),
   };
 
   if (isNoindex) {
     meta.robots = { index: false, follow: true };
-  }
-
-  if (image) {
-    meta.openGraph = {
-      title: pageTitle,
-      description: resolvedDescription,
-      type: "website",
-      url: canonicalPath,
-      images: [image],
-    };
   }
 
   return meta;

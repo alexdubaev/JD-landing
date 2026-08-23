@@ -8,7 +8,9 @@ import { CartProvider } from "@/lib/cart/context";
 import { BRAND_DESCRIPTION, BRAND_NAME } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import { getContacts, getNavigation, getSiteSettings } from "@/lib/directus/content";
+import { buildSocialMetadata } from "@/lib/seo/social-metadata";
 import { buildRootTitle } from "@/lib/seo/site-title";
+import { absoluteUrl } from "@/lib/seo/url";
 import type { NavigationItem, SiteSettings } from "@/types/content";
 
 import "./globals.css";
@@ -36,6 +38,12 @@ export async function generateMetadata(): Promise<Metadata> {
         height: 630,
       })
     : undefined;
+  const social = buildSocialMetadata({
+    title: ogTitle,
+    description: ogDescription,
+    path: absoluteUrl("/"),
+    image: ogImage ? { url: ogImage } : null,
+  });
 
   return {
     metadataBase,
@@ -56,19 +64,12 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
       apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
     },
+    ...social,
     openGraph: {
-      title: ogTitle,
-      description: ogDescription,
+      ...social.openGraph,
       type: "website",
       locale: "ru_RU",
       siteName: companyName,
-      ...(ogImage ? { images: [ogImage] } : {}),
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: ogTitle,
-      description: ogDescription,
-      ...(ogImage ? { images: [ogImage] } : {}),
     },
   };
 }
@@ -100,6 +101,14 @@ export default async function RootLayout({
 
   return (
     <html data-scroll-behavior="smooth" lang="ru">
+      <head>
+        <link
+          rel="alternate"
+          type="text/plain"
+          href="/llms.txt"
+          title="Описание сайта для ИИ"
+        />
+      </head>
       <body>
         <Analytics
           gtmId={settings?.gtmId}

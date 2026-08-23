@@ -16,6 +16,7 @@ import {
   resolveArticleRelations,
 } from "@/lib/directus/articles";
 import { getSiteSettings } from "@/lib/directus/content";
+import { buildSocialMetadata } from "@/lib/seo/social-metadata";
 import { absoluteUrl } from "@/lib/seo/url";
 import { buildBreadcrumbSchema, buildOrganizationSchema } from "@/lib/seo/schema";
 
@@ -40,19 +41,23 @@ export async function generateMetadata({
     fit: "cover",
     format: "webp",
   });
+  const title = article.seoTitle ?? article.title;
+  const description = article.seoDescription ?? article.excerpt;
   return {
-    title: article.seoTitle ?? article.title,
-    description: article.seoDescription ?? article.excerpt,
+    title,
+    description,
     alternates: { canonical },
-    openGraph: {
-      title: article.seoTitle ?? article.title,
-      description: article.seoDescription ?? article.excerpt,
+    ...buildSocialMetadata({
+      title,
+      description,
+      path: absoluteUrl(canonical),
       type: "article",
-      url: absoluteUrl(canonical),
+      image: image
+        ? { url: image, alt: article.imageAlt ?? article.title }
+        : null,
       publishedTime: article.publishedAt,
-      modifiedTime: article.updatedAt ?? undefined,
-      images: image ? [{ url: image, alt: article.imageAlt ?? article.title }] : [],
-    },
+      modifiedTime: article.updatedAt,
+    }),
   };
 }
 
@@ -100,6 +105,8 @@ export default async function ArticlePage({
   const organizationSchema = settings
     ? buildOrganizationSchema(settings)
     : null;
+  const author = article.author?.trim();
+  const reviewer = article.reviewer?.trim();
 
   return (
     <main className="article-page" id="main-content">
@@ -115,6 +122,12 @@ export default async function ArticlePage({
           image: coverUrl ? [coverUrl] : undefined,
           mainEntityOfPage: absoluteUrl(canonical),
           publisher: { "@id": `${absoluteUrl("/")}#organization` },
+          ...(author
+            ? { author: { "@type": "Person", name: author } }
+            : {}),
+          ...(reviewer
+            ? { reviewedBy: { "@type": "Person", name: reviewer } }
+            : {}),
         }}
       />
       <JsonLdSchema data={buildBreadcrumbSchema(breadcrumbItems)} />

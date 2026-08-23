@@ -10,6 +10,7 @@ const category: Category = {
   id: "engine",
   title: "Двигатель",
   slug: "engine",
+  sortOrder: 0,
   parentId: null,
   description: null,
   imageId: null,
@@ -46,6 +47,7 @@ describe("HomeCategories", () => {
   });
 
   it("tracks a homepage category selection", () => {
+    window.localStorage.setItem("deere-shop:cookie-consent", "accepted");
     window.dataLayer = [];
     render(<HomeCategories categories={[category]} section={section} />);
     const link = screen.getByRole("link", { name: "Двигатель — перейти в каталог" });

@@ -23,9 +23,21 @@ export type AnalyticsEvent = { event: AnalyticsEventName } & Record<
   string | number | boolean | undefined
 >;
 
+export const COOKIE_CONSENT_STORAGE_KEY = "deere-shop:cookie-consent";
+
 declare global {
   interface Window {
     dataLayer?: AnalyticsEvent[];
+  }
+}
+
+export function hasAnalyticsConsent(): boolean {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY) === "accepted";
+  } catch {
+    return false;
   }
 }
 
@@ -33,6 +45,12 @@ export function trackEvent(
   event: AnalyticsEventName,
   properties: Omit<AnalyticsEvent, "event"> = {},
 ) {
-  if (typeof window === "undefined" || !Array.isArray(window.dataLayer)) return;
+  if (
+    !hasAnalyticsConsent() ||
+    typeof window === "undefined" ||
+    !Array.isArray(window.dataLayer)
+  ) {
+    return;
+  }
   window.dataLayer.push({ event, ...properties });
 }

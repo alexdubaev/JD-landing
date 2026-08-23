@@ -18,6 +18,9 @@ import {
 } from "@/lib/directus/content";
 
 import { HomePageView } from "./HomePageView";
+import { directusAssetUrl } from "@/lib/directus/assets";
+import { buildSocialMetadata } from "@/lib/seo/social-metadata";
+import { absoluteUrl } from "@/lib/seo/url";
 
 // Directus is intentionally unavailable while Docker builds the frontend.
 // Rendering this route at build time would persist the CMS fallback as the
@@ -27,12 +30,27 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const page = await getHomePage();
+    const [page, settings] = await Promise.all([
+      getHomePage(),
+      getSiteSettings().catch(() => null),
+    ]);
     if (!page) return {};
+    const title = page.seoTitle ?? page.title;
+    const description = page.seoDescription;
+    const image = directusAssetUrl(settings?.defaultOgImageId, {
+      width: 1200,
+      height: 630,
+    });
     return {
-      title: page.seoTitle ?? page.title,
-      description: page.seoDescription,
+      title,
+      description,
       alternates: { canonical: "/" },
+      ...buildSocialMetadata({
+        title,
+        description,
+        path: absoluteUrl("/"),
+        image: image ? { url: image } : null,
+      }),
     };
   } catch {
     return {};

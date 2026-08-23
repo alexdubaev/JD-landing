@@ -3,6 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { CatalogControls } from "@/components/catalog/CatalogControls";
+import { CategoryTree } from "@/components/catalog/CategoryTree";
 import { EmptyCatalog } from "@/components/catalog/EmptyCatalog";
 import { Pagination } from "@/components/catalog/Pagination";
 import { ProductGrid } from "@/components/catalog/ProductGrid";
@@ -13,9 +14,15 @@ import {
   type CatalogSearchParams,
   parseCatalogSearchParams,
 } from "@/lib/catalog/search-params";
+import {
+  buildCategoryTree,
+  findCategoryTreeNode,
+  getCategoryAncestors,
+} from "@/lib/catalog/category-tree";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import {
   getCatalogPage,
+  getCategories,
   getCategoryBySlug,
   getCategoryRedirect,
 } from "@/lib/directus/catalog";
@@ -87,8 +94,15 @@ export default async function CategoryPage({
     ...parseCatalogSearchParams(rawSearchParams),
     categorySlug,
   };
-  const catalog = await getCatalogPage(query);
+  const [catalog, categories] = await Promise.all([
+    getCatalogPage(query),
+    getCategories().catch(() => []),
+  ]);
   const fallbackContent = getCategorySeoContent(category.slug);
+  const indexableCategories = categories.filter((item) => item.isIndexable);
+  const categoryTree = buildCategoryTree(categories);
+  const categoryNode = findCategoryTreeNode(categoryTree, category.id);
+  const ancestors = getCategoryAncestors(indexableCategories, category.id);
 
   // 404 for out-of-range page numbers
   if (isPageOutOfRange(query, catalog.total)) notFound();
@@ -96,6 +110,10 @@ export default async function CategoryPage({
   const breadcrumbItems = [
     { name: "Главная", url: absoluteUrl("/") },
     { name: "Каталог", url: absoluteUrl("/catalog") },
+    ...ancestors.map((ancestor) => ({
+      name: ancestor.title,
+      url: absoluteUrl(`/catalog/${ancestor.slug}`),
+    })),
     { name: category.title, url: absoluteUrl(`/catalog/${category.slug}`) },
   ];
 
@@ -114,6 +132,10 @@ export default async function CategoryPage({
           items={[
             { href: "/", label: "Главная" },
             { href: "/catalog", label: "Каталог" },
+            ...ancestors.map((ancestor) => ({
+              href: `/catalog/${ancestor.slug}`,
+              label: ancestor.title,
+            })),
             { label: category.title },
           ]}
         />
@@ -125,6 +147,10 @@ export default async function CategoryPage({
         <Suspense fallback={<div className="catalog-controls-skeleton" />}>
           <CatalogControls categorySlug={categorySlug} />
         </Suspense>
+        <CategoryTree
+          nodes={categoryNode?.children ?? []}
+          title={`Подкатегории: ${category.title}`}
+        />
         <div className="catalog-results">
           <p aria-live="polite">
             Найдено позиций: <strong>{catalog.total}</strong>
@@ -142,9 +168,10 @@ export default async function CategoryPage({
           searchParams={rawSearchParams}
           total={catalog.total}
         />
-        {!category.seoText && fallbackContent ? (
-          <CategorySeoContent content={fallbackContent} />
-        ) : null}
+        <CategorySeoContent
+          content={fallbackContent}
+          seoText={category.seoText}
+        />
       </Container>
     </main>
   );

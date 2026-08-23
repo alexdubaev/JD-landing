@@ -78,7 +78,7 @@ describe("product page", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
-  it("uses the branded placeholder as an Open Graph image when a product image is absent", async () => {
+  it("does not invent an Open Graph image when a product image is absent", async () => {
     const metadata = await generateMetadata({
       params: Promise.resolve({
         categorySlug: "hydraulics",
@@ -86,12 +86,11 @@ describe("product page", () => {
       }),
     });
 
-    expect(metadata.openGraph?.images).toEqual([
-      {
-        url: "https://deere-shop.ru/images/catalog/product-placeholder-industrial.webp",
-        alt: product.title,
-      },
-    ]);
+    expect(metadata.openGraph).not.toHaveProperty("images");
+    expect(metadata.twitter).toMatchObject({
+      card: "summary",
+      title: product.title,
+    });
   });
 
   it("renders only provided specifications and fixed price data", async () => {

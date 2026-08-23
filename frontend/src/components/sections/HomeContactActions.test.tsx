@@ -18,9 +18,11 @@ const contacts: ContactChannel[] = [
 describe("MobileContactBar", () => {
   afterEach(() => {
     delete window.dataLayer;
+    window.localStorage.clear();
   });
 
   it("renders only factual contact actions and tracks messenger use", () => {
+    window.localStorage.setItem("deere-shop:cookie-consent", "accepted");
     window.dataLayer = [];
     render(<MobileContactBar contacts={contacts} phone={null} />);
 
@@ -44,6 +46,7 @@ describe("MobileContactBar", () => {
   });
 
   it("routes an email contact to the protected request form", () => {
+    window.localStorage.setItem("deere-shop:cookie-consent", "accepted");
     window.dataLayer = [];
     render(
       <>
@@ -65,6 +68,7 @@ describe("MobileContactBar", () => {
   });
 
   it("tracks the final CTA phone action", () => {
+    window.localStorage.setItem("deere-shop:cookie-consent", "accepted");
     window.dataLayer = [];
     render(<TrackedPhoneLink className="button" phone="+7 900 000-00-00">Позвонить</TrackedPhoneLink>);
     const call = screen.getByRole("link", { name: "Позвонить" });

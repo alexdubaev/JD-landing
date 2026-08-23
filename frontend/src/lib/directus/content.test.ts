@@ -51,6 +51,8 @@ describe("content queries", () => {
       kpp: "781201001",
       ogrn: "1027800000000",
       legal_address: "Санкт-Петербург, пример",
+      yandex_metrica_id: "cms-counter-id",
+      gtm_id: null,
     });
 
     await expect(getSiteSettings()).resolves.toEqual(
@@ -68,6 +70,7 @@ describe("content queries", () => {
         kpp: "781201001",
         ogrn: "1027800000000",
         legalAddress: "Санкт-Петербург, пример",
+        yandexMetricaId: "cms-counter-id",
       }),
     );
   });
