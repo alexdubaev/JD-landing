@@ -31,7 +31,7 @@
 - `frontend/src/app/api/orders/route.ts` and tests: bounded JSON parsing and shared verifier integration.
 - `frontend/src/app/api/revalidate/route.ts` and `.test.ts`: regression-only changes; item-aware behavior must remain intact.
 - `deploy/Caddyfile` and `deploy/caddyfile.test.mjs`: trusted forwarded-header overwrite and existing preview/security behavior.
-- `deploy/deploy.sh`, `deploy/deploy.test.mjs`, `deploy/.env.production.example`: preflight flags and checks before any compose mutation.
+- `deploy/compose.production.yml`, `deploy/deploy.sh`, `deploy/deploy.test.mjs`, `deploy/.env.production.example`: optional Caddy bindings and preflight flags/checks before any compose mutation.
 - `deploy/backup.sh` and `deploy/backup.test.mjs`: retain working local backup and gate optional restic mode.
 - `docs/runbooks/security-release-a.md`: operator preflight, verification, and owner-approval runbook.
 
@@ -46,7 +46,7 @@
 - Modify: `frontend/src/app/api/orders/route.test.ts` (create if absent)
 - Modify: `deploy/deploy.test.mjs`, `deploy/backup.test.mjs` (create backup test if absent)
 
-**Interfaces:** Tests define the required behavior for later helpers: `readBodyWithinLimit(request, maxBytes)`, `getTrustedClientIp(headers)`, and `verifyTurnstile({ token, remoteIp, secret, nodeEnv, timeoutMs })`.
+**Interfaces:** Tests define the required behavior for later helpers: `readBodyWithinLimit(request, maxBytes)`, `getTrustedClientIp(headers)`, and `verifyTurnstile({ token, remoteIp, secret, timeoutMs })`.
 
 - [ ] **Step 1: Add request helper tests.** Assert a stream with no `Content-Length` that sends more than five bytes rejects with `RequestTooLargeError`; assert one valid IP is accepted and a comma-separated chain, invalid value, and absent value return `null`.
 - [ ] **Step 2: Add Turnstile tests.** Assert missing secret is allowed outside production, missing secret is allowed by the route contract in the current opted-out mode, a configured request with no visitor token returns false without fetch, a fetch timeout returns false, and a non-2xx provider response returns false.
@@ -70,12 +70,12 @@ Expected: FAIL because the helpers and integrations do not yet exist and the cur
 - Produces `RequestTooLargeError`.
 - Produces `readBodyWithinLimit(request: Request, maxBytes: number): Promise<Uint8Array>`; it checks a finite `Content-Length` early, then reads every stream chunk and throws after the limit.
 - Produces `getTrustedClientIp(headers: Headers): string | null`; it accepts exactly one syntactically valid address and rejects chains/ambiguous values.
-- Produces `verifyTurnstile(options): Promise<boolean>`; it accepts `{ token, remoteIp, secret?, nodeEnv?, timeoutMs? }`, uses `AbortSignal.timeout(timeoutMs ?? 5000)`, and returns false on timeout, fetch failure, non-2xx, malformed JSON, or `{ success: false }`.
+- Produces `verifyTurnstile(options): Promise<boolean>`; it accepts `{ token, remoteIp, secret?, timeoutMs? }`, uses `AbortSignal.timeout(timeoutMs ?? 5000)`, and returns false on timeout, fetch failure, non-2xx, malformed JSON, or `{ success: false }`.
 - Produces `checkRateLimit(key, { limit, windowMs })` and `resetRateLimits()` for deterministic proxy tests.
 
 - [ ] **Step 1: Implement `readBodyWithinLimit` with a byte counter and reader cleanup.** Do not rely on `Content-Length`; concatenate only chunks that remain within the budget.
 - [ ] **Step 2: Implement strict forwarded-IP parsing.** Use the server-compatible IP validator and reject comma-separated or malformed values rather than selecting the first client-supplied hop.
-- [ ] **Step 3: Implement bounded Turnstile fetch.** Pass the abort signal, never log the secret/token, and keep missing-secret behavior explicit (`nodeEnv !== "production"`) until the owner enables the feature.
+- [ ] **Step 3: Implement bounded Turnstile fetch.** Pass the abort signal, never log the secret/token, and keep missing-secret behavior as the explicit opted-out path until the owner enables the feature.
 - [ ] **Step 4: Implement the small in-memory limiter.** Count per key/window and return `{ allowed, retryAfterSeconds }`; expose reset only for tests.
 - [ ] **Step 5: Run helper tests.**
 
@@ -133,6 +133,7 @@ Expected: PASS. If a local Caddy binary exists, also run `caddy validate --confi
 **Interfaces:** Preflight runs before any build/recreate and reads settings without printing values.
 
 - [ ] **Step 1: Implement `preflight`.** When `ENABLE_DIRECTUS_CMS_BASIC_AUTH=true`, require non-empty `DIRECTUS_CMS_AUTH_USER` and `DIRECTUS_CMS_AUTH_HASH`; when `ENABLE_RESTIC_BACKUP=true`, require `RESTIC_REPOSITORY`, `RESTIC_PASSWORD_FILE`, and an executable `restic`; otherwise leave both controls disabled and continue.
+- [ ] **Step 1a: Bind optional CMS auth values only into the Caddy service.** Add empty-by-default `DIRECTUS_CMS_AUTH_USER` and `DIRECTUS_CMS_AUTH_HASH` Compose environment entries so a separately reviewed Caddy `basic_auth` block can consume the preflight-checked values without exposing them to frontend or Directus containers.
 - [ ] **Step 2: Keep Caddy Basic Auth opt-in.** Do not add an unconditional `basic_auth` block while production variables are absent; document the exact enablement sequence and preflight failure in the env example/runbook.
 - [ ] **Step 3: Keep `backup.sh` local-first.** Retain `pg_dump`, uploads archive, 700 backup directory, and 14-day local retention. If restic mode is added, make it conditional on the same flag and fail before creating a partial remote backup when required settings are absent.
 - [ ] **Step 4: Add shell-static tests.** Verify function ordering (`preflight` before build), no secret echo, flag defaults, and local backup commands.

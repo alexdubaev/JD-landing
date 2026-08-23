@@ -277,7 +277,7 @@ describe("POST /api/leads", () => {
     form.set("name", "Иван");
     const response = await POST(multipartRequest(form, { "content-length": "" }));
 
-    expect(response.status).toBe(411);
+    expect(response.status).toBe(400);
   });
 
   it("cleans up the first file when the second attachment upload fails", async () => {
@@ -345,6 +345,62 @@ describe("POST /api/leads", () => {
 
     expect(response.status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a chunked JSON body after the aggregate byte limit", async () => {
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("{"));
+        controller.enqueue(new Uint8Array(20 * 1024 * 1024));
+        controller.enqueue(new TextEncoder().encode("}"));
+        controller.close();
+      },
+    });
+    const response = await POST(
+      new Request("https://example.test/api/leads", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: stream,
+        duplex: "half",
+      } as RequestInit),
+    );
+
+    expect(response.status).toBe(413);
+  });
+
+  it("accepts a chunked multipart body when it stays below the aggregate limit", async () => {
+    const boundary = "release-a-boundary";
+    const payload = [
+      `--${boundary}\r\nContent-Disposition: form-data; name="name"\r\n\r\nИван\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="phone"\r\n\r\n+7 900 000-00-00\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="page_url"\r\n\r\nhttps://example.test/\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="website"\r\n\r\n\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="request_items"\r\n\r\n[{"article":"RE504836","quantity":1}]\r\n`,
+      `--${boundary}--\r\n`,
+    ].join("");
+    const encoded = new TextEncoder().encode(payload);
+    const midpoint = Math.ceil(encoded.byteLength / 2);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoded.slice(0, midpoint));
+        controller.enqueue(encoded.slice(midpoint));
+        controller.close();
+      },
+    });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { id: "lead-1" } }), { status: 200 }),
+    );
+
+    const response = await POST(
+      new Request("https://example.test/api/leads", {
+        method: "POST",
+        headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
+        body: stream,
+        duplex: "half",
+      } as RequestInit),
+    );
+
+    expect(response.status).toBe(201);
   });
 });
 

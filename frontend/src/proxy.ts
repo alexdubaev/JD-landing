@@ -1,5 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { checkRateLimit } from "@/lib/security/rate-limit";
+import { getTrustedClientIp } from "@/lib/security/request";
+
 const knownTopLevelPaths = new Set([
   "about", "api", "articles", "cart", "catalog", "contacts", "delivery",
   "0f81321649a7e9ba734d09aeb5a47c5a.txt", "favicon.ico", "icon-16.png", "icon-32.png",
@@ -12,6 +15,29 @@ const notFoundDocument = `<!doctype html><html lang="ru"><head><meta charset="ut
 
 /** Reject unknown routes before the async root layout starts streaming. */
 export function proxy(request: NextRequest) {
+  const policy =
+    request.nextUrl.pathname === "/api/leads" && request.method === "POST"
+      ? { limit: 5, windowMs: 60 * 60 * 1000 }
+      : request.nextUrl.pathname === "/api/orders" && request.method === "POST"
+        ? { limit: 10, windowMs: 60 * 60 * 1000 }
+        : request.nextUrl.pathname === "/api/revalidate" && request.method === "POST"
+          ? { limit: 30, windowMs: 60 * 1000 }
+          : null;
+
+  if (policy) {
+    const clientIp = getTrustedClientIp(request.headers) ?? "unknown";
+    const limit = checkRateLimit(
+      `${request.nextUrl.pathname}:${clientIp}`,
+      policy,
+    );
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+      );
+    }
+  }
+
   if (request.method !== "GET" && request.method !== "HEAD") return NextResponse.next();
 
   const { pathname } = request.nextUrl;

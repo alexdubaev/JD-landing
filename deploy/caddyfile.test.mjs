@@ -43,3 +43,11 @@ test("Directus preview bridge alone may post its signed form to the public site"
     /cms\.deere-shop\.ru\s*\{[\s\S]*@preview_bridge path \/deere-shop\/preview\/\*[\s\S]*handle @preview_bridge\s*\{[\s\S]*import security_headers_preview_bridge[\s\S]*reverse_proxy directus:8055[\s\S]*\}[\s\S]*handle\s*\{[\s\S]*import security_headers[\s\S]*reverse_proxy directus:8055[\s\S]*\}/u,
   );
 });
+
+test("reverse proxies overwrite client-supplied forwarded chains", () => {
+  const removals = caddyfile.match(/header_up -X-Forwarded-For/g) ?? [];
+  const assignments = caddyfile.match(/header_up X-Forwarded-For \{http\.request\.remote\.host\}/g) ?? [];
+
+  assert.ok(removals.length >= 3, "frontend and both Directus handlers clear the incoming header");
+  assert.equal(removals.length, assignments.length);
+});

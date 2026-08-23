@@ -15,28 +15,16 @@ import {
 } from "@/lib/leads/attachments";
 import { leadSchema } from "@/lib/leads/schema";
 import { notifyNewLead } from "@/lib/notifications/notify";
+import {
+  RequestTooLargeError,
+  getTrustedClientIp,
+  readBodyWithinLimit,
+} from "@/lib/security/request";
+import { verifyTurnstile } from "@/lib/security/turnstile";
 
 const MAX_LEAD_REQUEST_BYTES = 20 * 1024 * 1024;
 
 class LeadValidationError extends Error {}
-
-async function isHuman(token: string | undefined, remoteIp: string | null) {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
-  if (!token) return false;
-
-  const form = new FormData();
-  form.set("secret", secret);
-  form.set("response", token);
-  if (remoteIp) form.set("remoteip", remoteIp);
-  const response = await fetch(
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-    { method: "POST", body: form, cache: "no-store" },
-  );
-  if (!response.ok) return false;
-  const result = (await response.json()) as { success?: boolean };
-  return result.success === true;
-}
 
 const stringValue = (form: FormData, name: string) => {
   const value = form.get(name);
@@ -71,24 +59,30 @@ function attachmentError(files: Array<[AttachmentKind, File | null]>) {
 export async function POST(request: Request) {
   const uploadedIds: string[] = [];
   try {
-    const contentLength = Number(request.headers.get("content-length"));
-    if (Number.isFinite(contentLength) && contentLength > MAX_LEAD_REQUEST_BYTES) {
-      return NextResponse.json(
-        { error: "Размер запроса превышает допустимый лимит." },
-        { status: 413 },
-      );
-    }
     const isMultipart = request.headers
       .get("content-type")
       ?.toLocaleLowerCase("en")
       .includes("multipart/form-data");
-    if (isMultipart && (!Number.isFinite(contentLength) || contentLength <= 0)) {
-      return NextResponse.json(
-        { error: "Для загрузки файлов требуется известный размер запроса." },
-        { status: 411 },
-      );
-    }
-    const form = isMultipart ? await request.formData() : null;
+
+    const boundedBody = await readBodyWithinLimit(
+      request,
+      MAX_LEAD_REQUEST_BYTES,
+    );
+    const boundedRequest = request.body
+      ? new Request(request.url, {
+          method: request.method,
+          headers: (() => {
+            const headers = new Headers(request.headers);
+            headers.delete("content-length");
+            return headers;
+          })(),
+          body: boundedBody.buffer.slice(
+            boundedBody.byteOffset,
+            boundedBody.byteOffset + boundedBody.byteLength,
+          ) as ArrayBuffer,
+        })
+      : request;
+    const form = isMultipart ? await boundedRequest.formData() : null;
     const input = form
       ? {
           name: stringValue(form, "name"),
@@ -108,7 +102,7 @@ export async function POST(request: Request) {
           website: stringValue(form, "website"),
           request_items: parseRequestItems(stringValue(form, "request_items")),
         }
-      : await request.json();
+      : await boundedRequest.json();
     const parsed = leadSchema.safeParse(input);
     if (!parsed.success) {
       throw new LeadValidationError();
@@ -127,10 +121,10 @@ export async function POST(request: Request) {
       throw new LeadValidationError();
     }
     if (
-      !(await isHuman(
-        parsed.data.turnstile_token,
-        request.headers.get("x-forwarded-for"),
-      ))
+      !(await verifyTurnstile({
+        token: parsed.data.turnstile_token,
+        remoteIp: getTrustedClientIp(request.headers),
+      }))
     ) {
       return NextResponse.json(
         { error: "Не удалось подтвердить отправку" },
@@ -172,6 +166,12 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (error) {
+    if (error instanceof RequestTooLargeError) {
+      return NextResponse.json(
+        { error: "Размер запроса превышает допустимый лимит." },
+        { status: 413 },
+      );
+    }
     if (uploadedIds.length) {
       await Promise.allSettled(uploadedIds.map(deleteLeadAttachment));
     }
