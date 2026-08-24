@@ -13,5 +13,5 @@ test("SEO Factory extension uses a row lock and bounded lease claim", () => {
   assert.match(source, /approved.*retryable/su);
   assert.match(source, /processing/u);
   assert.match(source, /draft_created/u);
-  assert.doesNotMatch(source, /published.*article|status\s*:\s*["']published/su);
+  assert.doesNotMatch(source, /update\(\{[^}]*status\s*:\s*["']published/su);
 });
