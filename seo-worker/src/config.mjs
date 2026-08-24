@@ -129,3 +129,25 @@ function buildConfig(env) {
 export function isShadow(config) {
   return !config.enabled || config.dryRun;
 }
+
+// Release B configuration is intentionally separate from the older one-shot
+// CLI flags. The factory has no apply or publish mode; it can only shadow-write
+// recommendations when an operator explicitly enables its schedule.
+export function createSeoFactoryConfig(env = process.env) {
+  const positiveInt = (value, fallback) => {
+    const parsed = Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  };
+  return Object.freeze({
+    enabled: env.SEO_FACTORY_ENABLED === "true",
+    mode: "shadow",
+    productionSchedule: env.SEO_FACTORY_PRODUCTION_SCHEDULE === "true",
+    allowApply: false,
+    allowPublish: false,
+    maxUrlsPerRun: positiveInt(env.SEO_FACTORY_MAX_URLS_PER_RUN, 100),
+    maxWorkItemsPerRun: positiveInt(env.SEO_FACTORY_MAX_WORK_ITEMS_PER_RUN, 100),
+    requestTimeoutMs: positiveInt(env.SEO_FACTORY_REQUEST_TIMEOUT_MS, 5000),
+    directusUrl: env.DIRECTUS_URL ? String(env.DIRECTUS_URL).trim() : null,
+    directusToken: env.SEO_WORKER_TOKEN ? String(env.SEO_WORKER_TOKEN) : null,
+  });
+}

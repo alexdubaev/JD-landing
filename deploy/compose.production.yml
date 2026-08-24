@@ -50,6 +50,7 @@ services:
       # never exposed to a browser and matches the frontend verifier.
       PREVIEW_SECRET: ${PREVIEW_SECRET:-}
       NEXT_PREVIEW_CONSUME_URL: ${NEXT_PREVIEW_CONSUME_URL:-https://deere-shop.ru/api/preview/consume}
+      SEO_FACTORY_WORKER_ROLE_ID: ${SEO_FACTORY_WORKER_ROLE_ID:-}
     volumes:
       - directus_uploads:/directus/uploads
       - directus_extensions:/directus/extensions
@@ -66,6 +67,30 @@ services:
     networks:
       - backend
       - web
+
+  seo-worker:
+    image: jd-landing-seo-worker
+    build:
+      context: ../seo-worker
+      dockerfile: Dockerfile
+    profiles: ["seo-factory"]
+    restart: unless-stopped
+    depends_on:
+      directus:
+        condition: service_healthy
+    environment:
+      DIRECTUS_URL: http://directus:8055
+      SEO_WORKER_TOKEN: ${SEO_WORKER_TOKEN:-}
+      SEO_FACTORY_ENABLED: ${SEO_FACTORY_ENABLED:-false}
+      SEO_FACTORY_PRODUCTION_SCHEDULE: ${SEO_FACTORY_PRODUCTION_SCHEDULE:-false}
+      SEO_FACTORY_ALLOW_APPLY: ${SEO_FACTORY_ALLOW_APPLY:-false}
+      SEO_FACTORY_ALLOW_PUBLISH: ${SEO_FACTORY_ALLOW_PUBLISH:-false}
+      SEO_FACTORY_MAX_URLS_PER_RUN: ${SEO_FACTORY_MAX_URLS_PER_RUN:-100}
+      SEO_FACTORY_MAX_WORK_ITEMS_PER_RUN: ${SEO_FACTORY_MAX_WORK_ITEMS_PER_RUN:-100}
+      SEO_FACTORY_REQUEST_TIMEOUT_MS: ${SEO_FACTORY_REQUEST_TIMEOUT_MS:-5000}
+      SEO_FACTORY_WORKER_ROLE_ID: ${SEO_FACTORY_WORKER_ROLE_ID:-}
+    networks:
+      - backend
 
   frontend:
     build:

@@ -803,7 +803,7 @@ export const schemaBlueprint = {
         field("status", "string", {
           required: true,
           default: "draft",
-          choices: ["draft", "ready", "review", "applied", "rolled_back", "rejected"],
+          choices: ["draft", "ready", "review", "approved", "processing", "draft_created", "retryable", "applied", "rolled_back", "rejected"],
           index: true,
         }),
         field("severity", "string", {

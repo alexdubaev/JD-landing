@@ -20690,6 +20690,22 @@
               "value": "review"
             },
             {
+              "text": "approved",
+              "value": "approved"
+            },
+            {
+              "text": "processing",
+              "value": "processing"
+            },
+            {
+              "text": "draft created",
+              "value": "draft_created"
+            },
+            {
+              "text": "retryable",
+              "value": "retryable"
+            },
+            {
               "text": "applied",
               "value": "applied"
             },
