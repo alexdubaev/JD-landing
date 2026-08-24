@@ -148,3 +148,17 @@ test("factory configuration supplies a non-empty run id bounded for Core headers
   assert.equal(supplied.runId, "x".repeat(128));
   assert.ok(generated.runId.length > 0 && generated.runId.length <= 128);
 });
+
+test("factory configuration replaces CRLF and Unicode run ids with unique ASCII header-safe ids", () => {
+  const unsafeInputs = ["run-safe\r\nx-injected: yes", "запуск-1"];
+  const replacements = unsafeInputs.map((SEO_WORKER_RUN_ID) => (
+    createSeoFactoryConfig({ SEO_WORKER_RUN_ID }).runId
+  ));
+  const generated = [createSeoFactoryConfig({}).runId, createSeoFactoryConfig({}).runId];
+
+  for (const runId of [...replacements, ...generated]) {
+    assert.match(runId, /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u);
+  }
+  assert.ok(replacements.every((runId) => runId.startsWith("run-")));
+  assert.notEqual(generated[0], generated[1]);
+});

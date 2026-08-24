@@ -76,6 +76,7 @@ const RUN_ID_FLAG = 'SEO_WORKER_RUN_ID';
 const MIN_TIER_FLAG = 'SEO_WORKER_MIN_EVIDENCE_TIER';
 
 const KNOWN_TIERS = ['authoritative', 'corroborated', 'single', 'weak'];
+const HEADER_SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/u;
 
 function generateRunId() {
   // Stable enough for a single process; not a security primitive.
@@ -84,7 +85,10 @@ function generateRunId() {
 
 function boundedRunId(value) {
   const normalized = String(value ?? "").trim();
-  return (normalized || generateRunId()).slice(0, 128);
+  const safeValue = normalized && HEADER_SAFE_RUN_ID.test(normalized)
+    ? normalized
+    : generateRunId();
+  return safeValue.slice(0, 128);
 }
 
 /**
