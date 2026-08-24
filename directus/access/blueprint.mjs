@@ -4,13 +4,13 @@ const permission = (collection, action, options = {}) => ({
   permissions: options.permissions ?? null,
   validation: options.validation ?? null,
   presets: options.presets ?? null,
-  fields: ["*"],
+  fields: options.fields ?? ["*"],
   allowRestrictedFallback: options.allowRestrictedFallback ?? false,
 });
 
 const read = (collection, options) => permission(collection, "read", options);
 const create = (collection, options) => permission(collection, "create", options);
-const update = (collection) => permission(collection, "update");
+const update = (collection, options) => permission(collection, "update", options);
 const remove = (collection, options) => permission(collection, "delete", options);
 
 const websiteCollections = [
@@ -203,6 +203,37 @@ export const accessBlueprint = {
       appAccess: true,
       adminAccess: false,
       permissions: seoPermissions,
+    },
+    {
+      key: "seo_worker",
+      role: {
+        name: "SEO Worker",
+        existingNames: ["SEO Worker"],
+        icon: "smart_toy",
+        description:
+          "Shadow-only service account: reads published SEO inputs, queues recommendations, and creates draft articles after manual approval.",
+      },
+      policyName: "SEO Worker",
+      existingPolicyNames: ["SEO Worker"],
+      appAccess: false,
+      adminAccess: false,
+      permissions: [
+        read("products", { permissions: { status: { _eq: "published" } } }),
+        read("categories", { permissions: { status: { _eq: "published" } } }),
+        read("pages", { permissions: { status: { _eq: "published" } } }),
+        read("seo_work_items"),
+        create("seo_work_items"),
+        update("seo_work_items"),
+        create("articles", {
+          fields: ["status", "title", "slug", "excerpt", "content", "published_at"],
+          validation: { status: { _eq: "draft" } },
+        }),
+        update("articles", {
+          fields: ["status", "title", "slug", "excerpt", "content", "published_at"],
+          permissions: { status: { _eq: "draft" } },
+          validation: { status: { _eq: "draft" } },
+        }),
+      ],
     },
   ],
 };
