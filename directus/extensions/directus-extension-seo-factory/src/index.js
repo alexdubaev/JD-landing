@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
+import { Buffer } from "node:buffer";
 
-const CLAIMABLE = ["approved", "retryable"];
+const CLAIMABLE = ["approved", "retryable", "processing"];
 const MAX_DRAFT_SECTIONS = 50;
+const MAX_JSON_DEPTH = 8;
+const MAX_JSON_ENTRIES = 100;
+const MAX_JSON_NODES = 1000;
+const MAX_JSON_FIELD_BYTES = 64 * 1024;
+const MAX_JSON_TOTAL_BYTES = 128 * 1024;
 const PUBLISHED_SOURCE_FIELDS = ["id", "status", "slug", "title", "seo_title", "seo_description"];
 const PUBLISHED_SOURCE_COLLECTIONS = ["products", "categories", "pages"];
 const ALLOWED_ENTITY_TYPES = new Set(PUBLISHED_SOURCE_COLLECTIONS);
@@ -21,6 +27,8 @@ const STRING_CAPS = {
   worker_run_id: 128,
 };
 const JSON_FIELDS = ["current_value_json", "proposed_value_json", "patch_json", "evidence_json", "sources_json", "metrics_json"];
+const JSON_ARRAY_FIELDS = new Set(["evidence_json", "sources_json"]);
+const NULLABLE_JSON_FIELDS = new Set(["current_value_json", "proposed_value_json", "metrics_json"]);
 
 function requireWorkerRole(accountability) {
   const expected = process.env.SEO_FACTORY_WORKER_ROLE_ID;
@@ -65,6 +73,64 @@ function databaseDecimal54(value) {
     && /^-?\d(?:\.\d{1,4})?$/u.test(String(value));
 }
 
+function plainObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function validateJsonTree(value, depth = 1, state = { ancestors: new Set(), nodes: 0 }) {
+  state.nodes += 1;
+  if (state.nodes > MAX_JSON_NODES) throw invalidRequest();
+  if (depth > MAX_JSON_DEPTH) throw invalidRequest();
+  if (value === null || typeof value === "string" || typeof value === "boolean") return;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) throw invalidRequest();
+    return;
+  }
+  if (typeof value !== "object" || state.ancestors.has(value)) throw invalidRequest();
+
+  const entries = Array.isArray(value) ? value : Object.entries(value);
+  if ((!Array.isArray(value) && !plainObject(value)) || entries.length > MAX_JSON_ENTRIES) throw invalidRequest();
+  state.ancestors.add(value);
+  if (Array.isArray(value)) {
+    for (const item of value) validateJsonTree(item, depth + 1, state);
+  } else {
+    for (const [key, item] of entries) {
+      if (Buffer.byteLength(key, "utf8") > 128) throw invalidRequest();
+      validateJsonTree(item, depth + 1, state);
+    }
+  }
+  state.ancestors.delete(value);
+}
+
+function validatedJsonFields(body) {
+  const result = {};
+  let totalBytes = 0;
+  for (const field of JSON_FIELDS) {
+    if (body[field] === undefined) continue;
+    const value = body[field];
+    if (value === null) {
+      if (!NULLABLE_JSON_FIELDS.has(field)) throw invalidRequest();
+    } else if (JSON_ARRAY_FIELDS.has(field) ? !Array.isArray(value) : !plainObject(value)) {
+      throw invalidRequest();
+    }
+    validateJsonTree(value);
+    let serialized;
+    try {
+      serialized = JSON.stringify(value);
+    } catch {
+      throw invalidRequest();
+    }
+    const bytes = Buffer.byteLength(serialized, "utf8");
+    if (bytes > MAX_JSON_FIELD_BYTES) throw invalidRequest();
+    totalBytes += bytes;
+    if (totalBytes > MAX_JSON_TOTAL_BYTES) throw invalidRequest();
+    result[field] = value;
+  }
+  return result;
+}
+
 function allowlistedRecommendation(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw invalidRequest();
   const dedupeKey = cappedString(body.dedupe_key, STRING_CAPS.dedupe_key);
@@ -86,14 +152,8 @@ function allowlistedRecommendation(body) {
     if (!databaseDecimal54(body.confidence)) throw invalidRequest();
     workItem.confidence = Number(body.confidence);
   }
-  for (const field of JSON_FIELDS) {
-    if (body[field] !== undefined) workItem[field] = body[field];
-  }
+  Object.assign(workItem, validatedJsonFields(body));
   return workItem;
-}
-
-function runId(request) {
-  return String(request.body?.runId || request.headers["x-seo-worker-run"] || "worker").slice(0, 128);
 }
 
 function requiredRunId(request) {
@@ -101,6 +161,13 @@ function requiredRunId(request) {
   if (typeof value !== "string") throw invalidRequest();
   const normalized = value.trim();
   if (!normalized || normalized.length > STRING_CAPS.worker_run_id) throw invalidRequest();
+  return normalized;
+}
+
+function requiredUuid(value) {
+  if (typeof value !== "string") throw invalidRequest();
+  const normalized = value.trim();
+  if (!UUID_PATTERN.test(normalized)) throw invalidRequest();
   return normalized;
 }
 
@@ -148,47 +215,68 @@ function articleDraft(body) {
 }
 
 async function requireOwnedClaim(trx, id, owner) {
-  const row = await trx("seo_work_items").where({ id }).forUpdate().first();
+  const now = trx.fn.now();
+  const row = await trx("seo_work_items")
+    .where({ id, status: "processing", worker_run_id: owner })
+    .andWhere("expires_at", ">", now)
+    .forUpdate()
+    .first();
   if (!row || row.status !== "processing" || row.worker_run_id !== owner) throw claimNotOwned();
+  const claim = await trx("seo_factory_claims")
+    .where({ work_item_id: id, run_id: owner, state: "processing" })
+    .andWhere("lease_until", ">", now)
+    .forUpdate()
+    .first();
+  if (!claim) throw claimNotOwned();
   return row;
 }
 
 export const claimApproved = ({ database, accountability, request }) => database.transaction(async (trx) => {
   requireWorkerRole(accountability);
+  const owner = requiredRunId(request);
   const now = new Date();
   const leaseMs = Math.min(Math.max(Number(request.body?.leaseMs || 300000), 30000), 1800000);
   const leaseUntil = new Date(now.getTime() + leaseMs);
   const rows = await trx("seo_work_items")
     .whereIn("status", CLAIMABLE)
-    .andWhere((query) => query.whereNull("expires_at").orWhere("expires_at", "<=", trx.fn.now()))
+    .andWhere((query) => query.whereNot("status", "processing").orWhere("expires_at", "<=", trx.fn.now()))
     .orderBy("created_at", "asc")
     .forUpdate()
     .skipLocked()
     .limit(boundedLimit(request.body?.limit));
   const claimed = [];
   for (const row of rows) {
+    if (row.status === "processing") {
+      const expiredClaim = await trx("seo_factory_claims")
+        .where({ work_item_id: row.id, state: "processing" })
+        .andWhere("lease_until", "<=", trx.fn.now())
+        .forUpdate()
+        .first();
+      if (!expiredClaim) continue;
+    }
     await trx("seo_factory_claims")
-      .insert({ work_item_id: row.id, run_id: runId(request), state: "processing", lease_until: leaseUntil, attempts: 1, updated_at: now })
+      .insert({ work_item_id: row.id, run_id: owner, state: "processing", lease_until: leaseUntil, attempts: 1, updated_at: now })
       .onConflict("work_item_id")
-      .merge({ run_id: runId(request), state: "processing", lease_until: leaseUntil, attempts: trx.raw("??.?? + 1", ["seo_factory_claims", "attempts"]), updated_at: now, last_error: null });
-    await trx("seo_work_items").where({ id: row.id }).update({ status: "processing", worker_run_id: runId(request), claimed_at: now, expires_at: leaseUntil, last_error: null });
-    claimed.push({ ...row, status: "processing", worker_run_id: runId(request), expires_at: leaseUntil.toISOString() });
+      .merge({ run_id: owner, state: "processing", lease_until: leaseUntil, attempts: trx.raw("??.?? + 1", ["seo_factory_claims", "attempts"]), updated_at: now, last_error: null });
+    await trx("seo_work_items").where({ id: row.id }).update({ status: "processing", worker_run_id: owner, claimed_at: now, expires_at: leaseUntil, last_error: null });
+    claimed.push({ ...row, status: "processing", worker_run_id: owner, expires_at: leaseUntil.toISOString() });
   }
   return claimed;
 });
 
 export const releaseClaim = ({ database, accountability, request }) => database.transaction(async (trx) => {
   requireWorkerRole(accountability);
-  const id = request.body?.id;
-  if (!id) throw invalidRequest();
+  const id = requiredUuid(request.body?.id);
   const owner = requiredRunId(request);
   await requireOwnedClaim(trx, id, owner);
   const error = String(request.body?.error || "draft creation failed").slice(0, 2000);
   const workItemsUpdated = await trx("seo_work_items")
     .where({ id, status: "processing", worker_run_id: owner })
+    .andWhere("expires_at", ">", trx.fn.now())
     .update({ status: "retryable", expires_at: null, last_error: error });
   const claimsUpdated = await trx("seo_factory_claims")
     .where({ work_item_id: id, run_id: owner, state: "processing" })
+    .andWhere("lease_until", ">", trx.fn.now())
     .update({ state: "retryable", lease_until: null, last_error: error, updated_at: trx.fn.now() });
   if (workItemsUpdated !== 1 || claimsUpdated !== 1) throw claimNotOwned();
   return { id, status: "retryable" };
@@ -196,8 +284,7 @@ export const releaseClaim = ({ database, accountability, request }) => database.
 
 export const createClaimedDraft = ({ database, accountability, request }) => database.transaction(async (trx) => {
   requireWorkerRole(accountability);
-  const id = request.body?.id;
-  if (!id) throw invalidRequest();
+  const id = requiredUuid(request.body?.id);
   const owner = requiredRunId(request);
   await requireOwnedClaim(trx, id, owner);
   const draft = articleDraft(request.body);
@@ -206,9 +293,11 @@ export const createClaimedDraft = ({ database, accountability, request }) => dat
   if (!draftId) throw new Error("SEO Factory draft creation failed");
   const workItemsUpdated = await trx("seo_work_items")
     .where({ id, status: "processing", worker_run_id: owner })
+    .andWhere("expires_at", ">", trx.fn.now())
     .update({ status: "draft_created", article: draftId, expires_at: null, last_error: null });
   const claimsUpdated = await trx("seo_factory_claims")
     .where({ work_item_id: id, run_id: owner, state: "processing" })
+    .andWhere("lease_until", ">", trx.fn.now())
     .update({ state: "draft_created", draft_id: draftId, lease_until: null, last_error: null, updated_at: trx.fn.now() });
   if (workItemsUpdated !== 1 || claimsUpdated !== 1) throw claimNotOwned();
   return { id, status: "draft_created", article: draftId };
@@ -231,6 +320,8 @@ export const upsertShadowWorkItem = async ({ database, accountability, request }
   const workItem = allowlistedRecommendation(request.body);
   const updateWorkItem = { ...workItem };
   delete updateWorkItem.id;
+  delete updateWorkItem.status;
+  delete updateWorkItem.worker_run_id;
   await database("seo_work_items")
     .insert(workItem)
     .onConflict("dedupe_key")
