@@ -2,14 +2,15 @@ const CLAIMABLE = ["approved", "retryable"];
 const PUBLISHED_SOURCE_FIELDS = ["id", "status", "slug", "title", "seo_title", "seo_description"];
 const PUBLISHED_SOURCE_COLLECTIONS = ["products", "categories", "pages"];
 const ALLOWED_ENTITY_TYPES = new Set(PUBLISHED_SOURCE_COLLECTIONS);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const STRING_CAPS = {
   type: 128,
   subtype: 128,
   severity: 32,
   entity_id: 128,
   entity_key: 255,
-  url: 2048,
-  title: 512,
+  url: 255,
+  title: 255,
   summary: 4000,
   recommendation: 8000,
   dedupe_key: 255,
@@ -49,11 +50,24 @@ function cappedString(value, maximum) {
   return String(value).trim().slice(0, maximum);
 }
 
+function databaseInteger(value) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= -2147483648 && parsed <= 2147483647;
+}
+
+function databaseDecimal54(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed)
+    && Math.abs(parsed) <= 9.9999
+    && /^-?\d(?:\.\d{1,4})?$/u.test(String(value));
+}
+
 function allowlistedRecommendation(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw invalidRequest();
   const dedupeKey = cappedString(body.dedupe_key, STRING_CAPS.dedupe_key);
   const entityType = cappedString(body.entity_type, 64);
   if (!dedupeKey || !ALLOWED_ENTITY_TYPES.has(entityType)) throw invalidRequest();
+  if (body.entity_id !== undefined && body.entity_id !== null && !UUID_PATTERN.test(String(body.entity_id))) throw invalidRequest();
 
   const workItem = { dedupe_key: dedupeKey, entity_type: entityType, status: "ready" };
   for (const [field, maximum] of Object.entries(STRING_CAPS)) {
@@ -61,9 +75,13 @@ function allowlistedRecommendation(body) {
     const value = cappedString(body[field], maximum);
     if (value !== undefined) workItem[field] = value;
   }
-  for (const field of ["priority_score", "confidence"]) {
-    const value = Number(body[field]);
-    if (Number.isFinite(value)) workItem[field] = value;
+  if (body.priority_score !== undefined && body.priority_score !== null) {
+    if (!databaseInteger(body.priority_score)) throw invalidRequest();
+    workItem.priority_score = Number(body.priority_score);
+  }
+  if (body.confidence !== undefined && body.confidence !== null) {
+    if (!databaseDecimal54(body.confidence)) throw invalidRequest();
+    workItem.confidence = Number(body.confidence);
   }
   for (const field of JSON_FIELDS) {
     if (body[field] !== undefined) workItem[field] = body[field];
