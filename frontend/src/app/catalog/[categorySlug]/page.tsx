@@ -157,7 +157,7 @@ export default async function CategoryPage({
           </p>
         </div>
         {catalog.items.length ? (
-          <ProductGrid products={catalog.items} />
+          <ProductGrid headingLevel={3} products={catalog.items} />
         ) : (
           <EmptyCatalog />
         )}

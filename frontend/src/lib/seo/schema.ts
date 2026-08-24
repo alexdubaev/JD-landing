@@ -220,5 +220,13 @@ export function buildWebSiteSchema(
     name: settings.companyName,
     url: siteUrl,
     publisher: { "@id": `${siteUrl}#organization` },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${siteUrl}catalog?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
   };
 }

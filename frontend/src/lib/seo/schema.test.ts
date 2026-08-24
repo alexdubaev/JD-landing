@@ -107,7 +107,7 @@ describe("buildProductSchema", () => {
 });
 
 describe("buildWebSiteSchema", () => {
-  it("does not include obsolete SearchAction markup", () => {
+  it("declares one article-search SearchAction for the public catalog search", () => {
     const schema = buildWebSiteSchema({
       city: null,
       companyImageId: null,
@@ -141,7 +141,14 @@ describe("buildWebSiteSchema", () => {
       gtmId: null,
     });
 
-    expect(schema.potentialAction).toBeUndefined();
+    expect(schema.potentialAction).toEqual({
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: "https://deere-shop.ru/catalog?q={search_term_string}",
+      },
+      "query-input": "required name=search_term_string",
+    });
   });
 });
 

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Category } from "@/types/catalog";
+import type { Category, ProductCardData } from "@/types/catalog";
 
 import CategoryPage from "./page";
 
@@ -10,11 +10,13 @@ const {
   getCategoriesMock,
   getCategoryBySlugMock,
   getCategoryRedirectMock,
+  productGridMock,
 } = vi.hoisted(() => ({
   getCatalogPageMock: vi.fn(),
   getCategoriesMock: vi.fn(),
   getCategoryBySlugMock: vi.fn(),
   getCategoryRedirectMock: vi.fn(),
+  productGridMock: vi.fn(),
 }));
 
 vi.mock("@/lib/directus/catalog", () => ({
@@ -37,7 +39,10 @@ vi.mock("@/components/catalog/Pagination", () => ({
   Pagination: () => null,
 }));
 vi.mock("@/components/catalog/ProductGrid", () => ({
-  ProductGrid: () => null,
+  ProductGrid: (props: unknown) => {
+    productGridMock(props);
+    return null;
+  },
 }));
 vi.mock("@/components/layout/Breadcrumbs", () => ({
   Breadcrumbs: ({ items }: { items: Array<{ label: string; href?: string }> }) => (
@@ -100,6 +105,21 @@ const child: Category = {
   parentId: category.id,
 };
 
+const product: ProductCardData = {
+  id: "product-1",
+  title: "Фильтр двигателя John Deere",
+  slug: "engine-filter",
+  sku: "RE509672",
+  category: { id: category.id, title: category.title, slug: category.slug },
+  shortDescription: null,
+  mainImageId: null,
+  imageAlt: null,
+  price: null,
+  currency: "RUB",
+  priceStatus: "on_request",
+  availabilityStatus: "on_request",
+};
+
 describe("category page hierarchy", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -139,5 +159,25 @@ describe("category page hierarchy", () => {
     );
 
     expect(screen.getByRole("heading", { level: 1, name: category.title })).toBeInTheDocument();
+  });
+
+  it("uses H3 for product cards beneath the category H1", async () => {
+    getCatalogPageMock.mockResolvedValueOnce({
+      items: [product],
+      total: 1,
+      page: 1,
+      pageSize: 24,
+    });
+
+    render(
+      await CategoryPage({
+        params: Promise.resolve({ categorySlug: category.slug }),
+        searchParams: Promise.resolve({}),
+      }),
+    );
+
+    expect(productGridMock).toHaveBeenCalledWith(
+      expect.objectContaining({ headingLevel: 3 }),
+    );
   });
 });
