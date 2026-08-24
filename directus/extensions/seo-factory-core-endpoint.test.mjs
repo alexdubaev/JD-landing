@@ -11,6 +11,8 @@ const {
 } = seoFactory;
 
 const worker = { role: "seo-worker" };
+const WORK_ITEM_ID = "11111111-1111-4111-8111-111111111111";
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 function createFakeDatabase({ workerRunId = "run-a", failArticleInsert = false } = {}) {
   let tables = {
@@ -26,10 +28,10 @@ function createFakeDatabase({ workerRunId = "run-a", failArticleInsert = false }
       { id: "page-published", status: "published", slug: "delivery", title: "Delivery", seo_title: "Delivery SEO", seo_description: "Delivery description" },
     ],
     seo_work_items: [
-      { id: "work-1", status: "processing", worker_run_id: workerRunId, expires_at: "2026-08-24T12:00:00.000Z", article: null, last_error: null },
+      { id: WORK_ITEM_ID, status: "processing", worker_run_id: workerRunId, expires_at: "2026-08-24T12:00:00.000Z", article: null, last_error: null },
     ],
     seo_factory_claims: [
-      { work_item_id: "work-1", run_id: workerRunId, state: "processing", lease_until: "2026-08-24T12:00:00.000Z", draft_id: null, last_error: null },
+      { work_item_id: WORK_ITEM_ID, run_id: workerRunId, state: "processing", lease_until: "2026-08-24T12:00:00.000Z", draft_id: null, last_error: null },
     ],
     articles: [],
   };
@@ -73,7 +75,8 @@ function createFakeDatabase({ workerRunId = "run-a", failArticleInsert = false }
           },
           async returning() {
             if (table === "articles" && failArticleInsert) throw new Error("database detail must stay private");
-            const row = { id: table === "articles" ? `article-${tables.articles.length + 1}` : undefined, ...data };
+            if (table === "articles" && !UUID_PATTERN.test(data.id)) throw new Error("articles.id must be supplied as a UUID");
+            const row = { ...data };
             tables[table] ??= [];
             tables[table].push(row);
             if (table === "articles") articleWrites.push({ ...data });
@@ -127,7 +130,7 @@ function claimedRequest(runId, text = "Safe draft") {
   return {
     headers: { "x-seo-worker-run": runId },
     body: {
-      id: "work-1",
+      id: WORK_ITEM_ID,
       status: "published",
       title: text,
       excerpt: text,
@@ -139,7 +142,7 @@ function claimedRequest(runId, text = "Safe draft") {
 function releaseRequest(runId) {
   return {
     headers: { "x-seo-worker-run": runId },
-    body: { id: "work-1", error: "temporary draft failure" },
+    body: { id: WORK_ITEM_ID, error: "temporary draft failure" },
   };
 }
 
@@ -263,21 +266,23 @@ test("draft endpoint creates an escaped draft and completes its own claim", asyn
   assert.match(fakeDatabase.articleWrites[0].content, /&lt;img onerror=1&gt;/u);
   assert.equal(fakeDatabase.articleWrites[0].title, "&lt;img onerror=1&gt;");
   assert.doesNotMatch(fakeDatabase.articleWrites[0].content, /<img\b/iu);
-  assert.deepEqual(fakeDatabase.locks[0], { table: "seo_work_items", criteria: { id: "work-1" } });
+  const draftId = fakeDatabase.articleWrites[0].id;
+  assert.match(draftId, UUID_PATTERN);
+  assert.deepEqual(fakeDatabase.locks[0], { table: "seo_work_items", criteria: { id: WORK_ITEM_ID } });
   assert.deepEqual(fakeDatabase.table("seo_work_items")[0], {
-    id: "work-1",
+    id: WORK_ITEM_ID,
     status: "draft_created",
     worker_run_id: "run-a",
     expires_at: null,
-    article: "article-1",
+    article: draftId,
     last_error: null,
   });
   assert.deepEqual(fakeDatabase.table("seo_factory_claims")[0], {
-    work_item_id: "work-1",
+    work_item_id: WORK_ITEM_ID,
     run_id: "run-a",
     state: "draft_created",
     lease_until: null,
-    draft_id: "article-1",
+    draft_id: draftId,
     last_error: null,
     updated_at: "database-now",
   });
@@ -313,7 +318,7 @@ test("failed article insertion rolls back so only the owning run can release for
   assert.equal(fakeDatabase.table("seo_factory_claims")[0].state, "processing");
   await assert.rejects(() => releaseClaim({ database: fakeDatabase, accountability: worker, request: releaseRequest("run-b") }), /claim not owned/u);
   const result = await releaseClaim({ database: fakeDatabase, accountability: worker, request: releaseRequest("run-a") });
-  assert.deepEqual(result, { id: "work-1", status: "retryable" });
+  assert.deepEqual(result, { id: WORK_ITEM_ID, status: "retryable" });
   assert.equal(fakeDatabase.table("seo_work_items")[0].status, "retryable");
   assert.equal(fakeDatabase.table("seo_factory_claims")[0].state, "retryable");
 });
@@ -322,11 +327,11 @@ test("draft and release require the bounded worker run header", async () => {
   const fakeDatabase = createFakeDatabase();
   for (const action of [createClaimedDraft, releaseClaim]) {
     await assert.rejects(
-      () => action({ database: fakeDatabase, accountability: worker, request: { body: { id: "work-1" }, headers: {} } }),
+      () => action({ database: fakeDatabase, accountability: worker, request: { body: { id: WORK_ITEM_ID }, headers: {} } }),
       /request is invalid/u,
     );
     await assert.rejects(
-      () => action({ database: fakeDatabase, accountability: worker, request: { body: { id: "work-1" }, headers: { "x-seo-worker-run": "x".repeat(129) } } }),
+      () => action({ database: fakeDatabase, accountability: worker, request: { body: { id: WORK_ITEM_ID }, headers: { "x-seo-worker-run": "x".repeat(129) } } }),
       /request is invalid/u,
     );
   }
@@ -344,10 +349,52 @@ test("draft rejects an unbounded section list before writing an article", async 
   assert.equal(fakeDatabase.table("seo_work_items")[0].status, "processing");
 });
 
+test("draft endpoint supplies a valid UUID for the raw article insert", async () => {
+  const fakeDatabase = createFakeDatabase();
+  const insertError = await createClaimedDraft({
+    database: fakeDatabase,
+    accountability: worker,
+    request: claimedRequest("run-a"),
+  }).then(() => null, (error) => error);
+  assert.equal(insertError, null);
+  assert.match(fakeDatabase.articleWrites[0].id, UUID_PATTERN);
+});
+
 test("endpoint registers draft creation without an external completion route", () => {
   const paths = [];
   registerSeoFactoryEndpoint({ post: (path) => paths.push(path) }, {});
   assert.ok(paths.includes("/draft"));
   assert.ok(!paths.includes("/complete"));
   assert.ok(paths.every((path) => !path.startsWith("/items/")));
+});
+
+test("registered draft route preserves inherited Express request headers and body", async () => {
+  const fakeDatabase = createFakeDatabase();
+  const routes = new Map();
+  registerSeoFactoryEndpoint({ post: (path, routeHandler) => routes.set(path, routeHandler) }, { database: fakeDatabase });
+
+  const requestPrototype = Object.defineProperties({}, {
+    accountability: { get: () => worker },
+    body: { get: () => claimedRequest("run-a").body },
+    headers: { get: () => ({ "x-seo-worker-run": "run-a" }) },
+  });
+  const request = Object.create(requestPrototype);
+  let responseStatus;
+  let responseBody;
+  const response = {
+    status(value) {
+      responseStatus = value;
+      return response;
+    },
+    json(value) {
+      responseBody = value;
+      return response;
+    },
+  };
+
+  await routes.get("/draft")(request, response);
+
+  assert.equal(responseStatus, undefined);
+  assert.equal(responseBody.data.status, "draft_created");
+  assert.equal(fakeDatabase.articleWrites.length, 1);
 });

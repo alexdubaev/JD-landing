@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 const CLAIMABLE = ["approved", "retryable"];
 const MAX_DRAFT_SECTIONS = 50;
 const PUBLISHED_SOURCE_FIELDS = ["id", "status", "slug", "title", "seo_title", "seo_description"];
@@ -135,6 +137,7 @@ function articleDraft(body) {
     ...sections.map(({ heading, body: sectionBody }) => `<h2>${heading}</h2><p>${sectionBody}</p>`),
   ].join("\n");
   return {
+    id: randomUUID(),
     status: "draft",
     title,
     slug: `draft-${id.replace(/[^a-z0-9-]/giu, "-").toLowerCase()}`.slice(0, 255),
@@ -236,7 +239,7 @@ export const upsertShadowWorkItem = async ({ database, accountability, request }
 function handler(action, context, failure = "claim_failed") {
   return async (request, response) => {
     try {
-      const result = await action({ ...context, accountability: request.accountability }, { ...request, context });
+      const result = await action({ ...context, accountability: request.accountability }, request);
       response.json({ data: result });
     } catch (error) {
       const status = error.code === "FORBIDDEN" ? 403 : error.code === "BAD_REQUEST" ? 400 : error.code === "CONFLICT" ? 409 : 500;
