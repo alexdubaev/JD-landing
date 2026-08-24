@@ -11,8 +11,9 @@ import type {
   SiteSettings,
 } from "@/types/content";
 import { BRAND_NAME } from "@/lib/brand";
+import { parseSeoJson, resolveSeo } from "@/lib/seo/directus-seo";
 
-import { directusRequest } from "./client";
+import { directusRequest, directusVersionedRequest, readPreviewContext } from "./client";
 
 type FileRelation = string | { id: string } | null;
 
@@ -57,6 +58,37 @@ type RawPage = {
   seo_title: string | null;
   seo_description: string | null;
   seo_text: string | null;
+  /** R11 additive plugin JSON (null until the CMS migration fills it). */
+  seo?: unknown;
+};
+
+type RawHomePage = {
+  id: string;
+  status: string;
+  source_page: FileRelation;
+  h1: string | null;
+  hero_title: string | null;
+  hero_text: string | null;
+  hero_image: FileRelation;
+  hero_image_alt: string | null;
+  hero_primary_button_text: string | null;
+  hero_primary_button_url: string | null;
+  hero_secondary_button_text: string | null;
+  hero_secondary_button_url: string | null;
+  hero_search_label: string | null;
+  hero_search_placeholder: string | null;
+  hero_search_button_text: string | null;
+  hero_bulk_prompt: string | null;
+  hero_bulk_link_text: string | null;
+  hero_bulk_link_url: string | null;
+  hero_excel_link_text: string | null;
+  hero_excel_link_url: string | null;
+  hero_photo_link_text: string | null;
+  hero_photo_link_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  /** R11 additive plugin JSON (null until the CMS migration fills it). */
+  seo?: unknown;
 };
 
 type RawSection = {
@@ -66,6 +98,7 @@ type RawSection = {
   subtitle: string | null;
   text: string | null;
   image: FileRelation;
+  image_alt: string | null;
   button_text: string | null;
   button_url: string | null;
   items: unknown;
@@ -175,6 +208,7 @@ const mapSection = (raw: RawSection): PageSection | null => {
     subtitle: raw.subtitle,
     text: raw.text,
     imageId: fileId(raw.image),
+    imageAlt: raw.image_alt,
     buttonText: raw.button_text,
     buttonUrl: raw.button_url,
     items: toItems(raw.items),
@@ -184,17 +218,35 @@ const mapSection = (raw: RawSection): PageSection | null => {
 };
 
 export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
-  const pageQuery = queryString({
-    "filter[status][_eq]": "published",
-    "filter[slug][_eq]": slug,
-    fields: "id,title,slug,h1,seo_title,seo_description,seo_text",
-    limit: "1",
-  });
-  const pages = await directusRequest<RawPage[]>(
-    `/items/pages?${pageQuery}`,
-    { next: { revalidate: 300, tags: ["pages", `page:${slug}`] } },
-  );
-  const page = pages[0];
+  // Task 16 preview: with a valid draft context the page row is read through
+  // its version overlay; the version's own slug must match the request so a
+  // preview cookie cannot leak onto another page's URL. Sections stay on the
+  // published fetch (page_sections are separate items, outside versioning).
+  // Without a preview context the published fetches stay byte-identical.
+  let page: RawPage | null = null;
+  const preview = await readPreviewContext();
+  if (preview?.collection === "pages") {
+    const raw = await directusVersionedRequest<RawPage>(
+      `/items/pages/${preview.id}?${queryString({
+        fields: "id,title,slug,h1,seo_title,seo_description,seo_text,seo",
+      })}`,
+      { version: preview.versionKey },
+    ).catch(() => null);
+    if (raw?.slug === slug) page = raw;
+  }
+  if (!page) {
+    const pageQuery = queryString({
+      "filter[status][_eq]": "published",
+      "filter[slug][_eq]": slug,
+      fields: "id,title,slug,h1,seo_title,seo_description,seo_text,seo",
+      limit: "1",
+    });
+    const pages = await directusRequest<RawPage[]>(
+      `/items/pages?${pageQuery}`,
+      { next: { revalidate: 300, tags: ["pages", `page:${slug}`] } },
+    );
+    page = pages[0];
+  }
   if (!page) return null;
 
   const sectionQuery = queryString({
@@ -202,7 +254,7 @@ export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
     "filter[page][_eq]": page.id,
     "filter[is_visible][_eq]": "true",
     fields:
-      "id,section_type,title,subtitle,text,image,button_text,button_url,items,settings,sort_order,is_visible",
+      "id,section_type,title,subtitle,text,image,image_alt,button_text,button_url,items,settings,sort_order,is_visible",
     sort: "sort_order",
     limit: "-1",
   });
@@ -211,22 +263,133 @@ export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
     { next: { revalidate: 300, tags: ["page-sections", `page:${slug}`] } },
   );
 
+  // R11 dual-read: plugin JSON first, scalars as per-key fallback. While seo
+  // is null this reproduces the previous scalar mapping exactly.
+  const seo = resolveSeo(page, {
+    title: page.seo_title,
+    description: page.seo_description,
+  });
+
   return {
     id: page.id,
     title: page.title,
     slug: page.slug,
     h1: page.h1,
-    seoTitle: page.seo_title,
-    seoDescription: page.seo_description,
+    seoTitle: seo.title,
+    seoDescription: seo.description,
     seoText: page.seo_text,
+    seo: parseSeoJson(page.seo),
     sections: rawSections
       .map(mapSection)
       .filter((section): section is PageSection => section !== null),
   };
 }
 
-export function getHomePage(): Promise<ContentPage | null> {
-  return getPageBySlug("home");
+const requiredText = (value: string | null) => value?.trim() || null;
+
+export async function getHomePage(): Promise<ContentPage | null> {
+  const fields = [
+    "id", "status", "source_page", "h1", "hero_title", "hero_text",
+    "hero_image", "hero_image_alt", "hero_primary_button_text",
+    "hero_primary_button_url", "hero_secondary_button_text",
+    "hero_secondary_button_url", "hero_search_label", "hero_search_placeholder",
+    "hero_search_button_text", "hero_bulk_prompt", "hero_bulk_link_text",
+    "hero_bulk_link_url", "hero_excel_link_text", "hero_excel_link_url",
+    "hero_photo_link_text", "hero_photo_link_url", "seo_title", "seo_description",
+    "seo",
+  ].join(",");
+  // Task 16 preview: the singleton is read through its version overlay when a
+  // valid draft context exists; the published status gate only applies to the
+  // published fetch so a draft main item can still be previewed. Sections stay
+  // on the published fetch (page_sections are outside versioning). Without a
+  // preview context the published fetch stays byte-identical.
+  const preview = await readPreviewContext();
+  const versionedPreview = preview?.collection === "home_page" ? preview : null;
+  const raw = versionedPreview
+    ? await directusVersionedRequest<RawHomePage>(
+        `/items/home_page?${queryString({ fields })}`,
+        { version: versionedPreview.versionKey },
+      )
+    : await directusRequest<RawHomePage>(
+        `/items/home_page?${queryString({ fields })}`,
+        { next: { revalidate: 300, tags: ["homepage"] } },
+      );
+  if (!raw || (!versionedPreview && raw.status !== "published")) return null;
+
+  const title = requiredText(raw.hero_title);
+  const text = requiredText(raw.hero_text);
+  const imageId = fileId(raw.hero_image);
+  const imageAlt = requiredText(raw.hero_image_alt);
+  const h1 = requiredText(raw.h1);
+  const sourcePageId = fileId(raw.source_page);
+  if (!title || !text || !imageId || !imageAlt || !h1 || !sourcePageId) {
+    throw new Error("Invalid homepage hero content");
+  }
+
+  const hero: PageSection = {
+    id: `${raw.id}:hero`,
+    type: "hero",
+    title,
+    subtitle: null,
+    text,
+    imageId,
+    imageAlt,
+    buttonText: raw.hero_primary_button_text,
+    buttonUrl: raw.hero_primary_button_url,
+    items: [],
+    settings: {
+      secondary_cta_text: raw.hero_secondary_button_text,
+      secondary_cta_url: raw.hero_secondary_button_url,
+      search_label: raw.hero_search_label,
+      search_placeholder: raw.hero_search_placeholder,
+      search_button_text: raw.hero_search_button_text,
+      bulk_prompt: raw.hero_bulk_prompt,
+      bulk_link_text: raw.hero_bulk_link_text,
+      bulk_link_url: raw.hero_bulk_link_url,
+      excel_link_text: raw.hero_excel_link_text,
+      excel_link_url: raw.hero_excel_link_url,
+      photo_link_text: raw.hero_photo_link_text,
+      photo_link_url: raw.hero_photo_link_url,
+    },
+    sortOrder: 0,
+  };
+  const sectionQuery = queryString({
+    "filter[status][_eq]": "published",
+    "filter[home_page][_eq]": raw.id,
+    "filter[is_visible][_eq]": "true",
+    fields:
+      "id,section_type,title,subtitle,text,image,image_alt,button_text,button_url,items,settings,sort_order,is_visible",
+    sort: "sort_order",
+    limit: "-1",
+  });
+  const rawSections = await directusRequest<RawSection[]>(
+    `/items/page_sections?${sectionQuery}`,
+    { next: { revalidate: 300, tags: ["homepage"] } },
+  );
+
+  // R11 dual-read: plugin JSON first, scalars as per-key fallback. While seo
+  // is null this reproduces the previous scalar mapping exactly.
+  const seo = resolveSeo(raw, {
+    title: raw.seo_title,
+    description: raw.seo_description,
+  });
+
+  return {
+    id: sourcePageId,
+    title: h1,
+    slug: "home",
+    h1,
+    seoTitle: seo.title,
+    seoDescription: seo.description,
+    seoText: null,
+    seo: parseSeoJson(raw.seo),
+    sections: [
+      hero,
+      ...rawSections
+        .map(mapSection)
+        .filter((section): section is PageSection => section !== null),
+    ],
+  };
 }
 
 export async function getFaqItems({

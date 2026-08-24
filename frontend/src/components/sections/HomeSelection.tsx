@@ -9,7 +9,6 @@ import Link from "next/link";
 
 import { ProcessMotion } from "@/components/motion/ProcessMotion";
 import { Container } from "@/components/ui/Container";
-import { safeUrl } from "@/lib/security/urls";
 import type { PageSection } from "@/types/content";
 
 const icons = [ClipboardList, FileSearch, BadgeCheck, Handshake];
@@ -83,7 +82,7 @@ export function HomeSelection({
     (typeof section.settings.cta_text === "string"
       ? section.settings.cta_text
       : "Передайте исходные данные — проверим запрос и уточним следующий шаг.");
-  const ctaUrl = safeUrl(ctaSection?.buttonUrl ?? section.buttonUrl, "#consultation") ?? "#consultation";
+  const ctaUrl = ctaSection?.buttonUrl ?? section.buttonUrl ?? "#consultation";
   const ctaLabel =
     ctaSection?.buttonText ?? section.buttonText ?? "Отправить запрос";
 

@@ -1,0 +1,15 @@
+{
+  "name": "deere-shop-theme",
+  "version": "1.0.0",
+  "description": "Visual theme for the DEERE-SHOP Directus Data Studio (light).",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "directus:extension": {
+    "type": "theme",
+    "path": "dist/index.js",
+    "source": "src/index.js",
+    "host": "^12.0.0"
+  }
+}

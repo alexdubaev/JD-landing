@@ -1,6 +1,6 @@
 import { access, readFile } from "node:fs/promises";
 import { constants } from "node:fs";
-import { basename, isAbsolute, relative, resolve } from "node:path";
+import { basename, extname, isAbsolute, relative, resolve } from "node:path";
 
 import {
   DirectusAdminClient,
@@ -173,13 +173,27 @@ const safePackagePath = (packageRoot, relativePath) => {
 
 const query = (parameters) => new URLSearchParams(parameters).toString();
 
+export const mimeForImagePath = (filename) => {
+  switch (extname(filename).toLowerCase()) {
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".png":
+      return "image/png";
+    case ".webp":
+      return "image/webp";
+    default:
+      return "application/octet-stream";
+  }
+};
+
 async function uploadFile(client, absolutePath, title, folderId) {
   const form = new FormData();
   form.set("title", title);
   form.set("folder", folderId);
   form.set(
     "file",
-    new Blob([await readFile(absolutePath)]),
+    new Blob([await readFile(absolutePath)], { type: mimeForImagePath(absolutePath) }),
     basename(absolutePath),
   );
 
@@ -308,7 +322,22 @@ async function ensureProducts(
   }
 }
 
-async function main() {
+export async function main() {
+  // R9 (Task 13): the legacy full-payload update path is RETIRED from
+  // production use. It PATCHed whole product payloads and could overwrite
+  // manual editorial work (see ADR-003). The field-level-safe replacement is
+  // importer/cli.mjs. Refuse to run except in explicit dry-run mode, and only
+  // against a non-production Directus URL.
+  const legacyDryRun = process.argv.includes("--dry-run");
+  const url = process.env.DIRECTUS_URL ?? "";
+  const isProduction = /cms\.deere-shop\.ru|deere-shop\.ru/.test(url);
+  if (!legacyDryRun || isProduction) {
+    throw new Error(
+      "import/products.mjs is retired for production writes (full-payload PATCH, ADR-003). " +
+        "Use: node importer/cli.mjs --profile=operations-default --input=<ndjson> (dry-run by default). " +
+        "This legacy tool remains available read-only with --dry-run against non-production only.",
+    );
+  }
   const packageRoot = resolve(
     process.cwd(),
     process.env.PRODUCT_IMPORT_DIR ??

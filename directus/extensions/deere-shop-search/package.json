@@ -1,0 +1,15 @@
+{
+  "name": "deere-shop",
+  "version": "1.0.0",
+  "description": "Indexed SKU/OEM product search endpoint for the DEERE-SHOP catalog: GET /deere-shop/search over products.sku_normalized/products.mpn_normalized and product_codes.normalized_code.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "directus:extension": {
+    "type": "endpoint",
+    "path": "dist/index.js",
+    "source": "src/index.js",
+    "host": "^12.0.0"
+  }
+}

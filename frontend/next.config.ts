@@ -1,22 +1,5 @@
 import type { NextConfig } from "next";
 
-const remoteImagePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
-  {
-    protocol: "https",
-    hostname: "cms.deere-shop.ru",
-    pathname: "/assets/**",
-  },
-];
-
-if (process.env.NODE_ENV !== "production") {
-  remoteImagePatterns.push({
-    protocol: "http",
-    hostname: "127.0.0.1",
-    port: "8055",
-    pathname: "/assets/**",
-  });
-}
-
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   output: "standalone",
@@ -31,6 +14,20 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
+    const cspReportOnly = [
+      "default-src 'self'",
+      "img-src 'self' data: blob: https://cms.deere-shop.ru",
+      "media-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self' data:",
+      "connect-src 'self' https://cms.deere-shop.ru",
+      "frame-ancestors 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "report-uri /api/csp-report",
+    ].join("; ");
+
     return [
       {
         source: "/(.*)",
@@ -46,6 +43,7 @@ const nextConfig: NextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains; preload",
           },
+          { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
         ],
       },
     ];
@@ -64,7 +62,19 @@ const nextConfig: NextConfig = {
         search: "",
       },
     ],
-    remotePatterns: remoteImagePatterns,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cms.deere-shop.ru",
+        pathname: "/assets/**",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8055",
+        pathname: "/assets/**",
+      },
+    ],
   },
 };
 

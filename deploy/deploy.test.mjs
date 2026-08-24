@@ -20,3 +20,22 @@ test("deploy invalidates cache before warming homepage and catalog", () => {
   assert.ok(revalidate < homepageWarmup, "revalidation precedes homepage warm-up");
   assert.ok(revalidate < catalogWarmup, "revalidation precedes catalog warm-up");
 });
+
+test("deploy runs optional security preflight before any compose mutation", () => {
+  const preflight = script.indexOf("preflight");
+  const build = script.indexOf("docker compose -f \"$COMPOSE_FILE\" --env-file \"$ENV_FILE\" build");
+  const recreate = script.indexOf("docker compose -f \"$COMPOSE_FILE\" --env-file \"$ENV_FILE\" up -d frontend");
+
+  assert.ok(preflight >= 0, "security preflight is present");
+  assert.ok(build >= 0 && preflight < build, "preflight precedes frontend build");
+  assert.ok(recreate >= 0 && preflight < recreate, "preflight precedes container recreation");
+  assert.match(script, /ENABLE_DIRECTUS_CMS_BASIC_AUTH/u);
+  assert.match(script, /DIRECTUS_CMS_AUTH_USER/u);
+  assert.match(script, /DIRECTUS_CMS_AUTH_HASH/u);
+  assert.match(script, /ENABLE_RESTIC_BACKUP/u);
+  assert.match(script, /RESTIC_REPOSITORY/u);
+  assert.match(script, /RESTIC_PASSWORD_FILE/u);
+  assert.match(script, /read_env ENABLE_DIRECTUS_CMS_BASIC_AUTH \|\| true/u);
+  assert.match(script, /read_env ENABLE_RESTIC_BACKUP \|\| true/u);
+  assert.doesNotMatch(script, /echo\s+.*\$DIRECTUS_CMS_AUTH_HASH/u);
+});

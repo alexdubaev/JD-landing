@@ -1,0 +1,8 @@
+{"sku": "SYN-0001", "price": 1111.11, "price_status": "fixed", "availability_status": "in_stock", "source_name": "synthetic-feed", "verified_at": "2026-08-17"}
+{"sku": "syn 0002", "price": "2 222,22", "availability_status": "on_request", "delivery_status": "3-5 days"}
+{"sku": "SYN-0003", "price": 3333.33}
+{"sku": "SYN-9999", "price": 4444.44, "price_status": "on_request", "status": "published"}
+{"sku": "SYN-0005", "price": 5555.55, "title": "Synthetic row that must conflict"}
+{"sku": "SYN-0006", "price": 6666.66, "slug": "synthetic-slug", "seo_title": "synthetic seo"}
+{"sku": "SYN-0007", "price": 7777.77, "main_image": "00000000-0000-0000-0000-000000000007", "gallery": ["00000000-0000-0000-0000-000000000008"]}
+{"sku": "SYN-0008", "price": 8888.88, "category": "synthetic-category"}

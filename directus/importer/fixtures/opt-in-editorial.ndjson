@@ -1,0 +1,5 @@
+{"sku": "SYN-0001", "title": "Synthetic fastener SYN-0001", "short_description": "Synthetic short description.", "price": 1111.11}
+{"sku": "SYN-0002", "title": "Synthetic pump SYN-0002", "image_alt": "Synthetic alt text", "price": 2222.22}
+{"sku": "SYN-7777", "title": "New synthetic draft product", "price": 7777.77, "status": "published"}
+{"sku": "SYN-0004", "title": "Unchanged title stays put", "price": 1234.56}
+{"sku": "SYN-0005", "slug": "forbidden-even-in-editorial", "price": 5555.55}

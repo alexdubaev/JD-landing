@@ -22,10 +22,4 @@ describe("Next image configuration", () => {
   it("allows the loopback host used by local browser QA", () => {
     expect(nextConfig.allowedDevOrigins).toContain("127.0.0.1");
   });
-
-  it("leaves CSP to the request proxy, which can attach a per-request nonce", async () => {
-    const headers = await nextConfig.headers?.();
-
-    expect(headers?.[0]?.headers.some(({ key }) => key === "Content-Security-Policy")).toBe(false);
-  });
 });

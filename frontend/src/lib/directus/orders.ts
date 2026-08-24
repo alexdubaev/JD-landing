@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { OrderInput } from "@/lib/orders/schema";
+import { MARKETING_CONSENT_VERSION } from "@/lib/marketing/consent";
 
 import { directusRequest } from "./client";
 
@@ -26,6 +27,9 @@ export async function createOrder(
     (sum, item) => sum + item.unit_price * item.quantity,
     0,
   );
+  const marketingConsentAt = input.marketing_consent
+    ? new Date().toISOString()
+    : null;
 
   const order = await directusRequest<CreatedOrder>("/items/orders", {
     method: "POST",
@@ -42,6 +46,11 @@ export async function createOrder(
       utm_campaign: input.utm_campaign ?? null,
       utm_content: input.utm_content ?? null,
       utm_term: input.utm_term ?? null,
+      marketing_consent: input.marketing_consent,
+      marketing_consent_at: marketingConsentAt,
+      marketing_consent_version: input.marketing_consent
+        ? MARKETING_CONSENT_VERSION
+        : null,
       status: "new",
     }),
     cache: "no-store",

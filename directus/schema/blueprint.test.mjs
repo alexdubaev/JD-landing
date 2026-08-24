@@ -4,30 +4,52 @@ import assert from "node:assert/strict";
 import { schemaBlueprint } from "./blueprint.mjs";
 
 const requiredCollections = [
+  "group_site",
+  "group_catalog",
+  "group_content",
+  "group_sales",
+  "group_settings",
+  "group_seo",
   "site_settings",
+  "home_page",
   "pages",
   "page_sections",
   "navigation_items",
   "categories",
   "articles",
+  "articles_editor_nodes",
   "products",
   "faq_items",
   "lead_forms",
   "leads",
-  "testimonials",
-  "banners",
-  "hero_blocks",
-  "advantages",
-  "cta_blocks",
   "contact_channels",
   "recent_supplies",
-  "seo_text_blocks",
   "product_images",
   "product_specifications",
   "product_documents",
+  "product_codes",
+  "products_analogs",
   "seo_redirects",
+  "seo_work_items",
   "orders",
   "order_items",
+];
+
+const decommissionedCollections = [
+  "hero_blocks",
+  "advantages",
+  "cta_blocks",
+  "seo_text_blocks",
+  "banners",
+  "testimonials",
+];
+
+const SEO_JSON_COLLECTIONS = [
+  "home_page",
+  "pages",
+  "categories",
+  "products",
+  "articles",
 ];
 
 const requiredProductFields = [
@@ -40,7 +62,6 @@ const requiredProductFields = [
   "short_description",
   "full_description",
   "seo_text",
-  "analog_skus",
   "main_image",
   "gallery",
   "price",
@@ -61,6 +82,7 @@ const requiredProductFields = [
   "brand",
   "part_type",
   "delivery_status",
+  "seo",
   "created_at",
   "updated_at",
 ];
@@ -68,8 +90,73 @@ const requiredProductFields = [
 test("uses the normalized Directus content and catalog model", () => {
   const names = schemaBlueprint.collections.map(({ name }) => name);
   assert.deepEqual(names, requiredCollections);
-  assert.equal(names.length, 24);
-  assert.ok(names.length <= 26);
+  assert.equal(names.length, 29);
+  assert.equal(
+    schemaBlueprint.collections.filter(({ folder }) => !folder).length,
+    23,
+    "20 data collections plus the editor junction, product_codes, products_analogs and seo_work_items (Core limit 25)",
+  );
+});
+
+test("the six legacy collections have been decommissioned from the blueprint", () => {
+  const names = new Set(schemaBlueprint.collections.map(({ name }) => name));
+  for (const name of decommissionedCollections) {
+    assert.ok(!names.has(name), `${name} must not be present after decommission`);
+  }
+});
+
+test("defines task folders and an editable homepage singleton", () => {
+  const folders = schemaBlueprint.collections.filter(({ folder }) => folder);
+  assert.deepEqual(
+    folders.map(({ name }) => name),
+    ["group_site", "group_catalog", "group_content", "group_sales", "group_settings", "group_seo"],
+  );
+
+  const homepage = schemaBlueprint.collections.find(({ name }) => name === "home_page");
+  assert.equal(homepage.singleton, true);
+  const fields = new Set(homepage.fields.map(({ name }) => name));
+  for (const field of [
+    "id", "status", "source_page", "h1", "hero_title", "hero_text",
+    "hero_image", "hero_image_alt", "hero_primary_button_text",
+    "hero_primary_button_url", "hero_secondary_button_text",
+    "hero_secondary_button_url", "hero_search_label", "hero_search_placeholder",
+    "hero_search_button_text", "hero_bulk_prompt", "hero_bulk_link_text",
+    "hero_bulk_link_url", "hero_excel_link_text", "hero_excel_link_url",
+    "hero_photo_link_text", "hero_photo_link_url", "seo_title", "seo_description",
+    "canonical_url", "og_title", "og_description", "og_image", "is_indexable", "seo",
+    "sections",
+    "translations", "created_at", "updated_at",
+  ]) {
+    assert.ok(fields.has(field), `missing home_page.${field}`);
+  }
+  const homepageSections = homepage.fields.find(({ name }) => name === "sections");
+  assert.equal(homepageSections.type, "alias");
+  assert.deepEqual(homepageSections.special, ["o2m"]);
+
+  const sections = schemaBlueprint.collections.find(({ name }) => name === "page_sections");
+  const homeRelation = sections.fields.find(({ name }) => name === "home_page");
+  assert.equal(homeRelation.relatedCollection, "home_page");
+  assert.equal(homeRelation.oneField, "sections");
+  assert.ok(sections.fields.some(({ name }) => name === "image_alt"));
+});
+
+test("page_sections owner fields are nullable to model exactly-one-owner", () => {
+  const sections = schemaBlueprint.collections.find(({ name }) => name === "page_sections");
+  const page = sections.fields.find(({ name }) => name === "page");
+  const homePage = sections.fields.find(({ name }) => name === "home_page");
+
+  // Owner-XOR migration: either page or home_page may be null, so neither
+  // owner field may stay required. This is the only page_sections schema
+  // change of the owner-XOR release.
+  assert.equal(page.required, undefined, "page_sections.page must be nullable");
+  assert.equal(homePage.required, undefined, "page_sections.home_page must stay nullable");
+  assert.equal(page.relatedCollection, "pages");
+  assert.equal(page.onDelete, "CASCADE");
+  assert.equal(homePage.relatedCollection, "home_page");
+
+  // Other page_sections integrity fields keep their required status.
+  const sectionType = sections.fields.find(({ name }) => name === "section_type");
+  assert.equal(sectionType.required, true);
 });
 
 test("stores factual company fields and translation-ready recent supplies", () => {
@@ -98,6 +185,7 @@ test("seeds the DEERE-SHOP singleton brand settings", () => {
 test("keeps editorial collections translation-ready without junction tables", () => {
   const translatable = [
     "site_settings",
+    "home_page",
     "pages",
     "page_sections",
     "navigation_items",
@@ -106,14 +194,8 @@ test("keeps editorial collections translation-ready without junction tables", ()
     "products",
     "faq_items",
     "lead_forms",
-    "testimonials",
-    "banners",
-    "hero_blocks",
-    "advantages",
-    "cta_blocks",
     "contact_channels",
     "recent_supplies",
-    "seo_text_blocks",
     "product_images",
     "product_specifications",
     "product_documents",
@@ -160,12 +242,71 @@ test("articles contain publishing, cover, content and SEO fields", () => {
     "seo_title",
     "seo_description",
     "og_image",
+    "seo",
     "translations",
     "created_at",
     "updated_at",
   ]) {
     assert.ok(fields.has(field), `missing articles.${field}`);
   }
+});
+
+test("articles declare the additive flexible-editor schema without touching content", () => {
+  const articles = schemaBlueprint.collections.find(
+    ({ name }) => name === "articles",
+  );
+
+  // The HTML field stays the canonical source until the cutover release.
+  const content = articles.fields.find(({ name }) => name === "content");
+  assert.equal(content.type, "text");
+  assert.equal(content.required, true);
+  assert.equal(content.interface, "input-rich-text-html");
+
+  const contentBlocks = articles.fields.find(({ name }) => name === "content_blocks");
+  assert.equal(contentBlocks.type, "json");
+  assert.equal(contentBlocks.required, undefined, "content_blocks is nullable");
+  assert.equal(contentBlocks.interface, "flexible-editor");
+  assert.deepEqual(contentBlocks.special, ["cast-json"]);
+  assert.equal(contentBlocks.options.m2aField, "editor_nodes");
+  assert.deepEqual(contentBlocks.options.relationBlocks, ["products", "categories"]);
+  assert.equal(contentBlocks.options.tools.includes("h1"), false, "H1 tool is disabled");
+  for (const tool of ["h2", "h3", "h4", "bulletList", "orderedList", "blockquote", "link", "table"]) {
+    assert.ok(contentBlocks.options.tools.includes(tool), `${tool} tool is enabled`);
+  }
+
+  const editorNodes = articles.fields.find(({ name }) => name === "editor_nodes");
+  assert.equal(editorNodes.type, "alias");
+  assert.equal(editorNodes.interface, null, "the M2A alias carries no interface");
+  assert.equal(editorNodes.hidden, true, "the M2A alias is hidden on detail");
+  assert.deepEqual(editorNodes.special, ["m2a"]);
+  assert.equal(editorNodes.relatedCollection, "articles_editor_nodes");
+});
+
+test("articles_editor_nodes is a hidden junction with a generated UUID primary key", () => {
+  const junction = schemaBlueprint.collections.find(
+    ({ name }) => name === "articles_editor_nodes",
+  );
+  assert.equal(junction.hidden, true);
+
+  const names = junction.fields.map(({ name }) => name);
+  assert.deepEqual(names, ["id", "articles_id", "collection", "item"]);
+
+  const primaryKey = junction.fields.find(({ name }) => name === "id");
+  assert.equal(primaryKey.type, "uuid");
+  assert.equal(primaryKey.primary, true);
+  assert.equal(primaryKey.default, "uuid", "PK = Generated UUID");
+
+  const owner = junction.fields.find(({ name }) => name === "articles_id");
+  assert.equal(owner.relatedCollection, "articles");
+  assert.equal(owner.oneField, "editor_nodes");
+  assert.equal(owner.onDelete, "CASCADE", "article deletion cascades to junction rows");
+
+  const discriminator = junction.fields.find(({ name }) => name === "collection");
+  assert.deepEqual(discriminator.special, ["m2a"]);
+
+  const item = junction.fields.find(({ name }) => name === "item");
+  assert.deepEqual(item.special, ["m2o"]);
+  assert.equal(item.junctionField, "collection");
 });
 
 test("products contain every catalog, media, SEO, and lead field", () => {
@@ -176,6 +317,318 @@ test("products contain every catalog, media, SEO, and lead field", () => {
 
   for (const field of requiredProductFields) {
     assert.ok(fields.has(field), `missing products.${field}`);
+  }
+});
+
+test("products gain hidden indexed normalized code copies without touching sku/mpn", () => {
+  const products = schemaBlueprint.collections.find(
+    ({ name }) => name === "products",
+  );
+
+  for (const name of ["sku_normalized", "mpn_normalized"]) {
+    const normalized = products.fields.find(({ name: n }) => n === name);
+    assert.equal(normalized.type, "string", `products.${name} is a string`);
+    assert.equal(normalized.required, undefined, `products.${name} is nullable`);
+    assert.equal(normalized.unique, undefined, `products.${name} is not unique`);
+    assert.equal(normalized.index, true, `products.${name} is indexed`);
+    assert.equal(normalized.hidden, true, `products.${name} is hidden in Studio`);
+    assert.ok(
+      typeof normalized.note === "string" && normalized.note.includes("backfill"),
+      `products.${name} documents the backfill as its only writer`,
+    );
+  }
+
+  // The canonical article fields stay exactly as they were (ADR-003).
+  const sku = products.fields.find(({ name }) => name === "sku");
+  assert.equal(sku.required, true);
+  assert.equal(sku.unique, true);
+  assert.equal(sku.index, true);
+  const mpn = products.fields.find(({ name }) => name === "mpn");
+  assert.equal(mpn.required, undefined);
+  assert.equal(mpn.index, true);
+});
+
+test("products declare the R7C child-collection aliases as alias-type only", () => {
+  const products = schemaBlueprint.collections.find(
+    ({ name }) => name === "products",
+  );
+
+  const aliases = {
+    image_items: "product_images",
+    specification_items: "product_specifications",
+    document_items: "product_documents",
+  };
+  for (const [name, relatedCollection] of Object.entries(aliases)) {
+    const alias = products.fields.find(({ name: n }) => n === name);
+    assert.ok(alias, `missing products.${name}`);
+    // Alias type => apply-schema posts schema: null, so a future apply can
+    // never try to create a physical column for these fields.
+    assert.equal(alias.type, "alias", `products.${name} is an alias`);
+    assert.deepEqual(alias.special, ["o2m"], `products.${name} is a special o2m`);
+    assert.equal(alias.relatedCollection, relatedCollection);
+    assert.equal(alias.hidden, true, `products.${name} is hidden until the R7C gate`);
+    assert.match(
+      alias.note ?? "",
+      /R7C/,
+      `products.${name} documents the gated cutover`,
+    );
+  }
+
+  // The legacy JSON fields stay exactly as they were until the R7C gate.
+  for (const name of ["gallery", "specifications", "documents"]) {
+    const legacy = products.fields.find(({ name: n }) => n === name);
+    assert.equal(legacy.type, "json", `products.${name} stays json`);
+    assert.equal(legacy.required, undefined, `products.${name} stays nullable`);
+    assert.equal(legacy.interface, undefined, `products.${name} keeps no blueprint interface`);
+  }
+});
+
+test("product_codes stores additional OEM codes behind a required normalized key", () => {
+  const codes = schemaBlueprint.collections.find(
+    ({ name }) => name === "product_codes",
+  );
+
+  assert.deepEqual(
+    codes.fields.map(({ name }) => name),
+    [
+      "id",
+      "product",
+      "code",
+      "normalized_code",
+      "code_type",
+      "source_name",
+      "source_reference",
+      "is_active",
+      "created_at",
+      "updated_at",
+    ],
+  );
+
+  const product = codes.fields.find(({ name }) => name === "product");
+  assert.equal(product.relatedCollection, "products");
+  assert.equal(product.required, true);
+  assert.equal(product.onDelete, "CASCADE", "product deletion cascades to codes");
+
+  const code = codes.fields.find(({ name }) => name === "code");
+  assert.equal(code.required, true);
+  const normalizedCode = codes.fields.find(({ name }) => name === "normalized_code");
+  assert.equal(normalizedCode.required, true);
+  assert.equal(normalizedCode.index, true);
+
+  const codeType = codes.fields.find(({ name }) => name === "code_type");
+  assert.equal(codeType.required, true);
+  assert.deepEqual(codeType.choices, [
+    "oem",
+    "mpn",
+    "supplier",
+    "previous",
+    "superseded",
+    "external",
+    "barcode",
+  ]);
+
+  const sourceName = codes.fields.find(({ name }) => name === "source_name");
+  assert.equal(sourceName.required, true, "source_name is NOT NULL so the unique key is deterministic");
+  assert.equal(codes.fields.find(({ name }) => name === "is_active").default, true);
+
+  // The composite unique constraint lives in the operator-run SQL file.
+  assert.match(
+    codes.note ?? "",
+    /product, code_type, normalized_code, source_name/,
+    "the composite unique constraint is documented on the collection",
+  );
+});
+
+test("products_analogs stores typed one-edge relations behind a canonical key", () => {
+  const analogs = schemaBlueprint.collections.find(
+    ({ name }) => name === "products_analogs",
+  );
+
+  assert.deepEqual(
+    analogs.fields.map(({ name }) => name),
+    [
+      "id",
+      "product_from",
+      "product_to",
+      "relation_type",
+      "canonical_key",
+      "source_name",
+      "note",
+      "verified_at",
+      "created_at",
+      "updated_at",
+    ],
+  );
+
+  // Both sides are required products with CASCADE — an edge cannot outlive
+  // either endpoint.
+  for (const [name, oneField] of [
+    ["product_from", "analogs_from"],
+    ["product_to", "analogs_to"],
+  ]) {
+    const side = analogs.fields.find(({ name: n }) => n === name);
+    assert.equal(side.relatedCollection, "products");
+    assert.equal(side.required, true, `products_analogs.${name} is required`);
+    assert.equal(side.onDelete, "CASCADE", `products_analogs.${name} cascades`);
+    assert.equal(side.oneField, oneField, `products_analogs.${name} registers the alias`);
+    assert.equal(side.index, true);
+  }
+
+  const relationType = analogs.fields.find(({ name }) => name === "relation_type");
+  assert.equal(relationType.required, true);
+  assert.deepEqual(relationType.choices, [
+    "analog",
+    "oem_cross",
+    "compatible",
+    "superseded_by",
+  ]);
+
+  const canonicalKey = analogs.fields.find(({ name }) => name === "canonical_key");
+  assert.equal(canonicalKey.required, true);
+  assert.equal(canonicalKey.index, true);
+  // The PHYSICAL unique constraint lives in the operator-run SQL file (the
+  // product_codes precedent): Directus would create its own differently named
+  // constraint on top of the guarded one.
+  assert.equal(canonicalKey.unique, undefined, "the unique constraint is owned by the SQL file");
+  assert.match(
+    analogs.note ?? "",
+    /sql\/product-analogs-constraints-up\.sql/,
+    "the collection documents the SQL constraints file",
+  );
+  assert.match(
+    analogs.note ?? "",
+    /superseded_by is directed/,
+    "the collection documents the symmetric/directed split",
+  );
+
+  const sourceName = analogs.fields.find(({ name }) => name === "source_name");
+  assert.equal(sourceName.required, true);
+  assert.equal(sourceName.default, "manual");
+});
+
+test("products declare hidden R8 analog aliases without touching related_products", () => {
+  const products = schemaBlueprint.collections.find(
+    ({ name }) => name === "products",
+  );
+
+  const aliases = {
+    analogs_from: "products_analogs",
+    analogs_to: "products_analogs",
+  };
+  for (const [name, relatedCollection] of Object.entries(aliases)) {
+    const alias = products.fields.find(({ name: n }) => n === name);
+    assert.ok(alias, `missing products.${name}`);
+    // Alias type => apply-schema posts schema: null and SKIPS the relation —
+    // the junction-side M2O with one_field registers the alias automatically.
+    assert.equal(alias.type, "alias", `products.${name} is an alias`);
+    assert.deepEqual(alias.special, ["o2m"], `products.${name} is a special o2m`);
+    assert.equal(alias.relatedCollection, relatedCollection);
+    assert.equal(alias.hidden, true, `products.${name} is hidden`);
+    assert.match(alias.note ?? "", /R8/, `products.${name} documents the release`);
+  }
+
+  // The legacy related_products JSON field stays exactly as it was until a
+  // separate gated cutover re-confirms it is empty.
+  const legacy = products.fields.find(({ name }) => name === "related_products");
+  assert.equal(legacy.type, "json", "products.related_products stays json");
+  assert.equal(legacy.required, undefined, "products.related_products stays nullable");
+});
+
+test("seo_work_items stores the control-plane queue behind a SQL-owned unique dedupe key", () => {
+  const workItems = schemaBlueprint.collections.find(
+    ({ name }) => name === "seo_work_items",
+  );
+
+  // The exact architecture-spec field list, in spec order.
+  assert.deepEqual(
+    workItems.fields.map(({ name }) => name),
+    [
+      "id",
+      "type",
+      "subtype",
+      "status",
+      "severity",
+      "priority_score",
+      "confidence",
+      "entity_type",
+      "entity_id",
+      "entity_key",
+      "url",
+      "title",
+      "summary",
+      "recommendation",
+      "current_value_json",
+      "proposed_value_json",
+      "patch_json",
+      "evidence_json",
+      "sources_json",
+      "metrics_json",
+      "dedupe_key",
+      "before_hash",
+      "article",
+      "worker_run_id",
+      "claimed_at",
+      "expires_at",
+      "applied_at",
+      "rolled_back_at",
+      "last_error",
+      "created_at",
+      "updated_at",
+    ],
+  );
+
+  // Status lifecycle is Directus choices, never a SQL enum (Task 14 spec).
+  const status = workItems.fields.find(({ name }) => name === "status");
+  assert.equal(status.required, true);
+  assert.equal(status.default, "draft", "items start as draft");
+  assert.deepEqual(status.choices, [
+    "draft",
+    "ready",
+    "review",
+    "approved",
+    "processing",
+    "draft_created",
+    "retryable",
+    "applied",
+    "rolled_back",
+    "rejected",
+  ]);
+
+  // dedupe_key: required + indexed, but the PHYSICAL unique constraint is owned
+  // by the operator-run SQL file (product_codes/products_analogs precedent) —
+  // declaring `unique` here would make Directus create a second constraint on
+  // top of the guarded one.
+  const dedupeKey = workItems.fields.find(({ name }) => name === "dedupe_key");
+  assert.equal(dedupeKey.required, true);
+  assert.equal(dedupeKey.index, true);
+  assert.equal(dedupeKey.unique, undefined, "the unique constraint is owned by the SQL file");
+  assert.match(
+    workItems.note ?? "",
+    /sql\/seo-work-items-constraints-up\.sql/,
+    "the collection documents the SQL constraints file",
+  );
+
+  // article is a junction-side-only nullable M2O: no one_field, so no O2M alias
+  // is ever declared on articles (production R7 alias lesson).
+  const article = workItems.fields.find(({ name }) => name === "article");
+  assert.equal(article.type, "uuid");
+  assert.equal(article.relatedCollection, "articles");
+  assert.equal(article.required, undefined, "article is nullable");
+  assert.equal(article.oneField, undefined, "never posts an alias side");
+  assert.equal(article.onDelete, undefined, "non-required M2O defaults to SET NULL");
+
+  // Control-plane internals: no editorial translations field is needed.
+  assert.equal(
+    workItems.fields.some(({ name }) => name === "translations"),
+    false,
+  );
+
+  // Claim/execution bookkeeping fields exist for the W1 claim/expiry contract.
+  for (const name of ["worker_run_id", "claimed_at", "expires_at", "applied_at", "rolled_back_at", "last_error"]) {
+    assert.ok(
+      workItems.fields.some((field) => field.name === name),
+      `missing seo_work_items.${name}`,
+    );
   }
 });
 
@@ -212,6 +665,9 @@ test("leads capture contact, context, attribution, and sales workflow fields", (
     "utm_term",
     "request_items",
     "attachments",
+    "marketing_consent",
+    "marketing_consent_at",
+    "marketing_consent_version",
     "created_at",
     "status",
     "manager_comment",
@@ -219,6 +675,15 @@ test("leads capture contact, context, attribution, and sales workflow fields", (
 
   for (const name of required) {
     assert.ok(fields.has(name), `missing leads.${name}`);
+  }
+});
+
+test("orders retain the marketing consent audit fields", () => {
+  const orders = schemaBlueprint.collections.find(({ name }) => name === "orders");
+  const fields = new Set(orders.fields.map(({ name }) => name));
+
+  for (const name of ["marketing_consent", "marketing_consent_at", "marketing_consent_version"]) {
+    assert.ok(fields.has(name), `missing orders.${name}`);
   }
 });
 
@@ -234,9 +699,96 @@ test("SEO data lives with pages, categories, and products", () => {
       "seo_description",
       "seo_text",
       "og_image",
+      "seo",
     ]) {
       if (name === "products" && field === "h1") continue;
       assert.ok(fields.has(field), `missing ${name}.${field}`);
     }
   }
+});
+
+test("the five content collections declare the additive seo-plugin JSON field", () => {
+  for (const name of SEO_JSON_COLLECTIONS) {
+    const collection = schemaBlueprint.collections.find(
+      (item) => item.name === name,
+    );
+    const seo = collection.fields.find((field) => field.name === "seo");
+    assert.ok(seo, `missing ${name}.seo`);
+    assert.equal(seo.type, "json", `${name}.seo is json`);
+    assert.equal(seo.required, undefined, `${name}.seo is nullable`);
+    assert.equal(seo.default, undefined, `${name}.seo defaults to null`);
+    assert.equal(
+      seo.interface,
+      "seo-interface",
+      `${name}.seo uses the vendored plugin interface`,
+    );
+    assert.equal(
+      seo.display,
+      "seo-display",
+      `${name}.seo uses the vendored plugin display`,
+    );
+    // PURELY ADDITIVE: exactly one seo field, nothing renamed away.
+    assert.equal(
+      collection.fields.filter((field) => field.name === "seo").length,
+      1,
+      `${name}.seo is declared exactly once`,
+    );
+  }
+});
+
+test("the legacy scalar SEO sources stay exactly as-is beside the additive seo JSON", () => {
+  const scalarMap = {
+    home_page: ["seo_title", "seo_description", "canonical_url", "og_title", "og_description", "og_image", "is_indexable"],
+    pages: ["seo_title", "seo_description", "seo_text", "canonical_url", "og_image", "is_indexable"],
+    categories: ["seo_title", "seo_description", "seo_text", "og_image", "is_indexable"],
+    products: ["seo_title", "seo_description", "seo_text", "og_image", "is_indexable"],
+    articles: ["seo_title", "seo_description", "og_image"],
+  };
+
+  const scalarTypes = {
+    seo_title: "string",
+    seo_description: "text",
+    seo_text: "text",
+    canonical_url: "text",
+    og_title: "string",
+    og_description: "text",
+    og_image: "uuid",
+    is_indexable: "boolean",
+  };
+
+  for (const [name, scalars] of Object.entries(scalarMap)) {
+    const collection = schemaBlueprint.collections.find(
+      (item) => item.name === name,
+    );
+    const byName = new Map(
+      collection.fields.map((field) => [field.name, field]),
+    );
+    for (const scalar of scalars) {
+      const field = byName.get(scalar);
+      assert.ok(field, `missing ${name}.${scalar}`);
+      assert.equal(field.type, scalarTypes[scalar], `${name}.${scalar} keeps its type`);
+      assert.equal(field.required, undefined, `${name}.${scalar} stays nullable`);
+    }
+  }
+
+  // The migration mapping skips keys with no scalar source: only home_page
+  // and pages carry canonical_url, and only articles lacks is_indexable.
+  for (const name of ["categories", "products", "articles"]) {
+    const collection = schemaBlueprint.collections.find(
+      (item) => item.name === name,
+    );
+    assert.equal(
+      collection.fields.some((field) => field.name === "canonical_url"),
+      false,
+      `${name}.canonical_url must not appear`,
+    );
+  }
+  const articles = schemaBlueprint.collections.find(
+    (item) => item.name === "articles",
+  );
+  assert.equal(
+    articles.fields.some((field) => field.name === "is_indexable"),
+    false,
+    "articles.is_indexable must not appear",
+  );
 });

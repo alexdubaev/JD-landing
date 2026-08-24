@@ -9,6 +9,7 @@ const categories = [
     id: "filters",
     title: "Фильтры",
     slug: "filters",
+    sortOrder: 0,
     parentId: null,
     description: null,
     imageId: null,

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ContactChannelLink } from "@/components/sections/HomeContactActions";
 import { Container } from "@/components/ui/Container";
 import { directusAssetUrl } from "@/lib/directus/assets";
-import { safeUrl } from "@/lib/security/urls";
 import type { PageSection, SiteSettings } from "@/types/content";
 
 const hasValue = (value: string | null) => Boolean(value?.trim());
@@ -62,10 +61,10 @@ export function HomeCompanyTrust({ section, settings }: { section: PageSection; 
           {settings.requisitesUrl || settings.documentsUrl ? (
             <div className="home-company-trust__links">
               {settings.requisitesUrl ? (
-                <Link href={safeUrl(settings.requisitesUrl, "/") ?? "/"}>Реквизиты</Link>
+                <Link href={settings.requisitesUrl}>Реквизиты</Link>
               ) : null}
               {settings.documentsUrl ? (
-                <Link href={safeUrl(settings.documentsUrl, "/") ?? "/"}>Документы</Link>
+                <Link href={settings.documentsUrl}>Документы</Link>
               ) : null}
             </div>
           ) : null}

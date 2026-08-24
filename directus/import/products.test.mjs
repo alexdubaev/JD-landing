@@ -5,6 +5,7 @@ import {
   buildCategoryRecords,
   buildProductPayload,
   extractCategoryTitle,
+  mimeForImagePath,
   slugify,
   validateSourceProducts,
 } from "./products.mjs";
@@ -28,6 +29,13 @@ test("creates stable URL slugs from Cyrillic catalog names", () => {
     slugify("Фланцевый винт John Deere 19M7866"),
     "flantsevyy-vint-john-deere-19m7866",
   );
+});
+
+test("assigns the correct MIME type to imported product images", () => {
+  assert.equal(mimeForImagePath("images/24/R130753_1.jpg"), "image/jpeg");
+  assert.equal(mimeForImagePath("images/24/detail.webp"), "image/webp");
+  assert.equal(mimeForImagePath("images/24/detail.png"), "image/png");
+  assert.equal(mimeForImagePath("images/24/unknown.bin"), "application/octet-stream");
 });
 
 test("extracts leaf categories and builds a root plus unique children", () => {
@@ -87,4 +95,21 @@ test("validates duplicate SKUs and missing image files", async () => {
 
   assert.deepEqual(result.duplicateSkus, ["19M7866"]);
   assert.deepEqual(result.missingImages, ["images/06/19M7866_2.jpg"]);
+});
+
+test("the legacy production update path is retired (R9 guard)", async () => {
+  const main = (await import("./products.mjs")).main;
+  const original = process.env.DIRECTUS_URL;
+  const originalArgv = process.argv;
+
+  process.env.DIRECTUS_URL = "https://cms.deere-shop.ru";
+  process.argv = [...originalArgv, "--dry-run"];
+  await assert.rejects(() => main(), /retired for production writes/);
+
+  process.env.DIRECTUS_URL = "https://staging.example";
+  process.argv = [...originalArgv]; // no --dry-run
+  await assert.rejects(() => main(), /retired for production writes/);
+
+  process.env.DIRECTUS_URL = original;
+  process.argv = originalArgv;
 });

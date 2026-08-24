@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { createOrder, deleteOrder } from "@/lib/directus/orders";
-import { createOrderSchema } from "@/lib/orders/schema";
-import { getTrustedClientIp } from "@/lib/security/request";
+import { orderSchema } from "@/lib/orders/schema";
+import {
+  RequestTooLargeError,
+  getTrustedClientIp,
+  readBodyWithinLimit,
+} from "@/lib/security/request";
 import { verifyTurnstile } from "@/lib/security/turnstile";
 
 const MAX_ORDER_REQUEST_BYTES = 1 * 1024 * 1024; // 1 MB is plenty for JSON line items.
@@ -12,19 +16,26 @@ class OrderValidationError extends Error {}
 export async function POST(request: Request) {
   let createdOrderId: string | null = null;
   try {
-    const contentLength = Number(request.headers.get("content-length"));
-    if (
-      Number.isFinite(contentLength) &&
-      contentLength > MAX_ORDER_REQUEST_BYTES
-    ) {
-      return NextResponse.json(
-        { error: "Размер запроса превышает допустимый лимит." },
-        { status: 413 },
-      );
-    }
-
-    const input: unknown = await request.json();
-    const parsed = createOrderSchema(process.env.NODE_ENV).safeParse(input);
+    const boundedBody = await readBodyWithinLimit(
+      request,
+      MAX_ORDER_REQUEST_BYTES,
+    );
+    const boundedRequest = request.body
+      ? new Request(request.url, {
+          method: request.method,
+          headers: (() => {
+            const headers = new Headers(request.headers);
+            headers.delete("content-length");
+            return headers;
+          })(),
+          body: boundedBody.buffer.slice(
+            boundedBody.byteOffset,
+            boundedBody.byteOffset + boundedBody.byteLength,
+          ) as ArrayBuffer,
+        })
+      : request;
+    const input: unknown = await boundedRequest.json();
+    const parsed = orderSchema.safeParse(input);
     if (!parsed.success) {
       throw new OrderValidationError();
     }
@@ -44,8 +55,14 @@ export async function POST(request: Request) {
     const order = await createOrder(parsed.data);
     createdOrderId = order.id;
 
-    return NextResponse.json({ ok: true }, { status: 201 });
+    return NextResponse.json({ ok: true, order_id: order.id }, { status: 201 });
   } catch (error) {
+    if (error instanceof RequestTooLargeError) {
+      return NextResponse.json(
+        { error: "Размер запроса превышает допустимый лимит." },
+        { status: 413 },
+      );
+    }
     if (createdOrderId) {
       // Compensating delete: if line items failed mid-way, drop the order
       // entirely so no orphaned half-orders remain.

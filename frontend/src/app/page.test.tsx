@@ -28,11 +28,23 @@ const page: ContentPage = {
       title: "Запчасти и комплектующие для техники John Deere",
       subtitle: "Подбор по артикулу и модели техники",
       text: "Проверим запрос и уточним условия поставки.",
-      imageId: null,
+      imageId: "9af727df-c55a-48d9-bbd0-458a18237068",
+      imageAlt: "Трактор John Deere в поле",
       buttonText: "Перейти в каталог",
       buttonUrl: "/catalog",
       items: [],
-      settings: { secondary_cta_text: "Получить консультацию" },
+      settings: {
+        search_label: "Поиск по каталогу",
+        search_placeholder: "Введите артикул детали",
+        search_button_text: "Найти",
+        bulk_prompt: "Нужно проверить несколько позиций?",
+        bulk_link_text: "Вставить список",
+        bulk_link_url: "/parts-request",
+        excel_link_text: "Загрузить Excel",
+        excel_link_url: "/parts-request?mode=excel#attachments",
+        photo_link_text: "Отправить фото",
+        photo_link_url: "/parts-request?mode=photo#attachments",
+      },
       sortOrder: 1,
     },
     {
@@ -128,6 +140,7 @@ const categories: Category[] = [
     id: "engine",
     title: "Двигатель",
     slug: "engine",
+    sortOrder: 0,
     parentId: null,
     description: "Компоненты двигателя",
     imageId: null,
@@ -166,6 +179,49 @@ const faq: FaqItem[] = [
 ];
 
 describe("HomePageView", () => {
+  it("does not invent optional sections that are absent from Directus", () => {
+    render(
+      <HomePageView
+        articles={[]}
+        categories={[]}
+        contacts={[]}
+        faq={[]}
+        page={{ ...page, sections: [page.sections[0]] }}
+        products={[]}
+        supplies={[]}
+        settings={settings}
+      />,
+    );
+
+    expect(screen.queryByText("Категории продукции")).not.toBeInTheDocument();
+    expect(screen.queryByText("Избранные товары")).not.toBeInTheDocument();
+    expect(screen.queryByText("Вопросы и ответы")).not.toBeInTheDocument();
+  });
+
+  it("renders primary homepage sections in CMS sort order", () => {
+    const orderedSections: ContentPage["sections"] = [
+      page.sections[0],
+      { ...page.sections[1], id: "categories-late", sortOrder: 20, title: "Категории позже" },
+      { ...page.sections[1], id: "trust-early", type: "company_trust", sortOrder: 10, title: "О компании раньше" },
+    ];
+    const { container } = render(
+      <HomePageView
+        articles={[]}
+        categories={categories}
+        contacts={[]}
+        faq={[]}
+        page={{ ...page, sections: orderedSections }}
+        products={[]}
+        supplies={[]}
+        settings={settings}
+      />,
+    );
+
+    expect(container.textContent?.indexOf("О компании раньше")).toBeLessThan(
+      container.textContent?.indexOf("Категории позже") ?? -1,
+    );
+  });
+
   it("renders CMS sections with catalog data and accessible entry points", () => {
     render(
       <HomePageView
@@ -190,7 +246,7 @@ describe("HomePageView", () => {
       screen.getByRole("search", { name: /поиск по каталогу/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("combobox", { name: "Артикул детали" }),
+      screen.getByRole("combobox", { name: "Поиск по каталогу" }),
     ).toHaveAttribute("name", "q");
     expect(
       screen.getByRole("heading", { name: "Категории запчастей" }),

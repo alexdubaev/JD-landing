@@ -21,6 +21,11 @@ describe("buildHomepageStructuredData", () => {
       expect.objectContaining({ "@type": "FAQPage" }),
     ]));
     expect(JSON.stringify(schemas)).not.toContain("offers");
-    expect(JSON.stringify(schemas)).not.toContain("SearchAction");
+    expect(schemas).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        "@type": "WebSite",
+        potentialAction: expect.objectContaining({ "@type": "SearchAction" }),
+      }),
+    ]));
   });
 });

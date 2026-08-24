@@ -34,6 +34,46 @@ test("builds a Directus collection payload with an explicit primary key", () => 
   assert.deepEqual(payload.fields[0].meta.special, ["uuid"]);
 });
 
+test("builds a schema-less collection folder payload", () => {
+  assert.deepEqual(
+    buildCollectionPayload({
+      name: "group_site",
+      folder: true,
+      icon: "web",
+      sort: 1,
+      fields: [],
+    }),
+    {
+      collection: "group_site",
+      meta: {
+        icon: "web",
+        hidden: false,
+        singleton: false,
+        sort: 1,
+      },
+      schema: null,
+    },
+  );
+});
+
+test("does not request fields for schema-less folders", async () => {
+  const calls = [];
+  const client = {
+    async request(path) {
+      calls.push(path);
+      if (path === "/collections" || path === "/relations") return [];
+      return {};
+    },
+  };
+
+  await applyBlueprint(client, {
+    collections: [{ name: "group_site", folder: true, fields: [] }],
+    seed: {},
+  }, { dryRun: true });
+
+  assert.deepEqual(calls, ["/collections", "/relations"]);
+});
+
 test("maps a required unique indexed string field", () => {
   const payload = buildFieldPayload({
     name: "slug",

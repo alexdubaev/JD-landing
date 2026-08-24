@@ -8,6 +8,8 @@ directus/.env
 node_modules/
 .next/
 dist/
+# Vendored Directus extension bundles are release artifacts (pinned + hash-verified)
+!directus/extensions/**/dist/
 coverage/
 
 # Local tooling and temporary files

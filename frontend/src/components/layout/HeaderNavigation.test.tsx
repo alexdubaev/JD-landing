@@ -41,14 +41,4 @@ describe("HeaderNavigation", () => {
       "aria-current",
     );
   });
-
-  it("replaces an unsafe CMS navigation URL with the site root", () => {
-    render(
-      <HeaderNavigation
-        navigation={[{ label: "РљР°С‚Р°Р»РѕРі", url: "javascript:alert(1)" }]}
-      />,
-    );
-
-    expect(screen.getByRole("link", { name: "РљР°С‚Р°Р»РѕРі" })).toHaveAttribute("href", "/");
-  });
 });

@@ -1,7 +1,7 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
+import { directusRequest, isUuid } from "@/lib/directus/client";
 import { notifyIndexNow } from "@/lib/seo/indexnow";
-import { requireProductionSecret, safeEqual } from "@/lib/security/secrets";
 
 const collectionTags = {
   articles: ["articles", "homepage", "sitemap"],
@@ -19,6 +19,8 @@ const collectionTags = {
   "recent-supplies": ["recent-supplies", "homepage"],
   recent_supplies: ["recent-supplies", "homepage"],
   orders: ["orders"],
+  "home-page": ["homepage"],
+  home_page: ["homepage"],
   homepage: ["homepage"],
   sitemap: ["sitemap"],
 } as const;
@@ -42,31 +44,98 @@ const collectionIndexNowPaths = {
   "recent-supplies": ["/"],
   recent_supplies: ["/"],
   orders: [],
+  "home-page": ["/"],
+  home_page: ["/"],
   homepage: ["/"],
   sitemap: ["/"],
 } as const;
 
 type Collection = keyof typeof collectionTags;
 
-export async function POST(request: Request) {
-  let secret: string | undefined;
-  try {
-    secret = requireProductionSecret(
-      "REVALIDATE_SECRET",
-      process.env.REVALIDATE_SECRET,
-      32,
+// Task 16 item-aware revalidation: when the payload identifies a concrete
+// item, its exact public path(s) are invalidated in addition to (never instead
+// of) the collection tags. Slug-based paths cover callers that know the old
+// and/or new slug (a slug change invalidates BOTH); the id-based lookup
+// resolves the item's current path server-side, which is the only way to
+// build a product leaf path (it needs the category slug).
+const SAFE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/iu;
+
+const slugPathBuilders: Partial<Record<Collection, (slug: string) => string>> =
+  {
+    articles: (slug) => `/articles/${slug}`,
+    pages: (slug) => `/${slug}`,
+    categories: (slug) => `/catalog/${slug}`,
+  };
+
+const itemLookupFields: Partial<Record<Collection, string>> = {
+  articles: "slug",
+  pages: "slug",
+  categories: "slug",
+  products: "slug,category.slug",
+};
+
+/**
+ * Normalizes an optional item field. Directus flow templates render missing
+ * trigger values as the literal string "undefined" (verified against the
+ * 12.1.1 flow engine), and values that fail validation cannot build a safe
+ * path — both are treated as "not provided" so the webhook stays reliable
+ * across items.create / items.update / items.delete.
+ */
+const optionalItemValue = (
+  value: unknown,
+  isValid: (value: string) => boolean,
+): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (trimmed === "" || trimmed === "undefined") return undefined;
+  return isValid(trimmed) ? trimmed : undefined;
+};
+
+type ItemLookup = {
+  slug?: unknown;
+  category?: { slug?: unknown } | null;
+};
+
+async function resolveItemPaths(
+  collection: Collection,
+  id: string,
+): Promise<string[]> {
+  if (collection === "home_page") return ["/"];
+  const fields = itemLookupFields[collection];
+  if (!fields) return [];
+  const item = await directusRequest<ItemLookup>(
+    `/items/${collection}/${id}?fields=${encodeURIComponent(fields)}`,
+    { cache: "no-store" },
+  );
+  const slug = optionalItemValue(item?.slug, (value) =>
+    SAFE_SLUG.test(value),
+  );
+  if (!slug) return [];
+  if (collection === "products") {
+    const categorySlug = optionalItemValue(item?.category?.slug, (value) =>
+      SAFE_SLUG.test(value),
     );
-  } catch {
+    return categorySlug ? [`/catalog/${categorySlug}/${slug}`] : [];
+  }
+  const build = slugPathBuilders[collection];
+  return build ? [build(slug)] : [];
+}
+
+export async function POST(request: Request) {
+  const secret = process.env.REVALIDATE_SECRET;
+  if (!secret || request.headers.get("x-revalidate-secret") !== secret) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!secret || !safeEqual(request.headers.get("x-revalidate-secret"), secret)) {
-    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
-
-  let body: { collection?: unknown };
+  let body: {
+    collection?: unknown;
+    id?: unknown;
+    oldSlug?: unknown;
+    newSlug?: unknown;
+    tags?: unknown;
+  };
   try {
-    body = (await request.json()) as { collection?: unknown };
+    body = (await request.json()) as typeof body;
   } catch {
     return Response.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
@@ -87,10 +156,57 @@ export async function POST(request: Request) {
   // profile serves stale content first, so it cannot guarantee fresh pages.
   tags.forEach((tag) => revalidateTag(tag, { expire: 0 }));
 
+  // Task 16 optional item identification. Legacy `{ collection }` payloads
+  // keep working identically: no item fields means no extra invalidation.
+  const id = optionalItemValue(body.id, isUuid);
+  const oldSlug = optionalItemValue(body.oldSlug, (value) =>
+    SAFE_SLUG.test(value),
+  );
+  const newSlug = optionalItemValue(body.newSlug, (value) =>
+    SAFE_SLUG.test(value),
+  );
+  if (
+    body.tags !== undefined &&
+    (!Array.isArray(body.tags) ||
+      !body.tags.every(
+        (tag) => typeof tag === "string" && tag.length > 0 && tag.length <= 100,
+      ))
+  ) {
+    return Response.json({ ok: false, error: "Invalid payload" }, { status: 400 });
+  }
+  const extraTags = body.tags as string[] | undefined;
+  extraTags?.forEach((tag) => revalidateTag(tag, { expire: 0 }));
+
+  const paths = new Set<string>();
+  const buildSlugPath = slugPathBuilders[collection];
+  for (const slug of [oldSlug, newSlug]) {
+    if (slug && buildSlugPath) paths.add(buildSlugPath(slug));
+  }
+  // The id-based lookup fills in the exact current path when the payload has
+  // no usable slug (regular saves) or when only the id can build the path
+  // (products need their category slug).
+  if (id && (paths.size === 0 || collection === "products")) {
+    try {
+      for (const path of await resolveItemPaths(collection, id)) {
+        paths.add(path);
+      }
+    } catch {
+      // Item lookup failed (for example right after a delete): the tag flush
+      // above remains the safety net.
+    }
+  }
+  paths.forEach((path) => revalidatePath(path));
+
   // Notify Yandex/Bing via IndexNow. Fire-and-forget after revalidation; any
   // error is swallowed inside notifyIndexNow so the webhook stays reliable.
   const indexNowPaths = collectionIndexNowPaths[collection];
   await notifyIndexNow([...indexNowPaths]);
 
-  return Response.json({ ok: true, collection, tags, indexNow: indexNowPaths });
+  return Response.json({
+    ok: true,
+    collection,
+    tags,
+    paths: [...paths],
+    indexNow: indexNowPaths,
+  });
 }

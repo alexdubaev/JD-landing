@@ -3,8 +3,6 @@
 import { Menu, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
-
-import { safeUrl } from "@/lib/security/urls";
 import { useState } from "react";
 
 import type { NavigationItem } from "./types";
@@ -45,7 +43,7 @@ export function MobileNavigation({
           >
             {navigation.map((item) => (
               <Link
-                href={safeUrl(item.url, "/") ?? "/"}
+                href={item.url}
                 key={`${item.url}:${item.label}`}
                 onClick={() => setIsOpen(false)}
               >

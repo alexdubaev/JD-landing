@@ -79,6 +79,19 @@ export function buildFieldPayload(field) {
 }
 
 export function buildCollectionPayload(collection) {
+  if (collection.folder) {
+    return {
+      collection: collection.name,
+      meta: {
+        icon: collection.icon ?? "folder",
+        hidden: false,
+        singleton: false,
+        sort: collection.sort ?? null,
+      },
+      schema: null,
+    };
+  }
+
   const primary = collection.fields.find((field) => field.primary);
   if (!primary) {
     throw new Error(`Collection ${collection.name} has no primary field`);
@@ -104,7 +117,7 @@ export function buildCollectionPayload(collection) {
   };
 }
 
-export function buildRelationPayload(collectionName, field) {
+export function buildRelationPayload(collectionName, field, junctionFields = []) {
   if (!field.relatedCollection) {
     throw new Error(`${collectionName}.${field.name} is not relational`);
   }
@@ -117,7 +130,14 @@ export function buildRelationPayload(collectionName, field) {
       one_field: field.oneField ?? null,
       one_deselect_action: field.translationRelation ? "delete" : "nullify",
       junction_field: field.junctionField ?? null,
-      sort_field: field.oneField ? "sort_order" : null,
+      // A dangling sort_field (column absent from the junction, e.g.
+      // products_analogs) breaks every fields=* read of the parent with a
+      // 403 "field does not exist" — only reference sort_order when the
+      // junction collection actually declares it.
+      sort_field:
+        field.oneField && junctionFields.includes("sort_order")
+          ? "sort_order"
+          : null,
     },
     schema: {
       on_update: "NO ACTION",
@@ -209,6 +229,7 @@ export async function applyBlueprint(client, blueprint, { dryRun = false } = {})
   }
 
   for (const collection of blueprint.collections) {
+    if (collection.folder) continue;
     const currentFields = collectionNames.has(collection.name) || !dryRun
       ? await client.request(`/fields/${collection.name}`)
       : [];
@@ -246,8 +267,15 @@ export async function applyBlueprint(client, blueprint, { dryRun = false } = {})
   );
 
   for (const collection of blueprint.collections) {
+    if (collection.folder) continue;
     for (const field of collection.fields) {
       if (!field.relatedCollection) continue;
+      // Alias fields have no DB column, so posting their relation side makes
+      // Directus generate a foreign key on a non-existent column (production
+      // R7 lesson). The alias side is registered automatically when the
+      // junction-side M2O carries meta.one_field, and /relations never lists
+      // the alias side as its own row — skip it instead of POSTing.
+      if (field.type === "alias") continue;
       const key = relationKey(collection.name, field.name);
       if (relationNames.has(key)) continue;
 
@@ -255,7 +283,13 @@ export async function applyBlueprint(client, blueprint, { dryRun = false } = {})
       if (!dryRun) {
         await client.request("/relations", {
           method: "POST",
-          body: JSON.stringify(buildRelationPayload(collection.name, field)),
+          body: JSON.stringify(
+            buildRelationPayload(
+              collection.name,
+              field,
+              collection.fields.map(({ name }) => name),
+            ),
+          ),
         });
       }
     }

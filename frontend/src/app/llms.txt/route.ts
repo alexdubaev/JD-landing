@@ -1,4 +1,8 @@
 import { siteOrigin } from "@/lib/seo/url";
+import { getFeaturedArticles } from "@/lib/directus/articles";
+import { getCategories } from "@/lib/directus/catalog";
+
+export const revalidate = 3600;
 
 /**
  * Static llms.txt endpoint for AI/LLM crawlers.
@@ -9,10 +13,17 @@ import { siteOrigin } from "@/lib/seo/url";
  */
 export async function GET() {
   const origin = siteOrigin();
+  const [categories, articles] = await Promise.all([
+    getCategories().catch(() => []),
+    getFeaturedArticles(3).catch(() => []),
+  ]);
+  const indexableCategories = categories
+    .filter((category) => category.isIndexable)
+    .slice(0, 10);
   const lines = [
     "# deere-shop.ru",
     "",
-    "> Каталог комплектующих John Deere. Поставка запчастей и подбор решений под задачи клиента.",
+    "> Независимый каталог комплектующих John Deere. Поставка запчастей и подбор решений под задачи клиента.",
     "",
     "## Основные страницы",
     "",
@@ -23,9 +34,23 @@ export async function GET() {
     `- [Доставка](${origin}/delivery)`,
     `- [О компании](${origin}/about)`,
     "",
+    "## Категории",
+    "",
+    ...indexableCategories.map(
+      (category) => `- [${category.title}](${origin}/catalog/${category.slug})`,
+    ),
+    "",
+    "## Условия подбора",
+    "",
+    "- Цены, наличие и совместимость подтверждаются перед заказом.",
+    "- Для подбора укажите артикул, модель техники, маркировку или приложите фото детали.",
+    "",
     "## Статьи",
     "",
     `- [Статьи о подборе комплектующих](${origin}/articles)`,
+    ...articles.map(
+      (article) => `- [${article.title}](${origin}/articles/${article.slug})`,
+    ),
     "",
     "## Политики",
     "",

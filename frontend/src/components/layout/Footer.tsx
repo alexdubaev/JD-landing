@@ -8,7 +8,6 @@ import {
   BRAND_NAME,
 } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
-import { safeUrl } from "@/lib/security/urls";
 
 import type { NavigationItem } from "./types";
 
@@ -17,12 +16,14 @@ export function Footer({
   phone,
   companyName = BRAND_NAME,
   footerText,
+  footerDisclaimer,
   logoId,
 }: {
   companyName?: string;
   navigation: NavigationItem[];
   phone?: string | null;
   footerText?: string | null;
+  footerDisclaimer?: string | null;
   logoId?: string | null;
 }) {
   const logoUrl =
@@ -51,7 +52,7 @@ export function Footer({
         </div>
         <nav aria-label="Навигация в подвале" className="site-footer__links">
           {navigation.map((item) => (
-            <Link href={safeUrl(item.url, "/") ?? "/"} key={`${item.url}:${item.label}`}>
+            <Link href={item.url} key={`${item.url}:${item.label}`}>
               {item.label}
             </Link>
           ))}
@@ -67,6 +68,7 @@ export function Footer({
       </Container>
       <Container className="site-footer__bottom">
         <span>© {new Date().getFullYear()} {companyName}</span>
+        <span>{footerDisclaimer ?? "Не является заявлением об официальном представительстве."}</span>
       </Container>
     </footer>
   );

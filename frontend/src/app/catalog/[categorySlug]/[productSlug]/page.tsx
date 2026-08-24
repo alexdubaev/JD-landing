@@ -16,6 +16,7 @@ import {
   getProductsByIds,
 } from "@/lib/directus/catalog";
 import { getFaqItems, getSiteSettings } from "@/lib/directus/content";
+import { buildSocialMetadata } from "@/lib/seo/social-metadata";
 import { absoluteUrl } from "@/lib/seo/url";
 import {
   buildBreadcrumbSchema,
@@ -46,7 +47,7 @@ export async function generateMetadata({
       width: 1200,
       height: 630,
       fit: "contain",
-    }) ?? absoluteUrl("/images/catalog/product-placeholder-industrial.webp");
+    });
   const title = product.seoTitle || product.title;
   const description = product.seoDescription || product.shortDescription;
 
@@ -57,16 +58,15 @@ export async function generateMetadata({
     ...(product.isIndexable === false
       ? { robots: { index: false, follow: true } }
       : {}),
-    openGraph: {
+    ...buildSocialMetadata({
       title,
       description: description ?? undefined,
-      // og:type intentionally left as "website": Next.js' OpenGraph union does
-      // not allow "product", and Google derives product rich results from the
-      // Product JSON-LD (emitted below), not from og:type.
       type: "website",
-      url: absoluteUrl(canonical),
-      images: image ? [{ url: image, alt: product.imageAlt || product.title }] : [],
-    },
+      path: absoluteUrl(canonical),
+      image: image
+        ? { url: image, alt: product.imageAlt || product.title }
+        : null,
+    }),
   };
 }
 

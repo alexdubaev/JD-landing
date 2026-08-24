@@ -3,16 +3,20 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { ArticleCard } from "@/components/articles/ArticleCard";
+import { ArticleContent } from "@/components/articles/ArticleContent";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { JsonLdSchema } from "@/components/seo/JsonLdSchema";
 import { Container } from "@/components/ui/Container";
 import { sanitizeArticleHtml } from "@/lib/articles/sanitize";
+import { parseStructuredContent } from "@/lib/articles/structured-content";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import {
   getArticleBySlug,
   getRelatedArticles,
+  resolveArticleRelations,
 } from "@/lib/directus/articles";
 import { getSiteSettings } from "@/lib/directus/content";
+import { buildSocialMetadata } from "@/lib/seo/social-metadata";
 import { absoluteUrl } from "@/lib/seo/url";
 import { buildBreadcrumbSchema, buildOrganizationSchema } from "@/lib/seo/schema";
 
@@ -37,19 +41,23 @@ export async function generateMetadata({
     fit: "cover",
     format: "webp",
   });
+  const title = article.seoTitle ?? article.title;
+  const description = article.seoDescription ?? article.excerpt;
   return {
-    title: article.seoTitle ?? article.title,
-    description: article.seoDescription ?? article.excerpt,
+    title,
+    description,
     alternates: { canonical },
-    openGraph: {
-      title: article.seoTitle ?? article.title,
-      description: article.seoDescription ?? article.excerpt,
+    ...buildSocialMetadata({
+      title,
+      description,
+      path: absoluteUrl(canonical),
       type: "article",
-      url: absoluteUrl(canonical),
+      image: image
+        ? { url: image, alt: article.imageAlt ?? article.title }
+        : null,
       publishedTime: article.publishedAt,
-      modifiedTime: article.updatedAt ?? undefined,
-      images: image ? [{ url: image, alt: article.imageAlt ?? article.title }] : [],
-    },
+      modifiedTime: article.updatedAt,
+    }),
   };
 }
 
@@ -62,6 +70,16 @@ export default async function ArticlePage({
   const article = await getArticleBySlug(slug);
   if (!article) notFound();
   const related = await getRelatedArticles(article.id);
+
+  // Dual-read: a valid, non-empty `content_blocks` document is rendered by the
+  // structured renderer; anything else keeps the sanitized HTML path below
+  // byte-identical to the pre-structured behaviour. Relations are resolved
+  // server-side only when the structured branch is actually taken.
+  const structured = parseStructuredContent(article.contentBlocks);
+  const resolveRelation = structured.ok
+    ? await resolveArticleRelations(article.id, structured.document)
+    : undefined;
+
   const cover = directusAssetUrl(article.coverImageId, {
     width: 1440,
     height: 900,
@@ -87,6 +105,8 @@ export default async function ArticlePage({
   const organizationSchema = settings
     ? buildOrganizationSchema(settings)
     : null;
+  const author = article.author?.trim();
+  const reviewer = article.reviewer?.trim();
 
   return (
     <main className="article-page" id="main-content">
@@ -102,6 +122,12 @@ export default async function ArticlePage({
           image: coverUrl ? [coverUrl] : undefined,
           mainEntityOfPage: absoluteUrl(canonical),
           publisher: { "@id": `${absoluteUrl("/")}#organization` },
+          ...(author
+            ? { author: { "@type": "Person", name: author } }
+            : {}),
+          ...(reviewer
+            ? { reviewedBy: { "@type": "Person", name: reviewer } }
+            : {}),
         }}
       />
       <JsonLdSchema data={buildBreadcrumbSchema(breadcrumbItems)} />
@@ -132,12 +158,20 @@ export default async function ArticlePage({
               />
             </div>
           ) : null}
-          <div
-            className="article-content"
-            dangerouslySetInnerHTML={{
-              __html: sanitizeArticleHtml(article.content),
-            }}
-          />
+          {structured.ok ? (
+            <ArticleContent
+              className="article-content"
+              contentBlocks={article.contentBlocks}
+              resolveRelation={resolveRelation}
+            />
+          ) : (
+            <div
+              className="article-content"
+              dangerouslySetInnerHTML={{
+                __html: sanitizeArticleHtml(article.content),
+              }}
+            />
+          )}
         </article>
         {related.length ? (
           <section className="related-articles">

@@ -8,6 +8,20 @@ import { DirectusAdminClient } from "../schema/apply-schema.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
 const assetRoot = resolve(here, "../seed-assets");
 export const HOME_HERO_ASSET_TITLE = "home-hero:deere-shop-v7";
+export const HOMEPAGE_CATEGORY_SLUGS = [
+  "gidravlika",
+  "dvigatel",
+  "detali-uborochnoy-tehniki",
+  "krepezh",
+  "naveska-i-tyagi",
+  "nasosy-i-kompressory",
+  "podveska-i-stabilizatory",
+  "podshipniki-i-vtulki",
+  "prochie-detali-john-deere",
+  "rezhuschiy-apparat",
+  "remni-tsepi-i-shkivy",
+  "rulevoe-upravlenie",
+];
 const manifest = JSON.parse(
   await readFile(resolve(assetRoot, "manifest.json"), "utf8"),
 );
@@ -370,7 +384,7 @@ async function publishCatalog(client) {
   const categories = await client.request(
     "/items/categories?fields=id,slug,parent&limit=-1",
   );
-  const homepageSlugs = new Set(manifest.categoryIcons.slice(0, 12).map((item) => item.slug));
+  const homepageSlugs = new Set(HOMEPAGE_CATEGORY_SLUGS);
   for (const category of categories) {
     await patchItem(client, "categories", category.id, {
       status: "published",

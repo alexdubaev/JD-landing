@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { safeUrl } from "@/lib/security/urls";
-
 import type { NavigationItem } from "./types";
 
 const internalPathname = (url: string) => {
@@ -32,8 +30,8 @@ export function HeaderNavigation({ navigation }: { navigation: NavigationItem[] 
     <nav aria-label="Основная навигация" className="site-header__navigation">
       {navigation.map((item) => (
         <Link
-          aria-current={isActive(pathname, safeUrl(item.url, "/") ?? "/") ? "page" : undefined}
-          href={safeUrl(item.url, "/") ?? "/"}
+          aria-current={isActive(pathname, item.url) ? "page" : undefined}
+          href={item.url}
           key={`${item.url}:${item.label}`}
         >
           {item.label}

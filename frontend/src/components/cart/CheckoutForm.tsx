@@ -6,6 +6,7 @@ import { useRef, useState, type FormEvent } from "react";
 
 import { trackEvent } from "@/lib/analytics";
 import { useCart } from "@/lib/cart/context";
+import { MarketingConsent } from "@/components/forms/MarketingConsent";
 import { TurnstileField, type TurnstileFieldHandle } from "@/components/forms/TurnstileField";
 
 type SubmitState = "idle" | "sending" | "success" | "error";
@@ -37,6 +38,7 @@ export function CheckoutForm() {
         utm_campaign: attribution.get("utm_campaign") ?? undefined,
         utm_content: attribution.get("utm_content") ?? undefined,
         utm_term: attribution.get("utm_term") ?? undefined,
+        marketing_consent: payload.marketing_consent === "on",
         items: lines.map((line) => ({
           product: line.id,
           sku: line.sku,
@@ -122,6 +124,7 @@ export function CheckoutForm() {
           <Link href="/privacy-policy">политикой конфиденциальности</Link>
         </span>
       </label>
+      <MarketingConsent />
       <TurnstileField ref={turnstile} />
       <button
         className="button button--primary"

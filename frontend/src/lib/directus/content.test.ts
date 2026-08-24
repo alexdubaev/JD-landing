@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { directusRequest } from "./client";
+import { directusRequest, directusVersionedRequest, readPreviewContext } from "./client";
 import {
   getFaqItems,
   getContacts,
@@ -13,13 +13,18 @@ import {
 
 vi.mock("./client", () => ({
   directusRequest: vi.fn(),
+  directusVersionedRequest: vi.fn(),
+  readPreviewContext: vi.fn(),
 }));
 
 const requestMock = vi.mocked(directusRequest);
+const versionedRequestMock = vi.mocked(directusVersionedRequest);
+const readPreviewContextMock = vi.mocked(readPreviewContext);
 
 describe("content queries", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    readPreviewContextMock.mockResolvedValue(null);
   });
 
   it("maps site settings without exposing raw Directus field names", async () => {
@@ -46,6 +51,8 @@ describe("content queries", () => {
       kpp: "781201001",
       ogrn: "1027800000000",
       legal_address: "Санкт-Петербург, пример",
+      yandex_metrica_id: "cms-counter-id",
+      gtm_id: null,
     });
 
     await expect(getSiteSettings()).resolves.toEqual(
@@ -63,6 +70,7 @@ describe("content queries", () => {
         kpp: "781201001",
         ogrn: "1027800000000",
         legalAddress: "Санкт-Петербург, пример",
+        yandexMetricaId: "cms-counter-id",
       }),
     );
   });
@@ -103,45 +111,93 @@ describe("content queries", () => {
     expect(url.searchParams.get("sort")).toBe("sort_order");
   });
 
-  it("maps only visible published homepage sections", async () => {
+  it("maps the editable homepage singleton and linked published sections", async () => {
     requestMock
+      .mockResolvedValueOnce({
+        id: "singleton-home",
+        status: "published",
+        source_page: "home",
+        h1: "Запчасти John Deere",
+        hero_title: "Редактируемый hero",
+        hero_text: "Текст из Directus",
+        hero_image: { id: "cms-hero-image" },
+        hero_image_alt: "Склад запчастей John Deere",
+        hero_primary_button_text: "Оставить заявку",
+        hero_primary_button_url: "#consultation",
+        hero_secondary_button_text: null,
+        hero_secondary_button_url: null,
+        hero_search_label: "Поиск по каталогу",
+        hero_search_placeholder: "Артикул или название",
+        hero_search_button_text: "Найти",
+        hero_bulk_prompt: "Несколько позиций?",
+        hero_bulk_link_text: "Вставить список",
+        hero_bulk_link_url: "/parts-request",
+        hero_excel_link_text: "Загрузить Excel",
+        hero_excel_link_url: "/parts-request?mode=excel",
+        hero_photo_link_text: "Отправить фото",
+        hero_photo_link_url: "/parts-request?mode=photo",
+        seo_title: "Каталог запчастей",
+        seo_description: "Описание",
+        canonical_url: "/",
+        og_title: null,
+        og_description: null,
+        og_image: null,
+        is_indexable: true,
+        seo: null,
+      })
       .mockResolvedValueOnce([
         {
-          id: "home",
-          title: "Главная",
-          slug: "home",
-          h1: "Запчасти John Deere",
-          seo_title: "Каталог",
-          seo_description: "Описание",
-          seo_text: "Полезный SEO-текст",
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: "hero",
-          section_type: "hero",
-          title: "Запчасти John Deere",
-          subtitle: "Подбор по артикулу",
-          text: "Проверим запрос",
-          image: { id: "hero-image" },
-          button_text: "В каталог",
-          button_url: "/catalog",
+          id: "categories",
+          section_type: "categories",
+          title: "Категории",
+          subtitle: null,
+          text: null,
+          image: null,
+          image_alt: null,
+          button_text: null,
+          button_url: null,
           items: [],
           settings: {},
-          sort_order: 1,
+          sort_order: 10,
           is_visible: true,
         },
       ]);
 
     const page = await getHomePage();
 
-    expect(page?.sections).toEqual([
-      expect.objectContaining({
-        type: "hero",
-        imageId: "hero-image",
-        buttonUrl: "/catalog",
-      }),
-    ]);
+    expect(requestMock.mock.calls[0][0]).toContain("/items/home_page?");
+    expect(page).toEqual(expect.objectContaining({
+      id: "home",
+      h1: "Запчасти John Deere",
+      seoTitle: "Каталог запчастей",
+    }));
+    expect(page?.sections[0]).toEqual(expect.objectContaining({
+      type: "hero",
+      title: "Редактируемый hero",
+      text: "Текст из Directus",
+      imageId: "cms-hero-image",
+      imageAlt: "Склад запчастей John Deere",
+    }));
+    expect(page?.sections[1]).toEqual(expect.objectContaining({ type: "categories" }));
+    expect(requestMock.mock.calls[0][1]).toEqual({
+      next: { revalidate: 300, tags: ["homepage"] },
+    });
+  });
+
+  it("rejects published homepage data without complete hero content", async () => {
+    requestMock.mockResolvedValueOnce({
+      id: "singleton-home",
+      status: "published",
+      source_page: "home",
+      h1: "Главная",
+      hero_title: "",
+      hero_text: "Описание",
+      hero_image: null,
+      hero_image_alt: "",
+    });
+
+    await expect(getHomePage()).rejects.toThrow("Invalid homepage hero content");
+    expect(requestMock).toHaveBeenCalledTimes(1);
   });
 
   it("loads FAQ items scoped to a page", async () => {
@@ -195,6 +251,7 @@ describe("content queries", () => {
           seo_title: null,
           seo_description: null,
           seo_text: null,
+          seo: null,
         },
       ])
       .mockResolvedValueOnce([
@@ -219,6 +276,113 @@ describe("content queries", () => {
     );
   });
 
+  it("maps a scalar-only page exactly as before the dual-read and requests seo", async () => {
+    requestMock
+      .mockResolvedValueOnce([
+        {
+          id: "about",
+          title: "О компании",
+          slug: "about",
+          h1: "О компании",
+          seo_title: "О компании — скалярный заголовок",
+          seo_description: "Скалярное описание",
+          seo_text: null,
+          seo: null,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const page = await getPageBySlug("about");
+
+    // The R11 production-safety property: with seo = null the mapped SEO
+    // output is byte-identical to the pre-dual-read scalar mapping.
+    expect(page).toEqual(
+      expect.objectContaining({
+        seoTitle: "О компании — скалярный заголовок",
+        seoDescription: "Скалярное описание",
+        seo: null,
+      }),
+    );
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("fields")).toContain("seo");
+  });
+
+  it("lets the plugin JSON win for an informational page", async () => {
+    requestMock
+      .mockResolvedValueOnce([
+        {
+          id: "about",
+          title: "О компании",
+          slug: "about",
+          h1: "О компании",
+          seo_title: "Скалярный заголовок",
+          seo_description: "Скалярное описание",
+          seo_text: null,
+          seo: {
+            title: "JSON-заголовок",
+            meta_description: "JSON-описание",
+          },
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const page = await getPageBySlug("about");
+
+    expect(page).toEqual(
+      expect.objectContaining({
+        seoTitle: "JSON-заголовок",
+        seoDescription: "JSON-описание",
+        seo: { title: "JSON-заголовок", meta_description: "JSON-описание" },
+      }),
+    );
+  });
+
+  it("lets the plugin JSON win for the homepage singleton", async () => {
+    requestMock
+      .mockResolvedValueOnce({
+        id: "singleton-home",
+        status: "published",
+        source_page: "home",
+        h1: "Запчасти John Deere",
+        hero_title: "Редактируемый hero",
+        hero_text: "Текст из Directus",
+        hero_image: { id: "cms-hero-image" },
+        hero_image_alt: "Склад запчастей John Deere",
+        hero_primary_button_text: null,
+        hero_primary_button_url: null,
+        hero_secondary_button_text: null,
+        hero_secondary_button_url: null,
+        hero_search_label: null,
+        hero_search_placeholder: null,
+        hero_search_button_text: null,
+        hero_bulk_prompt: null,
+        hero_bulk_link_text: null,
+        hero_bulk_link_url: null,
+        hero_excel_link_text: null,
+        hero_excel_link_url: null,
+        hero_photo_link_text: null,
+        hero_photo_link_url: null,
+        seo_title: "Скалярный заголовок",
+        seo_description: "Скалярное описание",
+        seo: { title: "JSON-заголовок главной" },
+      })
+      .mockResolvedValueOnce([]);
+
+    const page = await getHomePage();
+
+    expect(page).toEqual(
+      expect.objectContaining({
+        seoTitle: "JSON-заголовок главной",
+        // Per-key fallback: no meta_description in the JSON.
+        seoDescription: "Скалярное описание",
+        seo: { title: "JSON-заголовок главной" },
+      }),
+    );
+    // The singleton query now also requests the additive seo field.
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("fields")).toContain("seo");
+  });
+
   it("loads normalized contact records", async () => {
     requestMock.mockResolvedValueOnce([
       {
@@ -232,5 +396,198 @@ describe("content queries", () => {
     ]);
 
     await expect(getContacts()).resolves.toHaveLength(1);
+  });
+});
+
+const pagesPreviewContext = {
+  collection: "pages" as const,
+  id: "0c1d4b8e-6f7a-4b0c-9f55-3b2a87c90000",
+  version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+  versionKey: "r12-draft",
+};
+
+const homePreviewContext = {
+  collection: "home_page" as const,
+  id: "0c1d4b8e-6f7a-4b0c-9f55-3b2a87c90000",
+  version: "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000",
+  versionKey: "r12-draft",
+};
+
+const rawPreviewHomePage = {
+  id: "singleton-home",
+  status: "draft",
+  source_page: "home",
+  h1: "Черновик главной",
+  hero_title: "Hero из версии",
+  hero_text: "Текст черновика",
+  hero_image: { id: "draft-hero-image" },
+  hero_image_alt: "Черновик alt",
+  hero_primary_button_text: null,
+  hero_primary_button_url: null,
+  hero_secondary_button_text: null,
+  hero_secondary_button_url: null,
+  hero_search_label: null,
+  hero_search_placeholder: null,
+  hero_search_button_text: null,
+  hero_bulk_prompt: null,
+  hero_bulk_link_text: null,
+  hero_bulk_link_url: null,
+  hero_excel_link_text: null,
+  hero_excel_link_url: null,
+  hero_photo_link_text: null,
+  hero_photo_link_url: null,
+  seo_title: null,
+  seo_description: null,
+  seo: null,
+};
+
+describe("content version preview reads", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    readPreviewContextMock.mockResolvedValue(null);
+  });
+
+  it("reads the page through its version overlay when the draft context matches", async () => {
+    readPreviewContextMock.mockResolvedValue(pagesPreviewContext);
+    versionedRequestMock.mockResolvedValue({
+      id: "about",
+      title: "О компании (черновик)",
+      slug: "about",
+      h1: "О компании (черновик)",
+      seo_title: null,
+      seo_description: null,
+      seo_text: null,
+      seo: null,
+    });
+    requestMock.mockResolvedValueOnce([]);
+
+    const page = await getPageBySlug("about");
+
+    expect(versionedRequestMock.mock.calls[0][0]).toContain(
+      `/items/pages/${pagesPreviewContext.id}?`,
+    );
+    expect(versionedRequestMock.mock.calls[0][1]).toEqual({
+      version: pagesPreviewContext.versionKey,
+    });
+    expect(page).toEqual(
+      expect.objectContaining({ title: "О компании (черновик)" }),
+    );
+    // Sections stay on the published fetch.
+    expect(requestMock).toHaveBeenCalledTimes(1);
+    expect(requestMock.mock.calls[0][0]).toContain("/items/page_sections?");
+  });
+
+  it("falls back to the published page when the version slug does not match the URL", async () => {
+    readPreviewContextMock.mockResolvedValue(pagesPreviewContext);
+    versionedRequestMock.mockResolvedValue({
+      id: "delivery",
+      title: "Доставка",
+      slug: "delivery",
+      h1: "Доставка",
+      seo_title: null,
+      seo_description: null,
+      seo_text: null,
+      seo: null,
+    });
+    requestMock
+      .mockResolvedValueOnce([
+        {
+          id: "about",
+          title: "О компании",
+          slug: "about",
+          h1: "О компании",
+          seo_title: null,
+          seo_description: null,
+          seo_text: null,
+          seo: null,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const page = await getPageBySlug("about");
+
+    expect(page).toEqual(expect.objectContaining({ title: "О компании" }));
+    expect(requestMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the published page fetch byte-identical without a preview context", async () => {
+    requestMock
+      .mockResolvedValueOnce([
+        {
+          id: "about",
+          title: "О компании",
+          slug: "about",
+          h1: "О компании",
+          seo_title: null,
+          seo_description: null,
+          seo_text: null,
+          seo: null,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    await getPageBySlug("about");
+
+    expect(versionedRequestMock).not.toHaveBeenCalled();
+    const expectedQuery = new URLSearchParams({
+      "filter[status][_eq]": "published",
+      "filter[slug][_eq]": "about",
+      fields: "id,title,slug,h1,seo_title,seo_description,seo_text,seo",
+      limit: "1",
+    }).toString();
+    expect(requestMock.mock.calls[0]).toEqual([
+      `/items/pages?${expectedQuery}`,
+      { next: { revalidate: 300, tags: ["pages", "page:about"] } },
+    ]);
+  });
+
+  it("reads the homepage singleton through its version overlay, even in draft status", async () => {
+    readPreviewContextMock.mockResolvedValue(homePreviewContext);
+    versionedRequestMock.mockResolvedValue(rawPreviewHomePage);
+    requestMock.mockResolvedValueOnce([]);
+
+    const page = await getHomePage();
+
+    expect(versionedRequestMock.mock.calls[0][0]).toContain("/items/home_page?");
+    expect(versionedRequestMock.mock.calls[0][1]).toEqual({
+      version: homePreviewContext.versionKey,
+    });
+    expect(page).toEqual(
+      expect.objectContaining({
+        h1: "Черновик главной",
+        sections: expect.arrayContaining([
+          expect.objectContaining({
+            type: "hero",
+            title: "Hero из версии",
+            imageId: "draft-hero-image",
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it("keeps the published homepage fetch byte-identical without a preview context", async () => {
+    requestMock
+      .mockResolvedValueOnce({
+        id: "singleton-home",
+        status: "published",
+        source_page: "home",
+        h1: "Главная",
+        hero_title: "Hero",
+        hero_text: "Текст",
+        hero_image: "hero-file",
+        hero_image_alt: "Alt",
+      })
+      .mockResolvedValueOnce([]);
+
+    await getHomePage();
+
+    expect(versionedRequestMock).not.toHaveBeenCalled();
+    expect(requestMock.mock.calls[0][1]).toEqual({
+      next: { revalidate: 300, tags: ["homepage"] },
+    });
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.pathname).toBe("/items/home_page");
+    expect(url.searchParams.has("version")).toBe(false);
   });
 });

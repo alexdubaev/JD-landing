@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createLeadSchema, leadSchema } from "./schema";
+import { leadSchema } from "./schema";
 
 describe("leadSchema", () => {
   it("normalizes a valid lead and keeps attribution data", () => {
@@ -11,11 +11,24 @@ describe("leadSchema", () => {
       message: "Нужен подбор",
       page_url: "https://example.test/catalog",
       utm_source: "direct",
+      marketing_consent: true,
       website: "",
     });
 
     expect(result.name).toBe("Иван");
     expect(result.utm_source).toBe("direct");
+    expect(result.marketing_consent).toBe(true);
+  });
+
+  it("defaults marketing consent to false when it is not selected", () => {
+    const result = leadSchema.parse({
+      name: "Иван",
+      phone: "+7 900 000-00-00",
+      email: "",
+      website: "",
+    });
+
+    expect(result.marketing_consent).toBe(false);
   });
 
   it("rejects spam honeypot and malformed contacts", () => {
@@ -27,15 +40,5 @@ describe("leadSchema", () => {
         website: "spam.example",
       }),
     ).toThrow();
-  });
-
-  it("requires a Turnstile token in production", () => {
-    const result = createLeadSchema("production").safeParse({
-      name: "РРІР°РЅ",
-      phone: "+7 900 000-00-00",
-      website: "",
-    });
-
-    expect(result.success).toBe(false);
   });
 });

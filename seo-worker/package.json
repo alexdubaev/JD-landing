@@ -1,0 +1,17 @@
+{
+  "name": "deere-shop-seo-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SEO content-factory worker for Deere-Shop. Control-plane only: creates draft seo_work_items and article drafts. Disabled/shadow by default. Draft-only. No publish method.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/cli.mjs && node --check src/config.mjs && node --check src/content-drafts.mjs && node --check src/daemon.mjs && node --check src/directus-client.mjs && node --check src/evidence.mjs && node --check src/planner.mjs && node --check src/qa-audit.mjs && node --check src/work-items.mjs && node --check src/worker.mjs && node --check scripts/create-token.mjs",
+    "build": "node --check src/config.mjs && node --check src/planner.mjs && node --check src/directus-client.mjs && node --check src/worker.mjs && node --check src/daemon.mjs && node --check scripts/create-token.mjs && node --check src/cli.mjs",
+    "dry-run": "node src/cli.mjs --dry-run"
+  },
+  "dependencies": {}
+}

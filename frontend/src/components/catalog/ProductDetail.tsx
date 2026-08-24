@@ -1,9 +1,10 @@
 import Link from "next/link";
 
-import type { Product, PublicFile } from "@/types/catalog";
+import type { Product, ProductImageItem, PublicFile } from "@/types/catalog";
 
 import { AddToCartButton } from "./AddToCartButton";
 import { ProductGallery } from "./ProductGallery";
+import { ProductVerification } from "./ProductVerification";
 
 const availabilityLabels: Record<Product["availabilityStatus"], string> = {
   in_stock: "В наличии",
@@ -30,10 +31,20 @@ export function ProductDetail({
   documents: PublicFile[];
   product: Product;
 }) {
-  const imageIds = [
-    ...(product.mainImageId ? [product.mainImageId] : []),
-    ...product.galleryIds,
+  // Normalized dual-read view (R7A): canonical product_images rows when they
+  // exist, otherwise the mapped legacy gallery references — both arrive as
+  // ProductImageItem. The main image stays the gallery anchor.
+  const galleryImages: ProductImageItem[] = [
+    ...(product.mainImageId
+      ? [{ imageId: product.mainImageId, alt: product.imageAlt }]
+      : []),
+    ...(product.images ?? []),
   ];
+  // A canonical product_documents row may override the display title of the
+  // attached file; legacy JSON references carry no override.
+  const documentTitles = new Map(
+    (product.documentItems ?? []).map((item) => [item.fileId, item.title]),
+  );
   const consultationUrl = new URLSearchParams({
     product: product.id,
     ...(product.category ? { category: product.category.id } : {}),
@@ -44,7 +55,7 @@ export function ProductDetail({
       <div className="product-detail">
         <ProductGallery
           imageAlt={product.imageAlt || product.title}
-          imageIds={imageIds}
+          images={galleryImages}
         />
         <div className="product-detail__content">
           {product.category ? (
@@ -57,11 +68,6 @@ export function ProductDetail({
           ) : null}
           <h1>{product.title}</h1>
           <p className="product-detail__sku">Артикул: {product.sku}</p>
-          {product.analogSkus.length ? (
-            <p className="product-detail__analogs">
-              Замены: {product.analogSkus.join(", ")}
-            </p>
-          ) : null}
           {product.shortDescription ? (
             <p className="product-detail__summary">
               {product.shortDescription}
@@ -85,6 +91,7 @@ export function ProductDetail({
           </p>
         </div>
       </div>
+      <ProductVerification product={product} />
       {product.fullDescription ? (
         <section className="product-section" aria-labelledby="description-title">
           <h2 id="description-title">Описание</h2>
@@ -102,7 +109,9 @@ export function ProductDetail({
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  {document.title || document.filename}
+                  {documentTitles.get(document.id) ||
+                    document.title ||
+                    document.filename}
                 </a>
               </li>
             ))}

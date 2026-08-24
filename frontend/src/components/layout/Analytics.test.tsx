@@ -1,33 +1,65 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { Analytics } from "./Analytics";
+import { COOKIE_CONSENT_STORAGE_KEY, Analytics } from "./Analytics";
 
-afterEach(() => {
-  document.querySelectorAll('script[src="/analytics-loader.js"]').forEach((script) => script.remove());
-});
-
-describe("Analytics", () => {
-  it("emits only a same-origin loader for validated analytics identifiers", () => {
-    render(
-      <Analytics gtmId="GTM-ABC1234" yandexMetricaId="12345678" />,
-    );
-
-    const script = document.querySelector('script[src="/analytics-loader.js"]');
-    expect(script).toHaveAttribute("data-gtm-id", "GTM-ABC1234");
-    expect(script).toHaveAttribute("data-metrica-id", "12345678");
-    expect(document.querySelectorAll('script[src="/analytics-loader.js"]')).toHaveLength(1);
-    expect(script?.textContent).toBe("");
+describe("Analytics consent", () => {
+  afterEach(() => {
+    window.localStorage.clear();
+    document.querySelector("#yandex-metrica")?.remove();
+    document.querySelector("#gtm-base")?.remove();
   });
 
-  it("does not render a loader for stored XSS payloads", () => {
-    render(
-      <Analytics
-        gtmId="GTM-X');alert(1)//"
-        yandexMetricaId={'1, "init");alert(1)//'}
-      />,
-    );
+  it("shows the cookie banner and does not load analytics before a choice", () => {
+    render(<Analytics yandexMetricaId="111313911" />);
 
-    expect(document.querySelector('script[src="/analytics-loader.js"]')).toBeNull();
+    expect(screen.getByRole("dialog", { name: "Настройки cookie" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Принять аналитику" })).toBeInTheDocument();
+    expect(document.querySelector("#yandex-metrica")).not.toBeInTheDocument();
+  });
+
+  it("loads Yandex Metrica only after analytics consent", async () => {
+    render(<Analytics yandexMetricaId="111313911" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Принять аналитику" }));
+
+    expect(window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY)).toBe("accepted");
+    await waitFor(() =>
+      expect(document.querySelector("#yandex-metrica")).toBeInTheDocument(),
+    );
+  });
+
+  it("keeps analytics disabled after choosing only necessary cookies", async () => {
+    render(<Analytics yandexMetricaId="111313911" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Только необходимые" }));
+
+    expect(window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY)).toBe("declined");
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Настройки cookie" })).not.toBeInTheDocument(),
+    );
+    expect(document.querySelector("#yandex-metrica")).not.toBeInTheDocument();
+  });
+
+  it("restores accepted consent without showing the banner", async () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+
+    render(<Analytics yandexMetricaId="222222222" />);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Настройки cookie" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("does not load a provider script when its CMS identifier is absent", async () => {
+    render(<Analytics />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Принять аналитику" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Настройки cookie" })).not.toBeInTheDocument(),
+    );
+    expect(document.querySelector("#yandex-metrica")).not.toBeInTheDocument();
+    expect(document.querySelector("#gtm-base")).not.toBeInTheDocument();
   });
 });

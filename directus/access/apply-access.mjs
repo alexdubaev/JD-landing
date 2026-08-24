@@ -27,20 +27,38 @@ const normalize = (value) => {
   );
 };
 
-export function permissionMatches(existing, desired) {
+export function permissionMatches(
+  existing,
+  desired,
+  { allowRestrictedFallback = false } = {},
+) {
+  const rule = (value) =>
+    value && typeof value === "object" && Object.keys(value).length === 0
+      ? null
+      : (value ?? null);
   const comparable = (permission) => ({
     policy: permission.policy,
     collection: permission.collection,
     action: permission.action,
-    permissions: permission.permissions ?? null,
-    validation: permission.validation ?? null,
-    presets: permission.presets ?? null,
+    permissions: rule(permission.permissions),
+    validation: rule(permission.validation),
+    presets: rule(permission.presets),
     fields: permission.fields ?? ["*"],
   });
 
-  return (
+  const exact = (
     JSON.stringify(normalize(comparable(existing))) ===
     JSON.stringify(normalize(comparable(desired)))
+  );
+  if (exact || !allowRestrictedFallback) return exact;
+
+  const fallback = { ...desired };
+  delete fallback.permissions;
+  delete fallback.validation;
+  delete fallback.presets;
+  return (
+    JSON.stringify(normalize(comparable(existing))) ===
+    JSON.stringify(normalize(comparable(fallback)))
   );
 }
 
@@ -92,14 +110,21 @@ export async function applyAccessBlueprint(
   for (const policyDefinition of blueprint.policies) {
     const policyName =
       policyDefinition.existingPolicyName ?? policyDefinition.policyName;
-    let policy = policyByName.get(policyName);
+    const desiredPolicyName = policyDefinition.policyName ?? policyName;
+    let policy = policyByName.get(policyName) ?? policyByName.get(desiredPolicyName);
     if (!policy) {
-      actions.push(`create policy ${policyName}`);
+      for (const legacyName of policyDefinition.existingPolicyNames ?? []) {
+        policy = policyByName.get(legacyName);
+        if (policy) break;
+      }
+    }
+    if (!policy) {
+      actions.push(`create policy ${desiredPolicyName}`);
       if (!dryRun) {
         policy = await client.request("/policies", {
           method: "POST",
           body: JSON.stringify({
-            name: policyName,
+            name: desiredPolicyName,
             icon: policyDefinition.role?.icon ?? "public",
             description:
               policyDefinition.role?.description ?? "Public website access.",
@@ -108,20 +133,44 @@ export async function applyAccessBlueprint(
           }),
         });
       } else {
-        policy = { id: `dry-run:${policyDefinition.key}`, name: policyName };
+        policy = { id: `dry-run:${policyDefinition.key}`, name: desiredPolicyName };
       }
-      policyByName.set(policyName, policy);
+      policyByName.set(desiredPolicyName, policy);
+    } else if (
+      policyDefinition.policyName &&
+      policy.name !== policyDefinition.policyName
+    ) {
+      actions.push(`rename policy ${policy.name} -> ${policyDefinition.policyName}`);
+      if (!dryRun) {
+        await client.request(`/policies/${policy.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: policyDefinition.policyName,
+            icon: policyDefinition.role?.icon ?? "public",
+            description: policyDefinition.role?.description ?? null,
+          }),
+        });
+      }
+      policy = { ...policy, name: policyDefinition.policyName };
+      policyByName.set(policy.name, policy);
     }
     managedPolicyIds.add(policy.id);
 
     if (policyDefinition.role) {
       let role = roleByName.get(policyDefinition.role.name);
       if (!role) {
+        for (const legacyName of policyDefinition.role.existingNames ?? []) {
+          role = roleByName.get(legacyName);
+          if (role) break;
+        }
+      }
+      if (!role) {
         actions.push(`create role ${policyDefinition.role.name}`);
         if (!dryRun) {
+          const { existingNames: _existingNames, ...rolePayload } = policyDefinition.role;
           role = await client.request("/roles", {
             method: "POST",
-            body: JSON.stringify(policyDefinition.role),
+            body: JSON.stringify(rolePayload),
           });
         } else {
           role = {
@@ -130,13 +179,24 @@ export async function applyAccessBlueprint(
           };
         }
         roleByName.set(role.name, role);
+      } else if (role.name !== policyDefinition.role.name) {
+        actions.push(`rename role ${role.name} -> ${policyDefinition.role.name}`);
+        if (!dryRun) {
+          const { existingNames: _existingNames, ...rolePayload } = policyDefinition.role;
+          await client.request(`/roles/${role.id}`, {
+            method: "PATCH",
+            body: JSON.stringify(rolePayload),
+          });
+        }
+        role = { ...role, ...policyDefinition.role };
+        roleByName.set(role.name, role);
       }
 
       const hasAccess = accessRows.some(
         (row) => row.role === role.id && row.policy === policy.id,
       );
       if (!hasAccess) {
-        actions.push(`attach ${policyName} policy to ${role.name}`);
+        actions.push(`attach ${desiredPolicyName} policy to ${role.name}`);
         if (!dryRun) {
           await client.request("/access", {
             method: "POST",
@@ -163,7 +223,7 @@ export async function applyAccessBlueprint(
 
       if (!existing) {
         actions.push(
-          `create ${policyName} permission ${definition.collection}:${definition.action}`,
+          `create ${desiredPolicyName} permission ${definition.collection}:${definition.action}`,
         );
         if (!dryRun) {
           try {
@@ -182,16 +242,18 @@ export async function applyAccessBlueprint(
                 body: JSON.stringify(fallback),
               });
               actions.push(
-                `note: created without custom rules ${policyName} permission ${definition.collection}:${definition.action}`,
+                `note: created without custom rules ${desiredPolicyName} permission ${definition.collection}:${definition.action}`,
               );
             } else {
               throw error;
             }
           }
         }
-      } else if (!permissionMatches(existing, desired)) {
+      } else if (!permissionMatches(existing, desired, {
+        allowRestrictedFallback: definition.allowRestrictedFallback,
+      })) {
         actions.push(
-          `update ${policyName} permission ${definition.collection}:${definition.action}`,
+          `update ${desiredPolicyName} permission ${definition.collection}:${definition.action}`,
         );
         if (!dryRun) {
           try {
@@ -202,7 +264,7 @@ export async function applyAccessBlueprint(
           } catch (error) {
             if (error.message.includes("RESOURCE_RESTRICTED")) {
               actions.push(
-                `skip restricted ${policyName} permission ${definition.collection}:${definition.action}`,
+                `skip restricted ${desiredPolicyName} permission ${definition.collection}:${definition.action}`,
               );
             } else {
               throw error;

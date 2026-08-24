@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import { trackEvent } from "@/lib/analytics";
-import { safeUrl } from "@/lib/security/urls";
 import type { Category } from "@/types/catalog";
 import type { PageSection } from "@/types/content";
 
@@ -19,7 +18,7 @@ export const getHomepageCategories = (categories: Category[]) =>
       (item) => item.id === category.id || item.slug === category.slug,
     );
 
-    if (result.length < 11 && !isMisc && !isDuplicate) result.push(category);
+    if (result.length < 12 && !isMisc && !isDuplicate) result.push(category);
     return result;
   }, []);
 
@@ -41,7 +40,7 @@ export function HomeCategories({
             {section.subtitle ? <p>{section.subtitle}</p> : null}
             <h2>{section.title ?? "Категории продукции"}</h2>
           </div>
-          <Link href={safeUrl(section.buttonUrl, "/catalog") ?? "/catalog"}>
+          <Link href={section.buttonUrl ?? "/catalog"}>
             Смотреть все категории
             <ArrowRight aria-hidden="true" />
           </Link>
@@ -86,18 +85,6 @@ export function HomeCategories({
               </article>
             );
           })}
-          <article className="home-category home-category--text-only home-category--all">
-            <Link
-              aria-label="Все категории — перейти в каталог"
-              href={safeUrl(section.buttonUrl, "/catalog") ?? "/catalog"}
-            >
-              <span className="home-category__media">
-                <PackageSearch aria-hidden="true" />
-              </span>
-              <h3>Все категории</h3>
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </article>
         </div>
       </Container>
     </section>

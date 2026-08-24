@@ -3,12 +3,16 @@ type Entry = { count: number; resetAt: number };
 
 const entries = new Map<string, Entry>();
 
-export function checkRateLimit(key: string, policy: RateLimitPolicy) {
+export function checkRateLimit(
+  key: string,
+  policy: RateLimitPolicy,
+): { allowed: boolean; retryAfterSeconds: number } {
   const now = Date.now();
   const current = entries.get(key);
-  const entry = !current || current.resetAt <= now
-    ? { count: 0, resetAt: now + policy.windowMs }
-    : current;
+  const entry =
+    !current || current.resetAt <= now
+      ? { count: 0, resetAt: now + policy.windowMs }
+      : current;
 
   entry.count += 1;
   entries.set(key, entry);
@@ -18,6 +22,6 @@ export function checkRateLimit(key: string, policy: RateLimitPolicy) {
   };
 }
 
-export function resetRateLimits() {
+export function resetRateLimits(): void {
   entries.clear();
 }

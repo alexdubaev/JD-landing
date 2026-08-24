@@ -16,29 +16,10 @@ import type {
   ContactChannel,
   ContentPage,
   FaqItem,
-  PageSection,
   RecentSupply,
   SectionType,
   SiteSettings,
 } from "@/types/content";
-
-const fallbackSection = (
-  type: SectionType,
-  title: string,
-  sortOrder: number,
-): PageSection => ({
-  id: `fallback-${type}`,
-  type,
-  title,
-  subtitle: null,
-  text: null,
-  imageId: null,
-  buttonText: null,
-  buttonUrl: null,
-  items: [],
-  settings: {},
-  sortOrder,
-});
 
 export function HomePageView({
   articles,
@@ -61,41 +42,55 @@ export function HomePageView({
 }) {
   const find = (type: SectionType) =>
     page.sections.find((section) => section.type === type);
-  const hero = find("hero") ?? fallbackSection("hero", page.h1, 0);
-  const categoriesSection =
-    find("categories") ?? fallbackSection("categories", "Категории продукции", 1);
-  const featured =
-    find("featured_products") ??
-    fallbackSection("featured_products", "Избранные товары", 2);
-  const process =
-    find("process") ?? fallbackSection("process", "Как происходит подбор", 3);
-  const articleSection =
-    find("articles") ?? fallbackSection("articles", "Практические статьи", 4);
-  const faqSection =
-    find("faq") ?? fallbackSection("faq", "Вопросы и ответы", 5);
+  const hero = find("hero");
+  if (!hero) throw new Error("Homepage hero section is required");
+  const supportingTypes = new Set<SectionType>([
+    "hero", "advantages", "cta", "lead_form", "seo_text", "parts_request",
+  ]);
+  const primarySections = page.sections
+    .filter((section) => !supportingTypes.has(section.type))
+    .toSorted((left, right) => left.sortOrder - right.sortOrder);
+
+  const renderSection = (section: (typeof primarySections)[number]) => {
+    switch (section.type) {
+      case "categories":
+        return <HomeCategories categories={categories} key={section.id} section={section} />;
+      case "featured_products":
+        return <HomeFeatured key={section.id} products={products.slice(0, 5)} section={section} />;
+      case "process":
+        return <HomeSelection ctaSection={find("cta")} key={section.id} section={section} />;
+      case "company_trust":
+        return <HomeCompanyTrust key={section.id} section={section} settings={settings} />;
+      case "recent_supplies":
+        return <HomeRecentSupplies key={section.id} section={section} supplies={supplies} />;
+      case "articles":
+        return <HomeArticles articles={articles.slice(0, 3)} key={section.id} section={section} />;
+      case "faq":
+        return <HomeFaq faq={faq} key={section.id} section={section} />;
+      case "contacts":
+        return (
+          <HomeContactHub
+            contactSection={section}
+            contacts={contacts}
+            formSection={find("lead_form")}
+            key={section.id}
+            settings={settings}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <main className="home-page" id="main-content">
       <HomeHero
         benefitsSection={find("advantages") ?? null}
         contacts={contacts}
-        h1={page.h1}
         section={hero}
         settings={settings}
       />
-      <HomeCategories categories={categories} section={categoriesSection} />
-      <HomeFeatured products={products.slice(0, 5)} section={featured} />
-      <HomeSelection ctaSection={find("cta")} section={process} />
-      {find("company_trust") ? <HomeCompanyTrust section={find("company_trust")!} settings={settings} /> : null}
-      {find("recent_supplies") ? <HomeRecentSupplies section={find("recent_supplies")!} supplies={supplies} /> : null}
-      <HomeArticles articles={articles.slice(0, 3)} section={articleSection} />
-      <HomeFaq faq={faq} section={faqSection} />
-      <HomeContactHub
-        contactSection={find("contacts")}
-        contacts={contacts}
-        formSection={find("lead_form")}
-        settings={settings}
-      />
+      {primarySections.map(renderSection)}
     </main>
   );
 }

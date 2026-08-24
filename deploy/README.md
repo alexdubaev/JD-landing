@@ -10,7 +10,8 @@ The production stack runs on a single VPS:
 Directus is pinned to `12.1.1`. The project data model deliberately stays
 below the Directus Core limit of 25 custom collections.
 
-The CMS has 12 custom collections. Its public policy is closed; the Next.js
+The CMS has 25 physical custom collections plus five schema-less navigation
+folders. Its public policy is closed; the Next.js
 container will use a server-only `Frontend API` account and must enforce
 publication filters and lead validation. Directus tokens must never be exposed
 through `NEXT_PUBLIC_*` variables.
@@ -45,6 +46,10 @@ REVALIDATE_SECRET=<long random secret>
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=<Cloudflare Turnstile site key>
 TURNSTILE_SECRET_KEY=<Cloudflare Turnstile secret key>
 ```
+
+The same `REVALIDATE_SECRET` is injected into Directus and the frontend.
+Directus uses the private Docker URL `http://frontend:3000/api/revalidate` in
+the managed flow, so CMS saves invalidate the Next.js cache immediately.
 
 Configure both Turnstile variables together. The public site key is embedded at
 image build time; the secret stays server-side and is used only by `/api/leads`.

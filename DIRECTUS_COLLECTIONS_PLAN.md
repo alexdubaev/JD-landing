@@ -1,78 +1,88 @@
-# Directus collections plan
+# Directus: структура коллекций
 
-The project uses Directus `12.1.1` and deliberately stays below the Directus
-Core limit of 25 custom collections. The production model contains exactly 12
-collections:
+Проект использует Directus `12.1.1` и остаётся в пределах лимита Directus Core:
+25 коллекций с физическими таблицами. Пять дополнительных элементов
+`group_*` — это папки навигации без схемы и таблиц, поэтому они не увеличивают
+число коллекций в лицензии.
+
+## Что видит клиент
+
+В Data Studio коллекции собраны по задачам, а не по устройству базы:
+
+| Группа | Основные экраны |
+|---|---|
+| Сайт | Главная страница, Страницы, Меню |
+| Каталог | Товары, Категории |
+| Контент | Статьи, Вопросы и ответы, Недавние поставки |
+| Продажи | Заявки, Заказы |
+| Настройки | Настройки сайта |
+
+Технические и устаревшие коллекции скрыты из верхнего меню. Они сохранены для
+совместимости и связей, но клиенту не нужно открывать их для обычной работы.
+
+## Почему главная страница отдельная
+
+`home_page` — singleton: в админке всегда открывается одна форма без списка
+записей. В ней находятся:
+
+- H1, заголовок и описание hero;
+- изображение hero и его alt-текст;
+- тексты и URL кнопок;
+- все подписи поиска и сценариев Excel/фото/списка;
+- встроенный список секций главной с порядком и видимостью;
+- SEO и Open Graph.
+
+`page_sections` остаётся отдельной технической таблицей, но показывается внутри
+формы главной через виртуальное поле `home_page.sections`. Это сохраняет
+масштабируемость без лишнего пункта меню.
+
+## Физические коллекции
 
 1. `site_settings`
-2. `pages`
-3. `page_sections`
-4. `navigation_items`
-5. `categories`
-6. `products`
-7. `faq_items`
-8. `lead_forms`
-9. `leads`
-10. `testimonials`
-11. `banners`
-12. `seo_redirects`
+2. `home_page`
+3. `pages`
+4. `page_sections`
+5. `navigation_items`
+6. `categories`
+7. `articles`
+8. `products`
+9. `faq_items`
+10. `lead_forms`
+11. `leads`
+12. `testimonials`
+13. `banners`
+14. `hero_blocks` (архив)
+15. `advantages` (архив)
+16. `cta_blocks` (архив)
+17. `contact_channels` (совместимость)
+18. `recent_supplies`
+19. `seo_text_blocks` (архив)
+20. `product_images` (совместимость)
+21. `product_specifications` (совместимость)
+22. `product_documents` (совместимость)
+23. `seo_redirects`
+24. `orders`
+25. `order_items`
 
-The executable definition is
-[`directus/schema/blueprint.mjs`](directus/schema/blueprint.mjs). The checked-in
-Directus snapshot is generated from that definition and is not the source of
-truth.
+Источник истины — [blueprint.mjs](directus/schema/blueprint.mjs). Снимок
+[snapshot.json](directus/schema/snapshot.json) генерируется из blueprint.
 
-## Consolidation rules
+## Права и безопасность
 
-- Global contacts, branding, footer data, legal details, and the primary CTA
-  belong in `site_settings`.
-- Ordinary page SEO belongs in `pages`; category and product SEO stays on the
-  corresponding record.
-- Hero, advantages, order steps, CTA, contact, catalog-preview, and other
-  reusable page blocks belong in `page_sections`.
-- Product gallery, documents, specifications, and related-product identifiers
-  are JSON fields on `products`.
-- FAQ remains separate because it needs page, category, and product relations.
-- `leads` remains separate because it has its own access rules and workflow.
-- Translation-ready content is represented by JSON `translations` fields in
-  the relevant collections. This avoids extra translation collections while
-  preserving a migration path to a normalized multilingual model later.
+- публичная роль Directus закрыта;
+- браузер не получает токен Directus;
+- Next.js использует серверную роль «API фронтенда»;
+- «Контент-менеджер» меняет контент без удаления защищённых записей;
+- «Менеджер продаж» работает с заявками и заказами;
+- «SEO-менеджер» работает с SEO-полями и связанным контентом;
+- сервер Next.js валидирует формы, UTM и вложения до записи в Directus.
 
-This replaces the earlier normalized collections such as `hero_blocks`,
-`advantages`, `cta_blocks`, `contact_channels`, `seo_pages`,
-`seo_text_blocks`, `product_images`, `product_documents`, and
-`product_specifications`.
+Directus Core ограничивает точные фильтры системной коллекции файлов. Установщик
+прав явно распознаёт разрешённый fallback Core и остаётся идемпотентным.
 
-## Directus 12 Core access model
+## Масштабирование
 
-Directus 12 Core accepts collection/action permissions but does not allow the
-custom row filters or field-level restrictions required by the ideal role
-model. Therefore:
-
-- the public Directus policy has no permissions;
-- the browser never receives a Directus token;
-- Next.js uses a server-only `Frontend API` account;
-- Next.js always adds publication filters to content queries;
-- lead validation, spam protection, field allowlisting, and UTM normalization
-  happen in the Next.js server layer before `leads:create`;
-- Content Manager has create/read/update access but no delete access;
-- Sales Manager can read/update all lead fields, not only workflow fields;
-- SEO Manager can create/update whole SEO-bearing records, not only SEO fields.
-
-The wider Sales and SEO field access is a known Core-edition compromise.
-Administrative training and audit logging are required. If strict field-level
-separation becomes mandatory, the project must use a Directus edition that
-supports custom permission rules.
-
-Directus Core also limits active users. The server-only API account consumes
-one seat, so separate simultaneous accounts for every managerial role require
-checking the installed license before provisioning users.
-
-## Scaling
-
-The compact schema remains suitable for 300 products at launch and 1000+
-products later. Products and categories stay first-class, indexed collections;
-only low-cardinality nested data is stored as JSON. If filtering by an
-individual technical specification becomes a business requirement, promote
-that data to a dedicated collection only after measuring the need and
-rechecking the collection limit.
+Товары и категории остаются индексированными коллекциями, пригодными для 300–1000+
+позиций. Низкокардинальные характеристики, документы и галерея могут храниться в
+JSON. Новую коллекцию стоит добавлять только если по вложенным данным нужен поиск,
+фильтрация или самостоятельный workflow.

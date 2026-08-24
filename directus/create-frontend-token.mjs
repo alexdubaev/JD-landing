@@ -1,5 +1,4 @@
 import { DirectusAdminClient } from "./schema/apply-schema.mjs";
-import { randomBytes } from "node:crypto";
 
 async function main() {
   const client = await DirectusAdminClient.connectFromEnvironment();
@@ -16,7 +15,7 @@ async function main() {
   console.log("Found Frontend API role:", frontendRole.id);
 
   // Create a static token user for the Frontend API role
-  const token = randomBytes(32).toString("hex");
+  const token = "jd-frontend-static-token-" + Date.now();
 
   // Check if a frontend API user already exists
   const users = await client.request(
@@ -49,16 +48,9 @@ async function main() {
     console.log("Created user:", newUser.id);
   }
 
-  const outputFile = process.env.DIRECTUS_TOKEN_OUTPUT_FILE;
-  if (!outputFile) {
-    throw new Error("DIRECTUS_TOKEN_OUTPUT_FILE must point to a root-owned 0600 file");
-  }
-  const fs = await import("node:fs/promises");
-  await fs.writeFile(outputFile, `DIRECTUS_TOKEN=${token}\n`, { mode: 0o600 });
-  // `mode` only applies while creating a file; correct permissions on a
-  // pre-existing rotation target as well.
-  await fs.chmod(outputFile, 0o600);
-  console.log("Frontend API token rotated and written to the configured secure file.");
+  console.log("\n=== DIRECTUS_TOKEN ===");
+  console.log(token);
+  console.log("=====================");
 }
 
 main().catch((error) => {

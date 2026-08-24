@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import { ArticleCard } from "@/components/articles/ArticleCard";
 import { Container } from "@/components/ui/Container";
-import { safeUrl } from "@/lib/security/urls";
 import type { ArticleCardData } from "@/types/catalog";
 import type { PageSection } from "@/types/content";
 
@@ -23,7 +22,7 @@ export function HomeArticles({
             {section.subtitle ? <p>{section.subtitle}</p> : null}
             <h2>{section.title ?? "Полезные материалы"}</h2>
           </div>
-          <Link href={safeUrl(section.buttonUrl, "/articles") ?? "/articles"}>
+          <Link href={section.buttonUrl ?? "/articles"}>
             {section.buttonText ?? "Все статьи"}
             <ArrowRight aria-hidden="true" />
           </Link>

@@ -21,6 +21,7 @@ set -euo pipefail
 
 ENV_FILE="${ENV_FILE:-/opt/jd-landing/.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-/opt/jd-landing/release/deploy/compose.production.yml}"
+CADDYFILE="${CADDYFILE:-/opt/jd-landing/release/deploy/Caddyfile}"
 FRONTEND_CONTAINER="jd-landing-frontend-1"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -38,6 +39,54 @@ REVALIDATE_SECRET="$(read_env REVALIDATE_SECRET)"
 DIRECTUS_TOKEN="$(read_env DIRECTUS_TOKEN)"
 DIRECTUS_ADMIN_EMAIL="$(read_env DIRECTUS_ADMIN_EMAIL)"
 DIRECTUS_ADMIN_PASSWORD="$(read_env DIRECTUS_ADMIN_PASSWORD)"
+
+require_env_value() {
+  local key="$1"
+  local value
+  value="$(read_env "$key")"
+  if [[ -z "$value" ]]; then
+    echo "ERROR: $key is required for the enabled production control" >&2
+    return 1
+  fi
+}
+
+preflight() {
+  local cms_auth_enabled restic_enabled
+  # These controls are opt-in. Older production env files predate the flags;
+  # under `set -euo pipefail` a missing grep match must therefore mean false,
+  # not an early script exit.
+  cms_auth_enabled="$(read_env ENABLE_DIRECTUS_CMS_BASIC_AUTH || true)"
+  restic_enabled="$(read_env ENABLE_RESTIC_BACKUP || true)"
+
+  if [[ "$cms_auth_enabled" == "true" ]]; then
+    if [[ ! -f "$CADDYFILE" ]] || ! grep -Eq '^[[:space:]]*basic_auth([[:space:]]|\{|$)' "$CADDYFILE"; then
+      echo "ERROR: Caddy Basic Auth flag is enabled but the Caddyfile has no active basic_auth directive" >&2
+      return 1
+    fi
+    require_env_value DIRECTUS_CMS_AUTH_USER
+    require_env_value DIRECTUS_CMS_AUTH_HASH
+  fi
+
+  if [[ "$restic_enabled" == "true" ]]; then
+    require_env_value RESTIC_REPOSITORY
+    require_env_value RESTIC_PASSWORD_FILE
+    if ! command -v restic >/dev/null 2>&1; then
+      echo "ERROR: restic backup is enabled but the restic command is unavailable" >&2
+      return 1
+    fi
+    local password_file
+    password_file="$(read_env RESTIC_PASSWORD_FILE)"
+    if [[ ! -r "$password_file" ]]; then
+      echo "ERROR: RESTIC_PASSWORD_FILE is not readable" >&2
+      return 1
+    fi
+    echo "ERROR: restic backup requires a separate reviewed restore-tested release" >&2
+    return 1
+  fi
+}
+
+echo "==> Running deployment preflight..."
+preflight
 
 echo "==> 1/4 Rebuilding frontend image..."
 sudo docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build frontend

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   assetMimeType,
+  HOMEPAGE_CATEGORY_SLUGS,
   HOME_HERO_ASSET_TITLE,
 } from "./sync-editorial-assets.mjs";
 
@@ -33,6 +34,23 @@ test("category icon manifest contains one unique asset per category", async () =
     assert.ok(item.alt.length > 10);
     await access(resolve(root, item.file));
   }
+});
+
+test("homepage category selection uses twelve real catalog categories", () => {
+  assert.deepEqual(HOMEPAGE_CATEGORY_SLUGS, [
+    "gidravlika",
+    "dvigatel",
+    "detali-uborochnoy-tehniki",
+    "krepezh",
+    "naveska-i-tyagi",
+    "nasosy-i-kompressory",
+    "podveska-i-stabilizatory",
+    "podshipniki-i-vtulki",
+    "prochie-detali-john-deere",
+    "rezhuschiy-apparat",
+    "remni-tsepi-i-shkivy",
+    "rulevoe-upravlenie",
+  ]);
 });
 
 test("article cover manifest contains three unique editorial covers", async () => {

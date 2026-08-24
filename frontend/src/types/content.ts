@@ -1,3 +1,5 @@
+import type { DirectusSeoJson } from "@/lib/seo/directus-seo";
+
 export type NavigationItem = {
   id: string;
   label: string;
@@ -60,6 +62,7 @@ export type PageSection = {
   subtitle: string | null;
   text: string | null;
   imageId: string | null;
+  imageAlt?: string | null;
   buttonText: string | null;
   buttonUrl: string | null;
   items: unknown[];
@@ -75,6 +78,13 @@ export type ContentPage = {
   seoTitle: string | null;
   seoDescription: string | null;
   seoText: string | null;
+  /**
+   * R11 dual-read: the additive @directus-labs/seo-plugin JSON of pages /
+   * home_page. seoTitle/seoDescription above are already resolved JSON-first
+   * with the scalars as per-key fallback. Null while the CMS-side migration
+   * has not filled the field.
+   */
+  seo?: DirectusSeoJson | null;
   sections: PageSection[];
 };
 

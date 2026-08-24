@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Product } from "@/types/catalog";
@@ -34,7 +34,6 @@ const product: Product = {
   shortDescription: "Компонент гидравлической системы.",
   fullDescription: "Описание назначения детали.",
   seoText: null,
-  analogSkus: [],
   mainImageId: null,
   imageAlt: null,
   galleryIds: [],
@@ -79,7 +78,7 @@ describe("product page", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
-  it("uses the branded placeholder as an Open Graph image when a product image is absent", async () => {
+  it("does not invent an Open Graph image when a product image is absent", async () => {
     const metadata = await generateMetadata({
       params: Promise.resolve({
         categorySlug: "hydraulics",
@@ -87,54 +86,11 @@ describe("product page", () => {
       }),
     });
 
-    expect(metadata.openGraph?.images).toEqual([
-      {
-        url: "https://deere-shop.ru/images/catalog/product-placeholder-industrial.webp",
-        alt: product.title,
-      },
-    ]);
-  });
-
-  it("shows supplied replacement SKUs next to the primary SKU", async () => {
-    getProductBySlugsMock.mockResolvedValue({
-      ...product,
-      analogSkus: ["PGF7949", "RE210102"],
+    expect(metadata.openGraph).not.toHaveProperty("images");
+    expect(metadata.twitter).toMatchObject({
+      card: "summary",
+      title: product.title,
     });
-
-    render(
-      await ProductPage({
-        params: Promise.resolve({
-          categorySlug: "hydraulics",
-          productSlug: "hydraulic-pump",
-        }),
-      }),
-    );
-
-    expect(screen.getByText("Замены: PGF7949, RE210102")).toBeInTheDocument();
-  });
-
-  it("does not render technical source and verification copy", async () => {
-    getProductBySlugsMock.mockResolvedValue({
-      ...product,
-      verifiedAt: "2026-08-01",
-      reviewedBy: "Специалист по подбору",
-      sourceName: "Deere-shop",
-      sourceUrl: "https://example.com/product",
-    });
-
-    render(
-      await ProductPage({
-        params: Promise.resolve({
-          categorySlug: "hydraulics",
-          productSlug: "hydraulic-pump",
-        }),
-      }),
-    );
-
-    expect(
-      screen.queryByRole("heading", { name: "Проверка данных" }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText(/Источник:/i)).not.toBeInTheDocument();
   });
 
   it("renders only provided specifications and fixed price data", async () => {
@@ -158,5 +114,91 @@ describe("product page", () => {
     expect(screen.getByRole("table")).toHaveTextContent("Масса");
     expect(screen.getByRole("table")).toHaveTextContent("12 кг");
     expect(screen.queryByText(/официальн/i)).not.toBeInTheDocument();
+  });
+
+  it("renders the canonical child-collection media when the dual-read wins", async () => {
+    getProductBySlugsMock.mockResolvedValue({
+      ...product,
+      mainImageId: "child-image-1",
+      images: [
+        { imageId: "child-image-2", alt: "Насос в разрезе" },
+        { imageId: "child-image-3", alt: null },
+      ],
+      mediaSources: {
+        images: "children",
+        specifications: "children",
+        documents: "children",
+      },
+      specifications: [{ name: "Масса", value: "12", unit: "кг", group: null }],
+      documentIds: ["child-doc-1"],
+      documentItems: [{ fileId: "child-doc-1", title: "Паспорт насоса" }],
+    });
+    getFilesByIdsMock.mockResolvedValue([
+      { id: "child-doc-1", filename: "pasport.pdf", title: null, type: null },
+    ]);
+
+    render(
+      await ProductPage({
+        params: Promise.resolve({
+          categorySlug: "hydraulics",
+          productSlug: "hydraulic-pump",
+        }),
+      }),
+    );
+
+    // The active gallery image is the child row with its own alt text, and
+    // the canonical specification row renders value + unit.
+    expect(
+      screen.getByRole("img", { name: "Насос гидравлический" }),
+    ).toBeInTheDocument();
+    const second = screen.getByRole("button", { name: "Показать изображение 2" });
+    fireEvent.click(second);
+    expect(second).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("table")).toHaveTextContent("12 кг");
+    expect(screen.getByRole("link", { name: "Паспорт насоса" })).toHaveAttribute(
+      "href",
+      "/media/child-doc-1",
+    );
+  });
+
+  it("falls back to the legacy JSON media when the child collections are empty", async () => {
+    getProductBySlugsMock.mockResolvedValue({
+      ...product,
+      imageAlt: "Насос гидравлический",
+      images: [
+        { imageId: "legacy-gallery-1", alt: null },
+        { imageId: "legacy-gallery-2", alt: null },
+      ],
+      mediaSources: {
+        images: "legacy",
+        specifications: "legacy",
+        documents: "legacy",
+      },
+      specifications: [{ name: "Масса", value: "12 кг", unit: null, group: null }],
+      documentIds: ["legacy-doc-1"],
+      documentItems: [{ fileId: "legacy-doc-1", title: null }],
+    });
+    getFilesByIdsMock.mockResolvedValue([
+      { id: "legacy-doc-1", filename: "rukovodstvo.pdf", title: null, type: null },
+    ]);
+
+    render(
+      await ProductPage({
+        params: Promise.resolve({
+          categorySlug: "hydraulics",
+          productSlug: "hydraulic-pump",
+        }),
+      }),
+    );
+
+    // Legacy gallery references carry no per-image alt, so the product-level
+    // alt is used; the document falls back to its filename.
+    expect(
+      screen.getByRole("img", { name: "Насос гидравлический" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "rukovodstvo.pdf" })).toHaveAttribute(
+      "href",
+      "/media/legacy-doc-1",
+    );
   });
 });

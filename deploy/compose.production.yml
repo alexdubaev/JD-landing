@@ -4,8 +4,10 @@ services:
   database:
     image: postgres:17-alpine
     restart: unless-stopped
-    env_file:
-      - /opt/jd-landing/.env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,22 +27,30 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    env_file:
-      - /opt/jd-landing/.env
     environment:
+      SECRET: ${DIRECTUS_SECRET}
       DB_CLIENT: pg
       DB_HOST: database
       DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD}
       PUBLIC_URL: https://cms.deere-shop.ru
-      WEBSOCKETS_ENABLED: "false"
-      ADMIN_RATE_LIMITER_ENABLED: "true"
-      RATE_LIMITER_ENABLED: "true"
-      PASSWORD_POLICY: "/.{12,}/"
-      REFRESH_TOKEN_TTL: "1d"
-      REFRESH_TOKEN_COOKIE_SECURE: "true"
-      REFRESH_TOKEN_COOKIE_SAME_SITE: "lax"
+      WEBSOCKETS_ENABLED: "true"
       TELEMETRY: "false"
       MAX_PAYLOAD_SIZE: 50mb
+      # Studio Live Preview starts at the CMS bridge, then loads only the trusted
+      # public site in that same iframe.
+      CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: "'self' https://deere-shop.ru"
+      NEXT_REVALIDATE_URL: http://frontend:3000/api/revalidate
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      # Directus server signs short-lived Studio preview forms. The secret is
+      # never exposed to a browser and matches the frontend verifier.
+      PREVIEW_SECRET: ${PREVIEW_SECRET:-}
+      NEXT_PREVIEW_CONSUME_URL: ${NEXT_PREVIEW_CONSUME_URL:-https://deere-shop.ru/api/preview/consume}
+      SEO_FACTORY_WORKER_ROLE_ID: ${SEO_FACTORY_WORKER_ROLE_ID:-}
     volumes:
       - directus_uploads:/directus/uploads
       - directus_extensions:/directus/extensions
@@ -58,6 +68,30 @@ services:
       - backend
       - web
 
+  seo-worker:
+    image: jd-landing-seo-worker
+    build:
+      context: ../seo-worker
+      dockerfile: Dockerfile
+    profiles: ["seo-factory"]
+    restart: unless-stopped
+    depends_on:
+      directus:
+        condition: service_healthy
+    environment:
+      DIRECTUS_URL: http://directus:8055
+      SEO_WORKER_TOKEN: ${SEO_WORKER_TOKEN:-}
+      SEO_FACTORY_ENABLED: ${SEO_FACTORY_ENABLED:-false}
+      SEO_FACTORY_PRODUCTION_SCHEDULE: ${SEO_FACTORY_PRODUCTION_SCHEDULE:-false}
+      SEO_FACTORY_ALLOW_APPLY: ${SEO_FACTORY_ALLOW_APPLY:-false}
+      SEO_FACTORY_ALLOW_PUBLISH: ${SEO_FACTORY_ALLOW_PUBLISH:-false}
+      SEO_FACTORY_MAX_URLS_PER_RUN: ${SEO_FACTORY_MAX_URLS_PER_RUN:-100}
+      SEO_FACTORY_MAX_WORK_ITEMS_PER_RUN: ${SEO_FACTORY_MAX_WORK_ITEMS_PER_RUN:-100}
+      SEO_FACTORY_REQUEST_TIMEOUT_MS: ${SEO_FACTORY_REQUEST_TIMEOUT_MS:-5000}
+      SEO_FACTORY_WORKER_ROLE_ID: ${SEO_FACTORY_WORKER_ROLE_ID:-}
+    networks:
+      - backend
+
   frontend:
     build:
       context: ../frontend
@@ -69,16 +103,33 @@ services:
     depends_on:
       directus:
         condition: service_healthy
-    env_file:
-      - /opt/jd-landing/.env
     environment:
       DIRECTUS_URL: http://directus:8055
+      DIRECTUS_TOKEN: ${DIRECTUS_TOKEN}
+      DIRECTUS_PUBLIC_FOLDER_ID: ${DIRECTUS_PUBLIC_FOLDER_ID}
       NEXT_PUBLIC_SITE_URL: https://deere-shop.ru
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      # Secure Live Preview (Task 16/R12). PREVIEW_SECRET signs the preview
+      # cookie and authenticates /api/preview; DIRECTUS_PREVIEW_TOKEN is the
+      # server-only Directus static token for versioned reads. Both optional;
+      # when unset, preview endpoints refuse to work but the site is unaffected.
+      PREVIEW_SECRET: ${PREVIEW_SECRET:-}
+      DIRECTUS_PREVIEW_TOKEN: ${DIRECTUS_PREVIEW_TOKEN:-}
       # Manager lead notifications (SMTP). All optional; when unset,
       # notifications are silently disabled and leads are still stored.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_SECURE: ${SMTP_SECURE:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      NOTIFY_EMAIL_TO: ${NOTIFY_EMAIL_TO:-}
       # IndexNow: accelerates Yandex/Bing re-crawl after CMS edits. Optional;
       # when unset, IndexNow pings are skipped. The key must also be served at
       # https://deere-shop.ru/<INDEXNOW_KEY>.txt (place the file in frontend/public/).
+      INDEXNOW_KEY: ${INDEXNOW_KEY:-}
     healthcheck:
       test:
         - CMD
@@ -100,18 +151,14 @@ services:
         condition: service_healthy
       frontend:
         condition: service_healthy
-    env_file:
-      - /opt/jd-landing/.env
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      DIRECTUS_CMS_AUTH_USER: ${DIRECTUS_CMS_AUTH_USER:-}
+      DIRECTUS_CMS_AUTH_HASH: ${DIRECTUS_CMS_AUTH_HASH:-}
     ports:
       - "80:80"
       - "443:443"
       - "443:443/udp"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

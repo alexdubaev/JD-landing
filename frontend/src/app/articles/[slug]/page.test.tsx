@@ -9,17 +9,20 @@ const {
   getArticleBySlugMock,
   getRelatedArticlesMock,
   notFoundMock,
+  resolveArticleRelationsMock,
 } = vi.hoisted(() => ({
   getArticleBySlugMock: vi.fn(),
   getRelatedArticlesMock: vi.fn(),
   notFoundMock: vi.fn(() => {
     throw new Error("NEXT_HTTP_ERROR_FALLBACK;404");
   }),
+  resolveArticleRelationsMock: vi.fn(),
 }));
 
 vi.mock("@/lib/directus/articles", () => ({
   getArticleBySlug: getArticleBySlugMock,
   getRelatedArticles: getRelatedArticlesMock,
+  resolveArticleRelations: resolveArticleRelationsMock,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -47,6 +50,7 @@ describe("article page", () => {
     vi.clearAllMocks();
     getArticleBySlugMock.mockResolvedValue(article);
     getRelatedArticlesMock.mockResolvedValue([]);
+    resolveArticleRelationsMock.mockResolvedValue(undefined);
   });
 
   it("renders sanitized published content and Article/Breadcrumb JSON-LD", async () => {
@@ -73,6 +77,95 @@ describe("article page", () => {
     ]);
   });
 
+  it("keeps the HTML fallback branch unchanged when content_blocks is null (no relation fetch)", async () => {
+    // Live articles today: content_blocks = null → the page must render the
+    // sanitized content div exactly as before and never resolve relations.
+    const { container } = render(
+      await ArticlePage({
+        params: Promise.resolve({ slug: article.slug }),
+      }),
+    );
+
+    const content = container.querySelector(".article-content");
+    expect(content).not.toBeNull();
+    expect(content?.innerHTML).toContain("<h2>Что подготовить</h2>");
+    expect(content?.innerHTML).toContain("<p>Артикул и модель.</p>");
+    expect(content?.innerHTML).not.toContain("script");
+    expect(resolveArticleRelationsMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the HTML branch for invalid content_blocks JSON", async () => {
+    getArticleBySlugMock.mockResolvedValue({
+      ...article,
+      contentBlocks: "not-a-document",
+    });
+
+    const { container } = render(
+      await ArticlePage({
+        params: Promise.resolve({ slug: article.slug }),
+      }),
+    );
+
+    expect(container.querySelector(".article-content")?.innerHTML).toContain(
+      "<h2>Что подготовить</h2>",
+    );
+    expect(resolveArticleRelationsMock).not.toHaveBeenCalled();
+  });
+
+  it("renders the structured branch with resolved relations when content_blocks is valid", async () => {
+    const contentBlocks = {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 2 },
+          content: [{ type: "text", text: "Подбор из редактора" }],
+        },
+        { type: "productRelation", attrs: { id: "junction-1" } },
+      ],
+    };
+    getArticleBySlugMock.mockResolvedValue({
+      ...article,
+      contentBlocks,
+    });
+    resolveArticleRelationsMock.mockResolvedValue((ref: { kind: string; id: string }) =>
+      ref.kind === "product" && ref.id === "junction-1"
+        ? {
+            kind: "product",
+            title: "Муфта компрессора John Deere",
+            url: "/catalog/clutches/john-deere-clutch",
+            priceLabel: "Цена по запросу",
+          }
+        : undefined,
+    );
+
+    const { container } = render(
+      await ArticlePage({
+        params: Promise.resolve({ slug: article.slug }),
+      }),
+    );
+
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+      "Подбор из редактора",
+    );
+    const productLink = screen.getByRole("link", {
+      name: /Муфта компрессора John Deere/i,
+    });
+    expect(productLink).toHaveAttribute(
+      "href",
+      "/catalog/clutches/john-deere-clutch",
+    );
+    expect(screen.getByText("Цена по запросу")).toBeInTheDocument();
+    // The HTML fallback is not rendered alongside the structured document.
+    expect(container.querySelector(".article-content")?.innerHTML).not.toContain(
+      "Что подготовить",
+    );
+    expect(resolveArticleRelationsMock).toHaveBeenCalledWith(article.id, {
+      type: "doc",
+      content: expect.any(Array),
+    });
+  });
+
   it("returns canonical metadata for a published article", async () => {
     const metadata = await generateMetadata({
       params: Promise.resolve({ slug: article.slug }),
@@ -82,6 +175,33 @@ describe("article page", () => {
       `/articles/${article.slug}`,
     );
     expect(metadata.openGraph).toMatchObject({ type: "article" });
+    expect(metadata.twitter).toMatchObject({
+      card: "summary",
+      title: article.seoTitle,
+      description: article.seoDescription,
+    });
+  });
+
+  it("emits optional author and reviewer in Article JSON-LD", async () => {
+    getArticleBySlugMock.mockResolvedValue({
+      ...article,
+      author: "Редакция DEERE-SHOP",
+      reviewer: "Технический специалист",
+    });
+
+    const { container } = render(
+      await ArticlePage({
+        params: Promise.resolve({ slug: article.slug }),
+      }),
+    );
+    const articleSchema = [...container.querySelectorAll("script[type='application/ld+json']")]
+      .map((node) => JSON.parse(node.textContent ?? "{}"))
+      .find((schema) => schema["@type"] === "Article");
+
+    expect(articleSchema).toMatchObject({
+      author: { "@type": "Person", name: "Редакция DEERE-SHOP" },
+      reviewedBy: { "@type": "Person", name: "Технический специалист" },
+    });
   });
 
   it("uses the not-found boundary for unknown or draft slugs", async () => {

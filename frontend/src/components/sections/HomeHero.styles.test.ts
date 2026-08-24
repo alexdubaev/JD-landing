@@ -12,9 +12,12 @@ describe("homepage hero", () => {
     );
   });
 
-  it("offsets the assembly illustration 100px left and 70px down", () => {
+  it("keeps the transparent assembly separate from the hero background and hides it below 68rem", () => {
     expect(styles).toMatch(
-      /\.commerce-hero__assembly\s*\{[\s\S]*?top:\s*calc\(clamp\(3rem,\s*3\.3vw,\s*4\.75rem\)\s*\+\s*70px\);[\s\S]*?right:\s*calc\(clamp\(2rem,\s*4vw,\s*6rem\)\s*\+\s*100px\);/u,
+      /\.commerce-hero__assembly\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?pointer-events:\s*none;/u,
+    );
+    expect(styles).toMatch(
+      /@media\s*\(max-width:\s*68rem\)\s*\{[\s\S]*?\.commerce-hero__assembly\s*\{[\s\S]*?display:\s*none;/u,
     );
   });
 });

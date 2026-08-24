@@ -5,7 +5,10 @@ import { readFile } from "node:fs/promises";
 import { schemaBlueprint } from "./blueprint.mjs";
 
 test("deployment stays within the Directus 12 Core collection limit", async () => {
-  assert.ok(schemaBlueprint.collections.length <= 25);
+  const countedCollections = schemaBlueprint.collections.filter(
+    ({ folder }) => !folder,
+  );
+  assert.ok(countedCollections.length <= 25);
 
   const productionCompose = await readFile(
     new URL("../../deploy/compose.production.yml", import.meta.url),
@@ -17,5 +20,9 @@ test("deployment stays within the Directus 12 Core collection limit", async () =
   );
 
   assert.match(productionCompose, /directus\/directus:12\.1\.1/);
+  assert.match(
+    productionCompose,
+    /CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: "'self' https:\/\/deere-shop\.ru"/,
+  );
   assert.match(localExample, /DIRECTUS_VERSION=12\.1\.1/);
 });

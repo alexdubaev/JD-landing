@@ -4,32 +4,31 @@ const permission = (collection, action, options = {}) => ({
   permissions: options.permissions ?? null,
   validation: options.validation ?? null,
   presets: options.presets ?? null,
-  fields: ["*"],
+  fields: options.fields ?? ["*"],
+  allowRestrictedFallback: options.allowRestrictedFallback ?? false,
 });
 
 const read = (collection, options) => permission(collection, "read", options);
 const create = (collection, options) => permission(collection, "create", options);
-const update = (collection) => permission(collection, "update");
+const update = (collection, options) => permission(collection, "update", options);
 const remove = (collection, options) => permission(collection, "delete", options);
 
 const websiteCollections = [
   "site_settings",
+  "home_page",
   "pages",
   "page_sections",
   "navigation_items",
   "categories",
   "articles",
+  // Junction of the article flexible editor: the frontend resolves relation
+  // nodes (products/categories) through it when rendering content_blocks.
+  "articles_editor_nodes",
   "products",
   "faq_items",
   "lead_forms",
-  "testimonials",
-  "banners",
-  "hero_blocks",
-  "advantages",
-  "cta_blocks",
   "contact_channels",
   "recent_supplies",
-  "seo_text_blocks",
   "product_images",
   "product_specifications",
   "product_documents",
@@ -39,7 +38,7 @@ const websiteCollections = [
 ];
 
 const contentCollections = websiteCollections.filter(
-  (collection) => collection !== "site_settings",
+  (collection) => !["site_settings", "home_page"].includes(collection),
 );
 
 const publicAssetFolderId = "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a";
@@ -48,11 +47,15 @@ const folderFilter = (folderId) => ({ folder: { _eq: folderId } });
 
 const frontendPermissions = [
   ...websiteCollections.map(read),
-  read("directus_files", { permissions: folderFilter(publicAssetFolderId) }),
+  read("directus_files", {
+    permissions: folderFilter(publicAssetFolderId),
+    allowRestrictedFallback: true,
+  }),
   read("directus_folders"),
   create("directus_files", {
     validation: folderFilter(leadAttachmentFolderId),
     presets: { folder: leadAttachmentFolderId },
+    allowRestrictedFallback: true,
   }),
   // Needed so the API route can move a freshly uploaded attachment into the
   // Lead attachments folder — Directus 12 Core ignores the multipart `folder`
@@ -62,6 +65,7 @@ const frontendPermissions = [
   update("directus_files"),
   remove("directus_files", {
     permissions: folderFilter(leadAttachmentFolderId),
+    allowRestrictedFallback: true,
   }),
   create("leads"),
   create("orders"),
@@ -71,6 +75,8 @@ const frontendPermissions = [
 const contentPermissions = [
   read("site_settings"),
   update("site_settings"),
+  read("home_page"),
+  update("home_page"),
   ...contentCollections.flatMap((collection) => [
     read(collection),
     create(collection),
@@ -83,6 +89,7 @@ const contentPermissions = [
   // storage folder manually.
   create("directus_files", {
     presets: { folder: publicAssetFolderId },
+    allowRestrictedFallback: true,
   }),
   update("directus_files"),
   read("directus_folders"),
@@ -90,13 +97,13 @@ const contentPermissions = [
 ];
 
 const seoCollections = [
+  "home_page",
   "pages",
   "page_sections",
   "categories",
   "articles",
   "products",
   "faq_items",
-  "seo_text_blocks",
   "product_images",
   "seo_redirects",
 ];
@@ -130,12 +137,14 @@ export const accessBlueprint = {
     {
       key: "frontend_api",
       role: {
-        name: "Frontend API",
+        name: "API фронтенда",
+        existingNames: ["Frontend API"],
         icon: "dns",
         description:
-          "Server-only Next.js access. Publication filters and lead validation are enforced by the frontend.",
+          "Серверный доступ Next.js. Не используется в браузере.",
       },
-      policyName: "Frontend API",
+      policyName: "API фронтенда",
+      existingPolicyNames: ["Frontend API"],
       appAccess: false,
       adminAccess: false,
       permissions: frontendPermissions,
@@ -143,12 +152,14 @@ export const accessBlueprint = {
     {
       key: "content_manager",
       role: {
-        name: "Content Manager",
+        name: "Контент-менеджер",
+        existingNames: ["Content Manager"],
         icon: "edit_note",
         description:
-          "Manages site content and catalog without delete access. Directus 12 Core grants all fields for each allowed action.",
+          "Управляет сайтом, каталогом и контентом без права удаления защищённых данных.",
       },
-      policyName: "Content Manager",
+      policyName: "Контент-менеджер",
+      existingPolicyNames: ["Content Manager"],
       appAccess: true,
       adminAccess: false,
       permissions: contentPermissions,
@@ -156,12 +167,14 @@ export const accessBlueprint = {
     {
       key: "sales_manager",
       role: {
-        name: "Sales Manager",
+        name: "Менеджер продаж",
+        existingNames: ["Sales Manager"],
         icon: "support_agent",
         description:
-          "Reads and updates leads without delete access. Directus 12 Core cannot restrict updates to individual fields.",
+          "Работает с заявками и заказами без права удаления.",
       },
-      policyName: "Sales Manager",
+      policyName: "Менеджер продаж",
+      existingPolicyNames: ["Sales Manager"],
       appAccess: true,
       adminAccess: false,
       permissions: [
@@ -172,21 +185,39 @@ export const accessBlueprint = {
         read("order_items"),
         read("directus_files", {
           permissions: folderFilter(leadAttachmentFolderId),
+          allowRestrictedFallback: true,
         }),
       ],
     },
     {
       key: "seo_manager",
       role: {
-        name: "SEO Manager",
+        name: "SEO-менеджер",
+        existingNames: ["SEO Manager"],
         icon: "manage_search",
         description:
-          "Manages SEO-bearing collections. Directus 12 Core cannot restrict updates to SEO fields only.",
+          "Управляет SEO-полями страниц, категорий, товаров и статей.",
       },
-      policyName: "SEO Manager",
+      policyName: "SEO-менеджер",
+      existingPolicyNames: ["SEO Manager"],
       appAccess: true,
       adminAccess: false,
       permissions: seoPermissions,
+    },
+    {
+      key: "seo_worker",
+      role: {
+        name: "SEO Worker",
+        existingNames: ["SEO Worker"],
+        icon: "smart_toy",
+        description:
+          "Shadow-only service account: reads published SEO inputs, queues recommendations, and creates draft articles after manual approval.",
+      },
+      policyName: "SEO Worker",
+      existingPolicyNames: ["SEO Worker"],
+      appAccess: false,
+      adminAccess: false,
+      permissions: [],
     },
   ],
 };
