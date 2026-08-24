@@ -1,15 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
+import registerSeoFactoryEndpoint, * as seoFactory from "./directus-extension-seo-factory/dist/index.js";
+
+const {
+  createClaimedDraft,
   readPublishedInputs,
+  releaseClaim,
   upsertShadowWorkItem,
-} from "./directus-extension-seo-factory/dist/index.js";
+} = seoFactory;
 
 const worker = { role: "seo-worker" };
 
-function createFakeDatabase() {
-  const tables = {
+function createFakeDatabase({ workerRunId = "run-a", failArticleInsert = false } = {}) {
+  let tables = {
     products: [
       { id: "product-published", status: "published", slug: "tractor", title: "Tractor", seo_title: "Tractor SEO", seo_description: "Tractor description", private_note: "do not expose" },
       { id: "product-published-second", status: "published", slug: "combine", title: "Combine", seo_title: "Combine SEO", seo_description: "Combine description", private_note: "do not expose" },
@@ -21,22 +25,38 @@ function createFakeDatabase() {
     pages: [
       { id: "page-published", status: "published", slug: "delivery", title: "Delivery", seo_title: "Delivery SEO", seo_description: "Delivery description" },
     ],
+    seo_work_items: [
+      { id: "work-1", status: "processing", worker_run_id: workerRunId, expires_at: "2026-08-24T12:00:00.000Z", article: null, last_error: null },
+    ],
+    seo_factory_claims: [
+      { work_item_id: "work-1", run_id: workerRunId, state: "processing", lease_until: "2026-08-24T12:00:00.000Z", draft_id: null, last_error: null },
+    ],
+    articles: [],
   };
   const writes = [];
   const queries = [];
+  const articleWrites = [];
+  const locks = [];
 
   function database(table) {
     let selected = [];
-    let status;
+    let criteria = {};
     let limit;
     const query = {
       select(...fields) {
         selected = fields;
         return query;
       },
-      where(criteria) {
-        status = criteria.status;
+      where(values) {
+        criteria = { ...criteria, ...values };
         return query;
+      },
+      forUpdate() {
+        locks.push({ table, criteria: { ...criteria } });
+        return query;
+      },
+      async first() {
+        return (tables[table] ?? []).find((row) => Object.entries(criteria).every(([field, value]) => row[field] === value));
       },
       limit(value) {
         limit = value;
@@ -51,12 +71,30 @@ function createFakeDatabase() {
               },
             };
           },
+          async returning() {
+            if (table === "articles" && failArticleInsert) throw new Error("database detail must stay private");
+            const row = { id: table === "articles" ? `article-${tables.articles.length + 1}` : undefined, ...data };
+            tables[table] ??= [];
+            tables[table].push(row);
+            if (table === "articles") articleWrites.push({ ...data });
+            return [{ id: row.id }];
+          },
         };
       },
+      async update(data) {
+        let count = 0;
+        for (const row of tables[table] ?? []) {
+          if (Object.entries(criteria).every(([field, value]) => row[field] === value)) {
+            Object.assign(row, data);
+            count += 1;
+          }
+        }
+        return count;
+      },
       then(resolve, reject) {
-        queries.push({ table, fields: selected, status, limit });
+        queries.push({ table, fields: selected, status: criteria.status, limit });
         const rows = (tables[table] ?? [])
-          .filter((row) => row.status === status)
+          .filter((row) => Object.entries(criteria).every(([field, value]) => row[field] === value))
           .slice(0, limit)
           .map((row) => Object.fromEntries(selected.map((field) => [field, row[field]])));
         return Promise.resolve(rows).then(resolve, reject);
@@ -67,7 +105,42 @@ function createFakeDatabase() {
 
   database.writes = writes;
   database.queries = queries;
+  database.articleWrites = articleWrites;
+  database.locks = locks;
+  database.table = (name) => tables[name];
+  database.fn = { now: () => "database-now" };
+  database.transaction = async (action) => {
+    const snapshot = structuredClone(tables);
+    const articleWriteCount = articleWrites.length;
+    try {
+      return await action(database);
+    } catch (error) {
+      tables = snapshot;
+      articleWrites.length = articleWriteCount;
+      throw error;
+    }
+  };
   return database;
+}
+
+function claimedRequest(runId, text = "Safe draft") {
+  return {
+    headers: { "x-seo-worker-run": runId },
+    body: {
+      id: "work-1",
+      status: "published",
+      title: text,
+      excerpt: text,
+      sections: [{ heading: `${text} heading`, body: `${text} body` }],
+    },
+  };
+}
+
+function releaseRequest(runId) {
+  return {
+    headers: { "x-seo-worker-run": runId },
+    body: { id: "work-1", error: "temporary draft failure" },
+  };
 }
 
 const recommendation = {
@@ -180,4 +253,101 @@ test("queue caps URL and title to the database varchar limit", async () => {
   });
   assert.equal(fakeDatabase.writes[0].data.url.length, 255);
   assert.equal(fakeDatabase.writes[0].data.title.length, 255);
+});
+
+test("draft endpoint creates an escaped draft and completes its own claim", async () => {
+  const fakeDatabase = createFakeDatabase();
+  const result = await createClaimedDraft({ database: fakeDatabase, accountability: worker, request: claimedRequest("run-a", "<img onerror=1>") });
+  assert.equal(result.status, "draft_created");
+  assert.equal(fakeDatabase.articleWrites[0].status, "draft");
+  assert.match(fakeDatabase.articleWrites[0].content, /&lt;img onerror=1&gt;/u);
+  assert.equal(fakeDatabase.articleWrites[0].title, "&lt;img onerror=1&gt;");
+  assert.doesNotMatch(fakeDatabase.articleWrites[0].content, /<img\b/iu);
+  assert.deepEqual(fakeDatabase.locks[0], { table: "seo_work_items", criteria: { id: "work-1" } });
+  assert.deepEqual(fakeDatabase.table("seo_work_items")[0], {
+    id: "work-1",
+    status: "draft_created",
+    worker_run_id: "run-a",
+    expires_at: null,
+    article: "article-1",
+    last_error: null,
+  });
+  assert.deepEqual(fakeDatabase.table("seo_factory_claims")[0], {
+    work_item_id: "work-1",
+    run_id: "run-a",
+    state: "draft_created",
+    lease_until: null,
+    draft_id: "article-1",
+    last_error: null,
+    updated_at: "database-now",
+  });
+});
+
+test("draft and release reject a claim owned by another run", async () => {
+  const fakeDatabase = createFakeDatabase();
+  await assert.rejects(() => createClaimedDraft({ database: fakeDatabase, accountability: worker, request: claimedRequest("run-b") }), /claim not owned/u);
+  await assert.rejects(() => releaseClaim({ database: fakeDatabase, accountability: worker, request: releaseRequest("run-b") }), /claim not owned/u);
+  assert.deepEqual(fakeDatabase.articleWrites, []);
+  assert.equal(fakeDatabase.table("seo_work_items")[0].status, "processing");
+});
+
+test("draft forces status and escapes every worker-supplied text field", async () => {
+  const fakeDatabase = createFakeDatabase();
+  await createClaimedDraft({
+    database: fakeDatabase,
+    accountability: worker,
+    request: claimedRequest("run-a", "<script>alert('x')</script> & quoted"),
+  });
+  const article = fakeDatabase.articleWrites[0];
+  assert.equal(article.status, "draft");
+  assert.doesNotMatch(JSON.stringify(article), /<script\b/iu);
+  assert.match(article.content, /&lt;script&gt;alert\(&#39;x&#39;\)&lt;\/script&gt; &amp; quoted heading/u);
+  assert.match(article.content, /&lt;script&gt;alert\(&#39;x&#39;\)&lt;\/script&gt; &amp; quoted body/u);
+});
+
+test("failed article insertion rolls back so only the owning run can release for retry", async () => {
+  const fakeDatabase = createFakeDatabase({ failArticleInsert: true });
+  await assert.rejects(() => createClaimedDraft({ database: fakeDatabase, accountability: worker, request: claimedRequest("run-a") }));
+  assert.deepEqual(fakeDatabase.articleWrites, []);
+  assert.equal(fakeDatabase.table("seo_work_items")[0].status, "processing");
+  assert.equal(fakeDatabase.table("seo_factory_claims")[0].state, "processing");
+  await assert.rejects(() => releaseClaim({ database: fakeDatabase, accountability: worker, request: releaseRequest("run-b") }), /claim not owned/u);
+  const result = await releaseClaim({ database: fakeDatabase, accountability: worker, request: releaseRequest("run-a") });
+  assert.deepEqual(result, { id: "work-1", status: "retryable" });
+  assert.equal(fakeDatabase.table("seo_work_items")[0].status, "retryable");
+  assert.equal(fakeDatabase.table("seo_factory_claims")[0].state, "retryable");
+});
+
+test("draft and release require the bounded worker run header", async () => {
+  const fakeDatabase = createFakeDatabase();
+  for (const action of [createClaimedDraft, releaseClaim]) {
+    await assert.rejects(
+      () => action({ database: fakeDatabase, accountability: worker, request: { body: { id: "work-1" }, headers: {} } }),
+      /request is invalid/u,
+    );
+    await assert.rejects(
+      () => action({ database: fakeDatabase, accountability: worker, request: { body: { id: "work-1" }, headers: { "x-seo-worker-run": "x".repeat(129) } } }),
+      /request is invalid/u,
+    );
+  }
+});
+
+test("draft rejects an unbounded section list before writing an article", async () => {
+  const fakeDatabase = createFakeDatabase();
+  const request = claimedRequest("run-a");
+  request.body.sections = Array.from({ length: 51 }, (_, index) => ({ heading: `Heading ${index}`, body: `Body ${index}` }));
+  await assert.rejects(
+    () => createClaimedDraft({ database: fakeDatabase, accountability: worker, request }),
+    /request is invalid/u,
+  );
+  assert.deepEqual(fakeDatabase.articleWrites, []);
+  assert.equal(fakeDatabase.table("seo_work_items")[0].status, "processing");
+});
+
+test("endpoint registers draft creation without an external completion route", () => {
+  const paths = [];
+  registerSeoFactoryEndpoint({ post: (path) => paths.push(path) }, {});
+  assert.ok(paths.includes("/draft"));
+  assert.ok(!paths.includes("/complete"));
+  assert.ok(paths.every((path) => !path.startsWith("/items/")));
 });

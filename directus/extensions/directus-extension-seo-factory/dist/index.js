@@ -1,4 +1,5 @@
 const CLAIMABLE = ["approved", "retryable"];
+const MAX_DRAFT_SECTIONS = 50;
 const PUBLISHED_SOURCE_FIELDS = ["id", "status", "slug", "title", "seo_title", "seo_description"];
 const PUBLISHED_SOURCE_COLLECTIONS = ["products", "categories", "pages"];
 const ALLOWED_ENTITY_TYPES = new Set(PUBLISHED_SOURCE_COLLECTIONS);
@@ -93,6 +94,62 @@ function runId(request) {
   return String(request.body?.runId || request.headers["x-seo-worker-run"] || "worker").slice(0, 128);
 }
 
+function requiredRunId(request) {
+  const value = request.headers?.["x-seo-worker-run"];
+  if (typeof value !== "string") throw invalidRequest();
+  const normalized = value.trim();
+  if (!normalized || normalized.length > STRING_CAPS.worker_run_id) throw invalidRequest();
+  return normalized;
+}
+
+function claimNotOwned() {
+  const error = new Error("SEO Factory claim not owned by this run");
+  error.code = "CONFLICT";
+  return error;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function articleDraft(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw invalidRequest();
+  const title = escapeHtml(cappedString(body.title, STRING_CAPS.title)).slice(0, STRING_CAPS.title);
+  if (!title || !Array.isArray(body.sections) || body.sections.length > MAX_DRAFT_SECTIONS) throw invalidRequest();
+  const sections = body.sections.map((section) => {
+    if (!section || typeof section !== "object" || Array.isArray(section)) throw invalidRequest();
+    return {
+      heading: escapeHtml(cappedString(section.heading, 4000)),
+      body: escapeHtml(cappedString(section.body, 8000)),
+    };
+  });
+  const id = cappedString(body.id, 128);
+  if (!id) throw invalidRequest();
+  const content = [
+    `<h1>${title}</h1>`,
+    ...sections.map(({ heading, body: sectionBody }) => `<h2>${heading}</h2><p>${sectionBody}</p>`),
+  ].join("\n");
+  return {
+    status: "draft",
+    title,
+    slug: `draft-${id.replace(/[^a-z0-9-]/giu, "-").toLowerCase()}`.slice(0, 255),
+    excerpt: escapeHtml(cappedString(body.excerpt ?? body.title, 500)),
+    content,
+    published_at: new Date().toISOString(),
+  };
+}
+
+async function requireOwnedClaim(trx, id, owner) {
+  const row = await trx("seo_work_items").where({ id }).forUpdate().first();
+  if (!row || row.status !== "processing" || row.worker_run_id !== owner) throw claimNotOwned();
+  return row;
+}
+
 export const claimApproved = ({ database, accountability, request }) => database.transaction(async (trx) => {
   requireWorkerRole(accountability);
   const now = new Date();
@@ -120,20 +177,37 @@ export const claimApproved = ({ database, accountability, request }) => database
 export const releaseClaim = ({ database, accountability, request }) => database.transaction(async (trx) => {
   requireWorkerRole(accountability);
   const id = request.body?.id;
-  if (!id) return null;
+  if (!id) throw invalidRequest();
+  const owner = requiredRunId(request);
+  await requireOwnedClaim(trx, id, owner);
   const error = String(request.body?.error || "draft creation failed").slice(0, 2000);
-  await trx("seo_work_items").where({ id }).update({ status: "retryable", expires_at: null, last_error: error });
-  await trx("seo_factory_claims").where({ work_item_id: id }).update({ state: "retryable", lease_until: null, last_error: error, updated_at: trx.fn.now() });
+  const workItemsUpdated = await trx("seo_work_items")
+    .where({ id, status: "processing", worker_run_id: owner })
+    .update({ status: "retryable", expires_at: null, last_error: error });
+  const claimsUpdated = await trx("seo_factory_claims")
+    .where({ work_item_id: id, run_id: owner, state: "processing" })
+    .update({ state: "retryable", lease_until: null, last_error: error, updated_at: trx.fn.now() });
+  if (workItemsUpdated !== 1 || claimsUpdated !== 1) throw claimNotOwned();
   return { id, status: "retryable" };
 });
 
-export const completeClaim = ({ database, accountability, request }) => database.transaction(async (trx) => {
+export const createClaimedDraft = ({ database, accountability, request }) => database.transaction(async (trx) => {
   requireWorkerRole(accountability);
   const id = request.body?.id;
-  const draftId = request.body?.draftId;
-  if (!id || !draftId) return null;
-  await trx("seo_work_items").where({ id }).update({ status: "draft_created", article: draftId, expires_at: null, last_error: null });
-  await trx("seo_factory_claims").where({ work_item_id: id }).update({ state: "draft_created", draft_id: draftId, lease_until: null, updated_at: trx.fn.now() });
+  if (!id) throw invalidRequest();
+  const owner = requiredRunId(request);
+  await requireOwnedClaim(trx, id, owner);
+  const draft = articleDraft(request.body);
+  const [inserted] = await trx("articles").insert(draft).returning("id");
+  const draftId = inserted?.id;
+  if (!draftId) throw new Error("SEO Factory draft creation failed");
+  const workItemsUpdated = await trx("seo_work_items")
+    .where({ id, status: "processing", worker_run_id: owner })
+    .update({ status: "draft_created", article: draftId, expires_at: null, last_error: null });
+  const claimsUpdated = await trx("seo_factory_claims")
+    .where({ work_item_id: id, run_id: owner, state: "processing" })
+    .update({ state: "draft_created", draft_id: draftId, lease_until: null, last_error: null, updated_at: trx.fn.now() });
+  if (workItemsUpdated !== 1 || claimsUpdated !== 1) throw claimNotOwned();
   return { id, status: "draft_created", article: draftId };
 });
 
@@ -165,7 +239,7 @@ function handler(action, context, failure = "claim_failed") {
       const result = await action({ ...context, accountability: request.accountability }, { ...request, context });
       response.json({ data: result });
     } catch (error) {
-      const status = error.code === "FORBIDDEN" ? 403 : error.code === "BAD_REQUEST" ? 400 : 500;
+      const status = error.code === "FORBIDDEN" ? 403 : error.code === "BAD_REQUEST" ? 400 : error.code === "CONFLICT" ? 409 : 500;
       response.status(status).json({ error: error.code === "FORBIDDEN" ? "forbidden" : failure });
     }
   };
@@ -174,7 +248,7 @@ function handler(action, context, failure = "claim_failed") {
 export default function registerSeoFactoryEndpoint(router, context) {
   router.post("/claim", handler((ctx, request) => claimApproved({ ...ctx, request }), context));
   router.post("/release", handler((ctx, request) => releaseClaim({ ...ctx, request }), context));
-  router.post("/complete", handler((ctx, request) => completeClaim({ ...ctx, request }), context));
+  router.post("/draft", handler((ctx, request) => createClaimedDraft({ ...ctx, request }), context, "draft_failed"));
   router.post("/inputs", handler((ctx, request) => readPublishedInputs({ ...ctx, request }), context, "request_failed"));
   router.post("/work-items/upsert", handler((ctx, request) => upsertShadowWorkItem({ ...ctx, request }), context, "request_failed"));
 }
