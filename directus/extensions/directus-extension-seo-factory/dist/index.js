@@ -126,7 +126,7 @@ function validatedJsonFields(body) {
     if (bytes > MAX_JSON_FIELD_BYTES) throw invalidRequest();
     totalBytes += bytes;
     if (totalBytes > MAX_JSON_TOTAL_BYTES) throw invalidRequest();
-    result[field] = value;
+    result[field] = JSON_ARRAY_FIELDS.has(field) ? serialized : value;
   }
   return result;
 }

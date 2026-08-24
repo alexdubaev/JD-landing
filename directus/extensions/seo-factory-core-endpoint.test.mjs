@@ -363,6 +363,16 @@ test("queue endpoint supplies a server UUID for the raw work item insert", async
   assert.equal(fakeDatabase.writes[0].update.id, undefined);
 });
 
+test("queue serializes JSON array fields for PostgreSQL json columns", async () => {
+  const fakeDatabase = createFakeDatabase();
+  await upsertShadowWorkItem({
+    database: fakeDatabase,
+    accountability: worker,
+    request: { body: { ...recommendation, evidence_json: [{ source: "staging" }] } },
+  });
+  assert.equal(fakeDatabase.writes[0].data.evidence_json, '[{"source":"staging"}]');
+});
+
 test("queue conflict updates preserve claim ownership fields", async () => {
   const fakeDatabase = createFakeDatabase();
   await upsertShadowWorkItem({
