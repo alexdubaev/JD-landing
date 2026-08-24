@@ -20,6 +20,26 @@ before making any write, commit or production deployment.
 - Deploy one reviewed commit only. Do not publish an accumulation of unrelated branch
   changes. A release is not complete until the declared public routes are verified.
 
+## Repository hygiene: clean code is the default
+
+- Keep `main` releasable: it must not contain uncommitted changes, experimental work or
+  unreviewed accumulations of changes.
+- Begin work by checking `git status --short --branch`, `git worktree list` and, when
+  relevant, `git stash list`. Treat an existing dirty state as someone else's work until
+  its owner and intended disposition are known.
+- Every intentional code or documentation change must end in one of two explicit states:
+  a reviewed, scoped commit on its branch; or a named temporary stash that records the
+  reason, date and return plan. Never leave anonymous untracked files or implicit
+  "tails" in a working tree.
+- Do not mix a pre-existing dirty diff into a new task, commit, merge, release or
+  deployment. Preserve it first and report where it was preserved.
+- Use short-lived, task-scoped branches or worktrees for parallel work. After successful
+  integration, verification and push, remove local duplicate branches and worktrees only
+  after preserving any unfinished work in a documented stash or archive.
+- Before each commit or push, verify the allowed-file scope, inspect both staged and
+  unstaged diffs, run the declared checks, and ensure the working tree is clean after the
+  commit. Prefer small, atomic commits with a clear purpose.
+
 Build a landing-page catalog for John Deere products using:
 
 - Frontend: Next.js
