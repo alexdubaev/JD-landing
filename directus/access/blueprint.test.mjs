@@ -175,30 +175,10 @@ test("all custom permission collections exist in the schema", () => {
   }
 });
 
-test("SEO Worker is least-privilege and draft-only", () => {
+test("SEO Worker has endpoint-only Core access", () => {
   const policy = accessBlueprint.policies.find(({ key }) => key === "seo_worker");
   assert.ok(policy);
-  const permissions = policy.permissions.map(permissionKey);
-  assert.deepEqual(new Set(permissions), new Set([
-    "products:read",
-    "categories:read",
-    "pages:read",
-    "seo_work_items:read",
-    "seo_work_items:create",
-    "seo_work_items:update",
-    "articles:create",
-    "articles:update",
-  ]));
-  assert.ok(!permissions.some((key) => /leads|orders|directus_users|directus_files|:delete/u.test(key)));
-  const articleCreate = policy.permissions.find(({ collection, action }) => collection === "articles" && action === "create");
-  const articleUpdate = policy.permissions.find(({ collection, action }) => collection === "articles" && action === "update");
-  for (const collection of ["products", "categories", "pages"]) {
-    const readPermission = policy.permissions.find((permission) => permission.collection === collection && permission.action === "read");
-    assert.deepEqual(readPermission.permissions, { status: { _eq: "published" } });
-  }
-  assert.deepEqual(articleCreate.fields, ["status", "title", "slug", "excerpt", "content", "published_at"]);
-  assert.deepEqual(articleUpdate.fields, ["status", "title", "slug", "excerpt", "content", "published_at"]);
-  assert.deepEqual(articleUpdate.permissions, { status: { _eq: "draft" } });
-  assert.deepEqual(articleCreate.validation, { status: { _eq: "draft" } });
-  assert.deepEqual(articleUpdate.validation, { status: { _eq: "draft" } });
+  assert.equal(policy.appAccess, false);
+  assert.equal(policy.adminAccess, false);
+  assert.deepEqual(policy.permissions, []);
 });
