@@ -8,8 +8,6 @@
 // and accepts an injected `fetchImpl` so callers/tests can substitute a fake
 // transport without touching the network.
 
-import { renderDraftHtml } from "./planner.mjs";
-
 /**
  * Build a Directus REST client bound to a config (URL + token from env).
  *
@@ -25,6 +23,11 @@ import { renderDraftHtml } from "./planner.mjs";
  *   getItem: (collection: string, id: string, query?: object) => Promise<any>,
  *   createItem: (collection: string, body: object) => Promise<any>,
  *   updateItem: (collection: string, id: string, body: object) => Promise<any>,
+ *   getFactoryInputs: (options?: {limit?: number}) => Promise<any>,
+ *   upsertFactoryWorkItem: (body: object) => Promise<any>,
+ *   claimApproved: (limit?: number) => Promise<any>,
+ *   createClaimedDraft: (body: object) => Promise<any>,
+ *   releaseClaim: (id: string, error: unknown) => Promise<any>,
  * }}
  */
 export function createDirectusClient(config, { fetchImpl, timeoutMs } = {}) {
@@ -46,12 +49,14 @@ export function createDirectusClient(config, { fetchImpl, timeoutMs } = {}) {
 
   const base = baseUrl.replace(/\/+$/, '');
   const requestTimeoutMs = timeoutMs ?? config.timeoutMs ?? config.requestTimeoutMs ?? 5000;
+  const workerRunId = String(config.runId ?? '').trim().slice(0, 128);
 
-  async function request(method, path, body) {
+  async function request(method, path, body, extraHeaders = {}) {
     const url = path.startsWith('http') ? path : `${base}${path}`;
     const headers = {
       Authorization: `Bearer ${token}`,
       Accept: 'application/json',
+      ...extraHeaders,
     };
     const init = { method, headers, signal: AbortSignal.timeout(requestTimeoutMs) };
     if (body !== undefined) {
@@ -83,6 +88,14 @@ export function createDirectusClient(config, { fetchImpl, timeoutMs } = {}) {
     return json && json.data !== undefined ? json.data : json;
   }
 
+  function factoryRequest(path, body, { includeRunId = true } = {}) {
+    if (includeRunId && !workerRunId) {
+      throw new Error('directus-client: config.runId is required for SEO Factory mutations');
+    }
+    const headers = includeRunId ? { 'x-seo-worker-run': workerRunId } : {};
+    return request('POST', path, body, headers);
+  }
+
   function buildQuery(query) {
     if (!query || Object.keys(query).length === 0) return '';
     const params = new URLSearchParams();
@@ -108,51 +121,20 @@ export function createDirectusClient(config, { fetchImpl, timeoutMs } = {}) {
     updateItem(collection, id, body) {
       return request('PATCH', `/items/${collection}/${encodeURIComponent(id)}`, body);
     },
-    async listPublishedInputs({ limit = 100 } = {}) {
-      const fields = 'id,status,slug,title,seo_title,seo_description';
-      const collections = ['products', 'categories', 'pages'];
-      const data = {};
-      for (const collection of collections) {
-        data[collection] = await request(
-          'GET',
-          `/items/${collection}?filter[status][_eq]=published&fields=${fields}&limit=${encodeURIComponent(limit)}`,
-        );
-      }
-      return {
-        products: Array.isArray(data.products) ? data.products : [],
-        categories: Array.isArray(data.categories) ? data.categories : [],
-        pages: Array.isArray(data.pages) ? data.pages : [],
-      };
+    getFactoryInputs({ limit = 100 } = {}) {
+      return factoryRequest('/seo-factory/inputs', { limit }, { includeRunId: false });
     },
-    async upsertWorkItem(item) {
-      const existing = await request(
-        'GET',
-        `/items/seo_work_items?filter[dedupe_key][_eq]=${encodeURIComponent(item.dedupe_key)}&limit=1`,
-      );
-      const row = Array.isArray(existing) ? existing[0] : null;
-      if (row?.id) return updateItem('seo_work_items', row.id, item);
-      try {
-        return await request('POST', '/items/seo_work_items', item);
-      } catch (error) {
-        // A concurrent worker may win the unique dedupe race between GET and
-        // POST. Re-read and patch the winner; never create a second item.
-        if (![400, 409].includes(error.status)) throw error;
-        const winner = await request(
-          'GET',
-          `/items/seo_work_items?filter[dedupe_key][_eq]=${encodeURIComponent(item.dedupe_key)}&limit=1`,
-        );
-        if (!winner?.[0]?.id) throw error;
-        return updateItem('seo_work_items', winner[0].id, item);
-      }
+    upsertFactoryWorkItem(item) {
+      return factoryRequest('/seo-factory/work-items/upsert', item);
     },
     claimApproved(limit = 10) {
-      return request('POST', '/seo-factory/claim', { limit });
+      return factoryRequest('/seo-factory/claim', { limit });
+    },
+    createClaimedDraft(body) {
+      return factoryRequest('/seo-factory/draft', body);
     },
     releaseClaim(id, error) {
-      return request('POST', '/seo-factory/release', { id, error: String(error?.message ?? error ?? 'unknown') });
-    },
-    completeClaim(id, draftId) {
-      return request('POST', '/seo-factory/complete', { id, draftId });
+      return factoryRequest('/seo-factory/release', { id, error: String(error?.message ?? error ?? 'unknown') });
     },
     async processApprovedDrafts({ limit = 10 } = {}) {
       const claimed = await this.claimApproved(limit);
@@ -162,16 +144,13 @@ export function createDirectusClient(config, { fetchImpl, timeoutMs } = {}) {
         try {
           const proposed = item.proposed_value_json ?? {};
           const body = {
-            status: 'draft',
+            id: item.id,
             title: String(proposed.title ?? item.title ?? '').trim(),
-            slug: `draft-${String(item.id).replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase()}`,
             excerpt: String(proposed.excerpt ?? proposed.title ?? item.title ?? '').trim().slice(0, 500),
-            content: renderDraftHtml({ title: proposed.title ?? item.title ?? '', sections: proposed.sections ?? [] }),
-            published_at: new Date().toISOString(),
+            sections: Array.isArray(proposed.sections) ? proposed.sections : [],
           };
-          const draft = await this.createItem('articles', body);
-          const linked = await this.completeClaim(item.id, draft?.id ?? draft?.data?.id ?? null);
-          results.push({ status: 'draft_created', itemId: item.id, articleId: draft?.id ?? draft?.data?.id, workItem: linked });
+          const linked = await this.createClaimedDraft(body);
+          results.push({ status: 'draft_created', itemId: item.id, articleId: linked?.article, workItem: linked });
         } catch (error) {
           await this.releaseClaim(item.id, error);
           results.push({ status: 'retryable', itemId: item.id, error: error.message });

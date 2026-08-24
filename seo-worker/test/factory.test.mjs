@@ -50,49 +50,48 @@ test("Directus requests carry an abort timeout signal", async () => {
   const client = createDirectusClient({
     baseUrl: "https://cms.example.test",
     token: "worker-token",
+    runId: "run-timeout",
     timeoutMs: 1234,
     fetchImpl: async (_url, init) => {
       captured = init;
       return new Response(JSON.stringify({ data: [] }), { status: 200 });
     },
   });
-  await client.listPublishedInputs({ limit: 5 });
+  await client.getFactoryInputs({ limit: 5 });
   assert.ok(captured.signal instanceof AbortSignal);
 });
 
-test("shadow batch reads published inputs and upserts only seo_work_items", async () => {
+test("shadow batch reads inputs and upserts recommendations through the factory endpoint", async () => {
   const requests = [];
   const responses = [
-    { data: [{ id: "p-1", status: "published", slug: "filter", title: "Filter", seo_title: "", seo_description: "" }] },
-    { data: [] },
-    { data: [] },
-    { data: [] },
-    { data: { id: "wi-1" } },
+    { data: { products: [{ id: "9e84190b-1cc6-4b1a-9a2c-3d6c9c6a4c4e", status: "published", slug: "filter", title: "Filter", seo_title: "", seo_description: "" }], categories: [], pages: [] } },
+    { data: { dedupe_key: "wi-1", status: "ready" } },
   ];
   const client = createDirectusClient({
     baseUrl: "https://cms.example.test",
     token: "worker-token",
+    runId: "run-shadow",
     fetchImpl: async (url, init) => {
       requests.push({ url, init });
       return new Response(JSON.stringify(responses.shift()), { status: 200 });
     },
   });
-  const result = await runShadowBatch({ client, config: createSeoFactoryConfig({ SEO_FACTORY_ENABLED: "true" }) });
+  const result = await runShadowBatch({ client, config: createSeoFactoryConfig({ SEO_FACTORY_ENABLED: "true", SEO_WORKER_RUN_ID: "run-shadow" }) });
   assert.equal(result.createdOrUpdated, 1);
-  assert.ok(requests.some(({ url, init }) => url.includes("seo_work_items") && init.method === "POST"));
-  assert.ok(requests.every(({ url }) => !url.includes("/items/products/") && !url.includes("/items/categories/")));
+  assert.ok(requests.some(({ url, init }) => url.endsWith("/seo-factory/work-items/upsert") && init.method === "POST"));
+  assert.ok(requests.every(({ url }) => !url.includes("/items/")));
 });
 
 test("approved workflow claims through atomic extension and creates a draft only", async () => {
   const requests = [];
   const responses = [
     { data: { id: "wi-1", type: "content", status: "processing", title: "Brief", proposed_value_json: { title: "Draft", sections: [] } } },
-    { data: { id: "article-1", status: "draft" } },
-    { data: { id: "wi-1", status: "draft_created" } },
+    { data: { id: "wi-1", status: "draft_created", article: "article-1" } },
   ];
   const client = createDirectusClient({
     baseUrl: "https://cms.example.test",
     token: "worker-token",
+    runId: "run-approved",
     fetchImpl: async (url, init) => {
       requests.push({ url, init });
       return new Response(JSON.stringify(responses.shift()), { status: 200 });
@@ -101,8 +100,9 @@ test("approved workflow claims through atomic extension and creates a draft only
   const result = await client.processApprovedDrafts({ limit: 1 });
   assert.equal(result[0].status, "draft_created");
   assert.match(requests[0].url, /seo-factory\/claim$/u);
-  const articleWrite = requests.find(({ url }) => url.endsWith("/items/articles"));
-  assert.equal(JSON.parse(articleWrite.init.body).status, "draft");
+  assert.match(requests[1].url, /seo-factory\/draft$/u);
+  assert.equal(JSON.parse(requests[1].init.body).id, "wi-1");
+  assert.ok(requests.every(({ url }) => !url.includes("/items/")));
   assert.doesNotMatch(JSON.stringify(requests), /"status":"published"/u);
 });
 
@@ -116,6 +116,7 @@ test("failed draft creation releases the claim as retryable", async () => {
   const client = createDirectusClient({
     baseUrl: "https://cms.example.test",
     token: "worker-token",
+    runId: "run-retry",
     fetchImpl: async (url, init) => {
       requests.push({ url, init });
       const response = responses.shift();

@@ -217,23 +217,7 @@ export const accessBlueprint = {
       existingPolicyNames: ["SEO Worker"],
       appAccess: false,
       adminAccess: false,
-      permissions: [
-        read("products", { permissions: { status: { _eq: "published" } } }),
-        read("categories", { permissions: { status: { _eq: "published" } } }),
-        read("pages", { permissions: { status: { _eq: "published" } } }),
-        read("seo_work_items"),
-        create("seo_work_items"),
-        update("seo_work_items"),
-        create("articles", {
-          fields: ["status", "title", "slug", "excerpt", "content", "published_at"],
-          validation: { status: { _eq: "draft" } },
-        }),
-        update("articles", {
-          fields: ["status", "title", "slug", "excerpt", "content", "published_at"],
-          permissions: { status: { _eq: "draft" } },
-          validation: { status: { _eq: "draft" } },
-        }),
-      ],
+      permissions: [],
     },
   ],
 };

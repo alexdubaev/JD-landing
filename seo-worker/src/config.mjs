@@ -76,10 +76,19 @@ const RUN_ID_FLAG = 'SEO_WORKER_RUN_ID';
 const MIN_TIER_FLAG = 'SEO_WORKER_MIN_EVIDENCE_TIER';
 
 const KNOWN_TIERS = ['authoritative', 'corroborated', 'single', 'weak'];
+const HEADER_SAFE_RUN_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/u;
 
 function generateRunId() {
   // Stable enough for a single process; not a security primitive.
   return `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function boundedRunId(value) {
+  const normalized = String(value ?? "").trim();
+  const safeValue = normalized && HEADER_SAFE_RUN_ID.test(normalized)
+    ? normalized
+    : generateRunId();
+  return safeValue.slice(0, 128);
 }
 
 /**
@@ -149,5 +158,6 @@ export function createSeoFactoryConfig(env = process.env) {
     requestTimeoutMs: positiveInt(env.SEO_FACTORY_REQUEST_TIMEOUT_MS, 5000),
     directusUrl: env.DIRECTUS_URL ? String(env.DIRECTUS_URL).trim() : null,
     directusToken: env.SEO_WORKER_TOKEN ? String(env.SEO_WORKER_TOKEN) : null,
+    runId: boundedRunId(env.SEO_WORKER_RUN_ID),
   });
 }

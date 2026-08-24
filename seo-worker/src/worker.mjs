@@ -5,10 +5,10 @@ export async function runShadowBatch({ client, config = createSeoFactoryConfig(p
   if (!config.enabled) {
     return { status: "skipped", reason: "SEO_FACTORY_ENABLED=false", createdOrUpdated: 0, workItems: [] };
   }
-  const input = await client.listPublishedInputs({ limit: config.maxUrlsPerRun });
+  const input = await client.getFactoryInputs({ limit: config.maxUrlsPerRun });
   const workItems = buildShadowWorkItems(input).slice(0, config.maxWorkItemsPerRun);
   const persisted = [];
-  for (const item of workItems) persisted.push(await client.upsertWorkItem(item));
+  for (const item of workItems) persisted.push(await client.upsertFactoryWorkItem(item));
   return { status: "completed", mode: "shadow", createdOrUpdated: persisted.length, workItems: persisted };
 }
 

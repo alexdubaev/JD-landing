@@ -1,4 +1,34 @@
-const CLAIMABLE = ["approved", "retryable"];
+import { randomUUID } from "node:crypto";
+import { Buffer } from "node:buffer";
+
+const CLAIMABLE = ["approved", "retryable", "processing"];
+const MAX_DRAFT_SECTIONS = 50;
+const MAX_JSON_DEPTH = 8;
+const MAX_JSON_ENTRIES = 100;
+const MAX_JSON_NODES = 1000;
+const MAX_JSON_FIELD_BYTES = 64 * 1024;
+const MAX_JSON_TOTAL_BYTES = 128 * 1024;
+const PUBLISHED_SOURCE_FIELDS = ["id", "status", "slug", "title", "seo_title", "seo_description"];
+const PUBLISHED_SOURCE_COLLECTIONS = ["products", "categories", "pages"];
+const ALLOWED_ENTITY_TYPES = new Set(PUBLISHED_SOURCE_COLLECTIONS);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+const STRING_CAPS = {
+  type: 128,
+  subtype: 128,
+  severity: 32,
+  entity_id: 128,
+  entity_key: 255,
+  url: 255,
+  title: 255,
+  summary: 4000,
+  recommendation: 8000,
+  dedupe_key: 255,
+  before_hash: 128,
+  worker_run_id: 128,
+};
+const JSON_FIELDS = ["current_value_json", "proposed_value_json", "patch_json", "evidence_json", "sources_json", "metrics_json"];
+const JSON_ARRAY_FIELDS = new Set(["evidence_json", "sources_json"]);
+const NULLABLE_JSON_FIELDS = new Set(["current_value_json", "proposed_value_json", "metrics_json"]);
 
 function requireWorkerRole(accountability) {
   const expected = process.env.SEO_FACTORY_WORKER_ROLE_ID;
@@ -14,61 +44,299 @@ function boundedLimit(value) {
   return Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 100) : 10;
 }
 
-function runId(request) {
-  return String(request.body?.runId || request.headers["x-seo-worker-run"] || "worker").slice(0, 128);
+function invalidRequest() {
+  const error = new Error("SEO Factory request is invalid");
+  error.code = "BAD_REQUEST";
+  return error;
+}
+
+function requestedLimit(value) {
+  const parsed = Number(value ?? 10);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) throw invalidRequest();
+  return parsed;
+}
+
+function cappedString(value, maximum) {
+  if (value === undefined || value === null) return undefined;
+  return String(value).trim().slice(0, maximum);
+}
+
+function databaseInteger(value) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= -2147483648 && parsed <= 2147483647;
+}
+
+function databaseDecimal54(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed)
+    && Math.abs(parsed) <= 9.9999
+    && /^-?\d(?:\.\d{1,4})?$/u.test(String(value));
+}
+
+function plainObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function validateJsonTree(value, depth = 1, state = { ancestors: new Set(), nodes: 0 }) {
+  state.nodes += 1;
+  if (state.nodes > MAX_JSON_NODES) throw invalidRequest();
+  if (depth > MAX_JSON_DEPTH) throw invalidRequest();
+  if (value === null || typeof value === "string" || typeof value === "boolean") return;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) throw invalidRequest();
+    return;
+  }
+  if (typeof value !== "object" || state.ancestors.has(value)) throw invalidRequest();
+
+  const entries = Array.isArray(value) ? value : Object.entries(value);
+  if ((!Array.isArray(value) && !plainObject(value)) || entries.length > MAX_JSON_ENTRIES) throw invalidRequest();
+  state.ancestors.add(value);
+  if (Array.isArray(value)) {
+    for (const item of value) validateJsonTree(item, depth + 1, state);
+  } else {
+    for (const [key, item] of entries) {
+      if (Buffer.byteLength(key, "utf8") > 128) throw invalidRequest();
+      validateJsonTree(item, depth + 1, state);
+    }
+  }
+  state.ancestors.delete(value);
+}
+
+function validatedJsonFields(body) {
+  const result = {};
+  let totalBytes = 0;
+  for (const field of JSON_FIELDS) {
+    if (body[field] === undefined) continue;
+    const value = body[field];
+    if (value === null) {
+      if (!NULLABLE_JSON_FIELDS.has(field)) throw invalidRequest();
+    } else if (JSON_ARRAY_FIELDS.has(field) ? !Array.isArray(value) : !plainObject(value)) {
+      throw invalidRequest();
+    }
+    validateJsonTree(value);
+    let serialized;
+    try {
+      serialized = JSON.stringify(value);
+    } catch {
+      throw invalidRequest();
+    }
+    const bytes = Buffer.byteLength(serialized, "utf8");
+    if (bytes > MAX_JSON_FIELD_BYTES) throw invalidRequest();
+    totalBytes += bytes;
+    if (totalBytes > MAX_JSON_TOTAL_BYTES) throw invalidRequest();
+    result[field] = value;
+  }
+  return result;
+}
+
+function allowlistedRecommendation(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw invalidRequest();
+  const dedupeKey = cappedString(body.dedupe_key, STRING_CAPS.dedupe_key);
+  const entityType = cappedString(body.entity_type, 64);
+  if (!dedupeKey || !ALLOWED_ENTITY_TYPES.has(entityType)) throw invalidRequest();
+  if (body.entity_id !== undefined && body.entity_id !== null && !UUID_PATTERN.test(String(body.entity_id))) throw invalidRequest();
+
+  const workItem = { id: randomUUID(), dedupe_key: dedupeKey, entity_type: entityType, status: "ready" };
+  for (const [field, maximum] of Object.entries(STRING_CAPS)) {
+    if (field === "dedupe_key") continue;
+    const value = cappedString(body[field], maximum);
+    if (value !== undefined) workItem[field] = value;
+  }
+  if (body.priority_score !== undefined && body.priority_score !== null) {
+    if (!databaseInteger(body.priority_score)) throw invalidRequest();
+    workItem.priority_score = Number(body.priority_score);
+  }
+  if (body.confidence !== undefined && body.confidence !== null) {
+    if (!databaseDecimal54(body.confidence)) throw invalidRequest();
+    workItem.confidence = Number(body.confidence);
+  }
+  Object.assign(workItem, validatedJsonFields(body));
+  return workItem;
+}
+
+function requiredRunId(request) {
+  const value = request.headers?.["x-seo-worker-run"];
+  if (typeof value !== "string") throw invalidRequest();
+  const normalized = value.trim();
+  if (!normalized || normalized.length > STRING_CAPS.worker_run_id) throw invalidRequest();
+  return normalized;
+}
+
+function requiredUuid(value) {
+  if (typeof value !== "string") throw invalidRequest();
+  const normalized = value.trim();
+  if (!UUID_PATTERN.test(normalized)) throw invalidRequest();
+  return normalized;
+}
+
+function claimNotOwned() {
+  const error = new Error("SEO Factory claim not owned by this run");
+  error.code = "CONFLICT";
+  return error;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function articleDraft(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw invalidRequest();
+  const title = escapeHtml(cappedString(body.title, STRING_CAPS.title)).slice(0, STRING_CAPS.title);
+  if (!title || !Array.isArray(body.sections) || body.sections.length > MAX_DRAFT_SECTIONS) throw invalidRequest();
+  const sections = body.sections.map((section) => {
+    if (!section || typeof section !== "object" || Array.isArray(section)) throw invalidRequest();
+    return {
+      heading: escapeHtml(cappedString(section.heading, 4000)),
+      body: escapeHtml(cappedString(section.body, 8000)),
+    };
+  });
+  const id = cappedString(body.id, 128);
+  if (!id) throw invalidRequest();
+  const content = [
+    `<h1>${title}</h1>`,
+    ...sections.map(({ heading, body: sectionBody }) => `<h2>${heading}</h2><p>${sectionBody}</p>`),
+  ].join("\n");
+  return {
+    id: randomUUID(),
+    status: "draft",
+    title,
+    slug: `draft-${id.replace(/[^a-z0-9-]/giu, "-").toLowerCase()}`.slice(0, 255),
+    excerpt: escapeHtml(cappedString(body.excerpt ?? body.title, 500)),
+    content,
+    published_at: new Date().toISOString(),
+  };
+}
+
+async function requireOwnedClaim(trx, id, owner) {
+  const now = trx.fn.now();
+  const row = await trx("seo_work_items")
+    .where({ id, status: "processing", worker_run_id: owner })
+    .andWhere("expires_at", ">", now)
+    .forUpdate()
+    .first();
+  if (!row || row.status !== "processing" || row.worker_run_id !== owner) throw claimNotOwned();
+  const claim = await trx("seo_factory_claims")
+    .where({ work_item_id: id, run_id: owner, state: "processing" })
+    .andWhere("lease_until", ">", now)
+    .forUpdate()
+    .first();
+  if (!claim) throw claimNotOwned();
+  return row;
 }
 
 export const claimApproved = ({ database, accountability, request }) => database.transaction(async (trx) => {
   requireWorkerRole(accountability);
+  const owner = requiredRunId(request);
   const now = new Date();
   const leaseMs = Math.min(Math.max(Number(request.body?.leaseMs || 300000), 30000), 1800000);
   const leaseUntil = new Date(now.getTime() + leaseMs);
   const rows = await trx("seo_work_items")
     .whereIn("status", CLAIMABLE)
-    .andWhere((query) => query.whereNull("expires_at").orWhere("expires_at", "<=", trx.fn.now()))
+    .andWhere((query) => query.whereNot("status", "processing").orWhere("expires_at", "<=", trx.fn.now()))
     .orderBy("created_at", "asc")
     .forUpdate()
     .skipLocked()
     .limit(boundedLimit(request.body?.limit));
   const claimed = [];
   for (const row of rows) {
+    if (row.status === "processing") {
+      const expiredClaim = await trx("seo_factory_claims")
+        .where({ work_item_id: row.id, state: "processing" })
+        .andWhere("lease_until", "<=", trx.fn.now())
+        .forUpdate()
+        .first();
+      if (!expiredClaim) continue;
+    }
     await trx("seo_factory_claims")
-      .insert({ work_item_id: row.id, run_id: runId(request), state: "processing", lease_until: leaseUntil, attempts: 1, updated_at: now })
+      .insert({ work_item_id: row.id, run_id: owner, state: "processing", lease_until: leaseUntil, attempts: 1, updated_at: now })
       .onConflict("work_item_id")
-      .merge({ run_id: runId(request), state: "processing", lease_until: leaseUntil, attempts: trx.raw("?? + 1", ["attempts"]), updated_at: now, last_error: null });
-    await trx("seo_work_items").where({ id: row.id }).update({ status: "processing", worker_run_id: runId(request), claimed_at: now, expires_at: leaseUntil, last_error: null });
-    claimed.push({ ...row, status: "processing", worker_run_id: runId(request), expires_at: leaseUntil.toISOString() });
+      .merge({ run_id: owner, state: "processing", lease_until: leaseUntil, attempts: trx.raw("??.?? + 1", ["seo_factory_claims", "attempts"]), updated_at: now, last_error: null });
+    await trx("seo_work_items").where({ id: row.id }).update({ status: "processing", worker_run_id: owner, claimed_at: now, expires_at: leaseUntil, last_error: null });
+    claimed.push({ ...row, status: "processing", worker_run_id: owner, expires_at: leaseUntil.toISOString() });
   }
   return claimed;
 });
 
 export const releaseClaim = ({ database, accountability, request }) => database.transaction(async (trx) => {
   requireWorkerRole(accountability);
-  const id = request.body?.id;
-  if (!id) return null;
+  const id = requiredUuid(request.body?.id);
+  const owner = requiredRunId(request);
+  await requireOwnedClaim(trx, id, owner);
   const error = String(request.body?.error || "draft creation failed").slice(0, 2000);
-  await trx("seo_work_items").where({ id }).update({ status: "retryable", expires_at: null, last_error: error });
-  await trx("seo_factory_claims").where({ work_item_id: id }).update({ state: "retryable", lease_until: null, last_error: error, updated_at: trx.fn.now() });
+  const workItemsUpdated = await trx("seo_work_items")
+    .where({ id, status: "processing", worker_run_id: owner })
+    .andWhere("expires_at", ">", trx.fn.now())
+    .update({ status: "retryable", expires_at: null, last_error: error });
+  const claimsUpdated = await trx("seo_factory_claims")
+    .where({ work_item_id: id, run_id: owner, state: "processing" })
+    .andWhere("lease_until", ">", trx.fn.now())
+    .update({ state: "retryable", lease_until: null, last_error: error, updated_at: trx.fn.now() });
+  if (workItemsUpdated !== 1 || claimsUpdated !== 1) throw claimNotOwned();
   return { id, status: "retryable" };
 });
 
-export const completeClaim = ({ database, accountability, request }) => database.transaction(async (trx) => {
+export const createClaimedDraft = ({ database, accountability, request }) => database.transaction(async (trx) => {
   requireWorkerRole(accountability);
-  const id = request.body?.id;
-  const draftId = request.body?.draftId;
-  if (!id || !draftId) return null;
-  await trx("seo_work_items").where({ id }).update({ status: "draft_created", article: draftId, expires_at: null, last_error: null });
-  await trx("seo_factory_claims").where({ work_item_id: id }).update({ state: "draft_created", draft_id: draftId, lease_until: null, updated_at: trx.fn.now() });
+  const id = requiredUuid(request.body?.id);
+  const owner = requiredRunId(request);
+  await requireOwnedClaim(trx, id, owner);
+  const draft = articleDraft(request.body);
+  const [inserted] = await trx("articles").insert(draft).returning("id");
+  const draftId = inserted?.id;
+  if (!draftId) throw new Error("SEO Factory draft creation failed");
+  const workItemsUpdated = await trx("seo_work_items")
+    .where({ id, status: "processing", worker_run_id: owner })
+    .andWhere("expires_at", ">", trx.fn.now())
+    .update({ status: "draft_created", article: draftId, expires_at: null, last_error: null });
+  const claimsUpdated = await trx("seo_factory_claims")
+    .where({ work_item_id: id, run_id: owner, state: "processing" })
+    .andWhere("lease_until", ">", trx.fn.now())
+    .update({ state: "draft_created", draft_id: draftId, lease_until: null, last_error: null, updated_at: trx.fn.now() });
+  if (workItemsUpdated !== 1 || claimsUpdated !== 1) throw claimNotOwned();
   return { id, status: "draft_created", article: draftId };
 });
 
-function handler(action, context) {
+export const readPublishedInputs = async ({ database, accountability, request }) => {
+  requireWorkerRole(accountability);
+  const limit = requestedLimit(request.body?.limit);
+  const rows = await Promise.all(
+    PUBLISHED_SOURCE_COLLECTIONS.map((collection) => database(collection)
+      .select(...PUBLISHED_SOURCE_FIELDS)
+      .where({ status: "published" })
+      .limit(limit)),
+  );
+  return Object.fromEntries(PUBLISHED_SOURCE_COLLECTIONS.map((collection, index) => [collection, rows[index]]));
+};
+
+export const upsertShadowWorkItem = async ({ database, accountability, request }) => {
+  requireWorkerRole(accountability);
+  const workItem = allowlistedRecommendation(request.body);
+  const updateWorkItem = { ...workItem };
+  delete updateWorkItem.id;
+  delete updateWorkItem.status;
+  delete updateWorkItem.worker_run_id;
+  await database("seo_work_items")
+    .insert(workItem)
+    .onConflict("dedupe_key")
+    .merge(updateWorkItem);
+  return { dedupe_key: workItem.dedupe_key, status: "ready" };
+};
+
+function handler(action, context, failure = "claim_failed") {
   return async (request, response) => {
     try {
-      const result = await action({ ...context, accountability: request.accountability }, { ...request, context });
+      const result = await action({ ...context, accountability: request.accountability }, request);
       response.json({ data: result });
     } catch (error) {
-      response.status(error.code === "FORBIDDEN" ? 403 : 500).json({ error: error.code === "FORBIDDEN" ? "forbidden" : "claim_failed" });
+      const status = error.code === "FORBIDDEN" ? 403 : error.code === "BAD_REQUEST" ? 400 : error.code === "CONFLICT" ? 409 : 500;
+      response.status(status).json({ error: error.code === "FORBIDDEN" ? "forbidden" : failure });
     }
   };
 }
@@ -76,5 +344,7 @@ function handler(action, context) {
 export default function registerSeoFactoryEndpoint(router, context) {
   router.post("/claim", handler((ctx, request) => claimApproved({ ...ctx, request }), context));
   router.post("/release", handler((ctx, request) => releaseClaim({ ...ctx, request }), context));
-  router.post("/complete", handler((ctx, request) => completeClaim({ ...ctx, request }), context));
+  router.post("/draft", handler((ctx, request) => createClaimedDraft({ ...ctx, request }), context, "draft_failed"));
+  router.post("/inputs", handler((ctx, request) => readPublishedInputs({ ...ctx, request }), context, "request_failed"));
+  router.post("/work-items/upsert", handler((ctx, request) => upsertShadowWorkItem({ ...ctx, request }), context, "request_failed"));
 }
