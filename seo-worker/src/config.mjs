@@ -82,6 +82,11 @@ function generateRunId() {
   return `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function boundedRunId(value) {
+  const normalized = String(value ?? "").trim();
+  return (normalized || generateRunId()).slice(0, 128);
+}
+
 /**
  * Load worker configuration from an environment map.
  *
@@ -149,5 +154,6 @@ export function createSeoFactoryConfig(env = process.env) {
     requestTimeoutMs: positiveInt(env.SEO_FACTORY_REQUEST_TIMEOUT_MS, 5000),
     directusUrl: env.DIRECTUS_URL ? String(env.DIRECTUS_URL).trim() : null,
     directusToken: env.SEO_WORKER_TOKEN ? String(env.SEO_WORKER_TOKEN) : null,
+    runId: boundedRunId(env.SEO_WORKER_RUN_ID),
   });
 }
