@@ -4,6 +4,7 @@ import test from "node:test";
 import registerSeoFactoryEndpoint, * as seoFactory from "./directus-extension-seo-factory/dist/index.js";
 
 const {
+  claimApproved,
   createClaimedDraft,
   readPublishedInputs,
   releaseClaim,
@@ -123,6 +124,81 @@ function createFakeDatabase({ workerRunId = "run-a", failArticleInsert = false }
       throw error;
     }
   };
+  return database;
+}
+
+function createClaimConflictDatabase() {
+  const workItem = {
+    id: WORK_ITEM_ID,
+    status: "approved",
+    created_at: "2026-08-24T10:00:00.000Z",
+  };
+  const claim = {
+    work_item_id: WORK_ITEM_ID,
+    run_id: "previous-run",
+    state: "retryable",
+    attempts: 2,
+  };
+
+  function database(table) {
+    if (table === "seo_work_items") {
+      const query = {
+        whereIn() { return query; },
+        andWhere(callback) {
+          const nested = {
+            whereNull() { return nested; },
+            orWhere() { return nested; },
+          };
+          callback(nested);
+          return query;
+        },
+        orderBy() { return query; },
+        forUpdate() { return query; },
+        skipLocked() { return query; },
+        limit() { return query; },
+        where() { return query; },
+        async update(values) {
+          Object.assign(workItem, values);
+          return 1;
+        },
+        then(resolve, reject) {
+          return Promise.resolve([workItem]).then(resolve, reject);
+        },
+      };
+      return query;
+    }
+
+    if (table === "seo_factory_claims") {
+      return {
+        insert() {
+          return {
+            onConflict() {
+              return {
+                async merge(values) {
+                  if (values.attempts?.qualifiedExistingAttempts !== true) {
+                    throw new Error('column reference "attempts" is ambiguous');
+                  }
+                  Object.assign(claim, values, { attempts: claim.attempts + 1 });
+                },
+              };
+            },
+          };
+        },
+      };
+    }
+
+    throw new Error(`unexpected table ${table}`);
+  }
+
+  database.claim = claim;
+  database.fn = { now: () => "database-now" };
+  database.raw = (sql, bindings) => {
+    if (sql === "??.?? + 1" && bindings?.[0] === "seo_factory_claims" && bindings?.[1] === "attempts") {
+      return { qualifiedExistingAttempts: true };
+    }
+    throw new Error('column reference "attempts" is ambiguous');
+  };
+  database.transaction = (action) => action(database);
   return database;
 }
 
@@ -267,6 +343,17 @@ test("queue caps URL and title to the database varchar limit", async () => {
   });
   assert.equal(fakeDatabase.writes[0].data.url.length, 255);
   assert.equal(fakeDatabase.writes[0].data.title.length, 255);
+});
+
+test("claim conflict increments the existing qualified lease attempts value", async () => {
+  const fakeDatabase = createClaimConflictDatabase();
+  const claimError = await claimApproved({
+    database: fakeDatabase,
+    accountability: worker,
+    request: { body: { limit: 1 }, headers: { "x-seo-worker-run": "run-a" } },
+  }).then(() => null, (error) => error);
+  assert.equal(claimError, null);
+  assert.equal(fakeDatabase.claim.attempts, 3);
 });
 
 test("draft endpoint creates an escaped draft and completes its own claim", async () => {

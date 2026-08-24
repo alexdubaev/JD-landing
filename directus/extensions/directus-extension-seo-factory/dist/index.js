@@ -170,7 +170,7 @@ export const claimApproved = ({ database, accountability, request }) => database
     await trx("seo_factory_claims")
       .insert({ work_item_id: row.id, run_id: runId(request), state: "processing", lease_until: leaseUntil, attempts: 1, updated_at: now })
       .onConflict("work_item_id")
-      .merge({ run_id: runId(request), state: "processing", lease_until: leaseUntil, attempts: trx.raw("?? + 1", ["attempts"]), updated_at: now, last_error: null });
+      .merge({ run_id: runId(request), state: "processing", lease_until: leaseUntil, attempts: trx.raw("??.?? + 1", ["seo_factory_claims", "attempts"]), updated_at: now, last_error: null });
     await trx("seo_work_items").where({ id: row.id }).update({ status: "processing", worker_run_id: runId(request), claimed_at: now, expires_at: leaseUntil, last_error: null });
     claimed.push({ ...row, status: "processing", worker_run_id: runId(request), expires_at: leaseUntil.toISOString() });
   }
