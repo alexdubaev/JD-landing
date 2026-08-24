@@ -182,7 +182,11 @@ test("queue endpoint forces ready and writes only seo_work_items", async () => {
   const result = await upsertShadowWorkItem({ database: fakeDatabase, accountability: worker, request: { body: recommendation } });
   assert.equal(result.status, "ready");
   assert.deepEqual(fakeDatabase.writes.map(({ table }) => table), ["seo_work_items"]);
-  assert.deepEqual(fakeDatabase.writes[0], {
+  const { id: insertedId, ...insertData } = fakeDatabase.writes[0].data;
+  const { id: mergedId, ...mergeData } = fakeDatabase.writes[0].update;
+  assert.match(insertedId, UUID_PATTERN);
+  assert.equal(mergedId, undefined);
+  assert.deepEqual({ ...fakeDatabase.writes[0], data: insertData, update: mergeData }, {
     table: "seo_work_items",
     field: "dedupe_key",
     data: {
@@ -212,6 +216,13 @@ test("queue endpoint forces ready and writes only seo_work_items", async () => {
       status: "ready",
     },
   });
+});
+
+test("queue endpoint supplies a server UUID for the raw work item insert", async () => {
+  const fakeDatabase = createFakeDatabase();
+  await upsertShadowWorkItem({ database: fakeDatabase, accountability: worker, request: { body: recommendation } });
+  assert.match(fakeDatabase.writes[0].data.id, UUID_PATTERN);
+  assert.equal(fakeDatabase.writes[0].update.id, undefined);
 });
 
 test("endpoint rejects a non-worker role", async () => {

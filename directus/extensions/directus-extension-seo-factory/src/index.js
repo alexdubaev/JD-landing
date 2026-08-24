@@ -72,7 +72,7 @@ function allowlistedRecommendation(body) {
   if (!dedupeKey || !ALLOWED_ENTITY_TYPES.has(entityType)) throw invalidRequest();
   if (body.entity_id !== undefined && body.entity_id !== null && !UUID_PATTERN.test(String(body.entity_id))) throw invalidRequest();
 
-  const workItem = { dedupe_key: dedupeKey, entity_type: entityType, status: "ready" };
+  const workItem = { id: randomUUID(), dedupe_key: dedupeKey, entity_type: entityType, status: "ready" };
   for (const [field, maximum] of Object.entries(STRING_CAPS)) {
     if (field === "dedupe_key") continue;
     const value = cappedString(body[field], maximum);
@@ -229,10 +229,12 @@ export const readPublishedInputs = async ({ database, accountability, request })
 export const upsertShadowWorkItem = async ({ database, accountability, request }) => {
   requireWorkerRole(accountability);
   const workItem = allowlistedRecommendation(request.body);
+  const updateWorkItem = { ...workItem };
+  delete updateWorkItem.id;
   await database("seo_work_items")
     .insert(workItem)
     .onConflict("dedupe_key")
-    .merge(workItem);
+    .merge(updateWorkItem);
   return { dedupe_key: workItem.dedupe_key, status: "ready" };
 };
 
