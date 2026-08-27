@@ -1,6 +1,6 @@
 import { createSeoFactoryConfig } from "./config.mjs";
 import { createDirectusClient } from "./directus-client.mjs";
-import { createNonOverlappingScheduler, runShadowBatch } from "./worker.mjs";
+import { createDaemon, runShadowBatch } from "./worker.mjs";
 
 const factoryConfig = createSeoFactoryConfig(process.env);
 
@@ -13,6 +13,11 @@ const task = async () => {
   await runShadowBatch({ client, config: factoryConfig });
 };
 
-const scheduler = createNonOverlappingScheduler(task);
-if (factoryConfig.enabled && factoryConfig.productionSchedule) scheduler.tick();
-setInterval(() => scheduler.tick(), Number(process.env.SEO_FACTORY_INTERVAL_MS || 900000));
+createDaemon({
+  task,
+  intervalMs: Number(process.env.SEO_FACTORY_INTERVAL_MS || 900000),
+  // Match the previous entry point: tick at once only when the production
+  // schedule is armed; the interval itself always runs and no-ops when
+  // disabled.
+  runOnStart: factoryConfig.enabled && factoryConfig.productionSchedule,
+}).start();
