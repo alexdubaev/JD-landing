@@ -597,6 +597,25 @@ const normalizeSku = (value: string) =>
 
 const looksLikeSkuQuery = (value: string) => /^[a-z0-9\s-]+$/iu.test(value);
 
+/**
+ * Cache-key-friendly search normalization: user input goes through this
+ * before it becomes a fetch parameter, so casing/whitespace variants of the
+ * same query share one data-cache entry instead of one per raw string.
+ * Also bounds the length (the route already rejects < 2 chars).
+ */
+export const normalizeSearchQuery = (value: string) =>
+  value.trim().toLocaleLowerCase("ru").slice(0, 64);
+
+// SKU matches hydrated into suggestions need at most the response limit;
+// capping keeps the `filter[id][_in]` URL short when a short pattern
+// (e.g. "50") matches hundreds of SKUs.
+const SUGGESTION_MATCH_CAP = 20;
+
+// Catalog pages paginate over matched ids, so the cap is higher — it only
+// guards the filter URL length (~100 uuids ≈ 3.7 KB) for degenerate
+// substring matches, well past any realistic search result set.
+const CATALOG_MATCH_CAP = 100;
+
 async function resolveNormalizedSkuIds(search: string) {
   if (!looksLikeSkuQuery(search)) return null;
   const query = queryString({
@@ -678,8 +697,10 @@ export async function getCatalogSuggestions(search: string, limit = 6) {
   const matchedIds = await resolveNormalizedSkuIds(search);
   const query = queryString({
     "filter[status][_eq]": "published",
-    "filter[id][_in]": matchedIds?.length ? matchedIds.join(",") : undefined,
-    search: matchedIds?.length ? undefined : search,
+    "filter[id][_in]": matchedIds?.length
+      ? matchedIds.slice(0, SUGGESTION_MATCH_CAP).join(",")
+      : undefined,
+    search: matchedIds?.length ? undefined : normalizeSearchQuery(search),
     fields: cardFields,
     sort: "-popularity_score,title",
     limit: String(safeLimit),
@@ -775,8 +796,10 @@ export async function getCatalogPage(
     "filter[availability_status][_eq]": input.availability,
     "filter[price_status][_eq]": input.priceStatus,
     "filter[part_type][_eq]": input.partType,
-    "filter[id][_in]": matchedIds?.length ? matchedIds.join(",") : undefined,
-    search: matchedIds?.length ? undefined : input.search,
+    "filter[id][_in]": matchedIds?.length
+      ? matchedIds.slice(0, CATALOG_MATCH_CAP).join(",")
+      : undefined,
+    search: matchedIds?.length ? undefined : normalizeSearchQuery(input.search),
     fields: cardFields,
     sort: sortByQuery[input.sort],
     page: String(input.page),

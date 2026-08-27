@@ -11,6 +11,7 @@ import {
   fetchProductAnalogs,
   fetchProductSuggestions,
   getCatalogPage,
+  getCatalogSuggestions,
   getCategories,
   getFeaturedProducts,
   getHomepageCategories,
@@ -137,6 +138,66 @@ describe("catalog queries", () => {
     const skuIndex = new URL(requestMock.mock.calls[0][0], "https://cms.test");
     expect(skuIndex.searchParams.get("fields")).toBe("id,sku");
     expect(skuIndex.searchParams.get("filter[status][_eq]")).toBe("published");
+  });
+
+  it("normalizes the search cache key for casing and whitespace variants", async () => {
+    envelopeRequestMock.mockResolvedValue({ data: [], meta: { filter_count: 0 } });
+
+    await getCatalogPage({
+      search: " Карданный Вал ",
+      page: 1,
+      pageSize: 24,
+      sort: "relevance",
+    });
+    await getCatalogPage({
+      search: "КАРДАННЫЙ ВАЛ",
+      page: 1,
+      pageSize: 24,
+      sort: "relevance",
+    });
+
+    const first = new URL(envelopeRequestMock.mock.calls[0][0], "https://cms.test");
+    const second = new URL(envelopeRequestMock.mock.calls[1][0], "https://cms.test");
+    expect(first.searchParams.get("search")).toBe("карданный вал");
+    // Identical query strings mean identical fetch cache keys.
+    expect(first.searchParams.toString()).toBe(second.searchParams.toString());
+  });
+
+  it("caps the sku match list hydrated into suggestions", async () => {
+    const index = Array.from({ length: 30 }, (_, i) => ({
+      id: `id-${i}`,
+      sku: `RE50${i}`,
+    }));
+    requestMock
+      .mockResolvedValueOnce(index) // sku index
+      .mockResolvedValueOnce([]); // hydrated product cards
+
+    await getCatalogSuggestions("re50", 6);
+
+    const productsUrl = new URL(requestMock.mock.calls[1][0], "https://cms.test");
+    const inFilter = productsUrl.searchParams.get("filter[id][_in]") ?? "";
+    expect(inFilter.split(",")).toHaveLength(20);
+    expect(inFilter.split(",")[0]).toBe("id-0");
+  });
+
+  it("caps the sku match filter on catalog pages to keep the URL bounded", async () => {
+    const index = Array.from({ length: 150 }, (_, i) => ({
+      id: `id-${i}`,
+      sku: `RE50${String(i).padStart(3, "0")}`,
+    }));
+    requestMock.mockResolvedValueOnce(index);
+    envelopeRequestMock.mockResolvedValue({ data: [], meta: { filter_count: 100 } });
+
+    await getCatalogPage({
+      search: "re5",
+      page: 1,
+      pageSize: 24,
+      sort: "relevance",
+    });
+
+    const url = new URL(envelopeRequestMock.mock.calls[0][0], "https://cms.test");
+    const inFilter = url.searchParams.get("filter[id][_in]") ?? "";
+    expect(inFilter.split(",")).toHaveLength(100);
   });
 
   it("loads only categories selected for the homepage", async () => {
