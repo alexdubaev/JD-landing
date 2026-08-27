@@ -83,18 +83,44 @@ function toCartLine(product: ProductCardData): CartLine {
 /**
  * localStorage-backed cart store exposed through useSyncExternalStore.
  *
- * The store keeps a single source of truth in localStorage (so multiple tabs
- * and the header badge stay in sync) and notifies React subscribers on every
- * mutation via a CustomEvent. The empty array returned during SSR is replaced
- * by the real persisted contents once the client reads localStorage.
+ * The store seeds its module-level state from localStorage when the first
+ * subscriber attaches (so a page reload shows the persisted cart without any
+ * user action) and stays in sync across tabs by re-reading storage on the
+ * `storage` event. Mutations notify React subscribers via a CustomEvent. The
+ * empty array returned during SSR is replaced by the real persisted contents
+ * once the client subscribes.
  */
+function isValidCartLine(value: unknown): value is CartLine {
+  if (typeof value !== "object" || value === null) return false;
+  const line = value as Record<string, unknown>;
+  return (
+    typeof line.id === "string" &&
+    line.id !== "" &&
+    typeof line.slug === "string" &&
+    typeof line.href === "string" &&
+    typeof line.title === "string" &&
+    Number.isFinite(line.unitPrice) &&
+    (line.unitPrice as number) >= 0 &&
+    Number.isInteger(line.quantity) &&
+    (line.quantity as number) >= 1 &&
+    (line.quantity as number) <= QUANTITY_MAX
+  );
+}
+
 function readStore(): CartState {
   if (typeof window === "undefined") return EMPTY_CART;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return EMPTY_CART;
     const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as CartLine[]) : EMPTY_CART;
+    if (!Array.isArray(parsed)) return EMPTY_CART;
+    const lines = parsed.filter(isValidCartLine);
+    if (lines.length !== parsed.length) {
+      console.warn(
+        `[cart] dropped ${parsed.length - lines.length} invalid persisted line(s)`,
+      );
+    }
+    return lines;
   } catch {
     return EMPTY_CART;
   }
@@ -113,20 +139,41 @@ function writeStore(lines: CartState): void {
 function subscribe(callback: () => void): () => void {
   if (typeof window === "undefined") return () => undefined;
   const handler = () => callback();
+  const onStorage = (event: StorageEvent) => {
+    // `key === null` means localStorage.clear() in another tab.
+    if (event.key !== null && event.key !== STORAGE_KEY) return;
+    currentState = readStore();
+    callback();
+  };
+  const seeded = ensureInitialized();
   window.addEventListener(EVENT_NAME, handler);
-  window.addEventListener("storage", handler);
+  window.addEventListener("storage", onStorage);
+  if (seeded) callback();
   return () => {
     window.removeEventListener(EVENT_NAME, handler);
-    window.removeEventListener("storage", handler);
+    window.removeEventListener("storage", onStorage);
   };
 }
 
 // Module-level mutable state: the live cart. Mutated only through dispatch,
 // which writes through to localStorage and broadcasts the change event.
 let currentState: CartState = EMPTY_CART;
+let storeInitialized = false;
 
 function getState(): CartState {
   return currentState;
+}
+
+// True once the store has checked localStorage (first subscription); false
+// during SSR, the hydration render and any pre-mount render. Unlike a
+// `typeof window` check, it never claims "hydrated" before the persisted
+// cart has actually been seeded.
+function getHydrated(): boolean {
+  return storeInitialized;
+}
+
+function getHydratedServer(): boolean {
+  return false;
 }
 
 // React calls this during SSR and hydration. It must return a stable reference
@@ -140,14 +187,21 @@ function dispatch(action: CartAction): void {
   writeStore(currentState);
 }
 
-// Lazy-init from localStorage on first client access.
-function ensureInitialized(): void {
-  if (typeof window !== "undefined" && currentState.length === 0) {
-    // Only seed if storage actually has data; otherwise keep the empty default
-    // so a freshly-cleared cart is not refilled from a stale empty string.
-    const stored = readStore();
-    if (stored.length > 0) currentState = stored;
+// Lazy-init from localStorage before the first subscriber reads the store.
+// Idempotent (guarded by storeInitialized) so StrictMode double-subscribes and
+// repeated calls from action handlers are safe. Returns true when the first
+// call changed the snapshot, so `subscribe` can notify React immediately.
+function ensureInitialized(): boolean {
+  if (storeInitialized || typeof window === "undefined") return false;
+  storeInitialized = true;
+  // Only seed if storage actually has data; otherwise keep the empty default
+  // so a freshly-cleared cart is not refilled from a stale empty string.
+  const stored = readStore();
+  if (stored.length > 0) {
+    currentState = stored;
+    return true;
   }
+  return false;
 }
 
 type CartContextValue = {
@@ -168,12 +222,14 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const isClient = typeof window !== "undefined";
   const lines = useSyncExternalStore(
     subscribe,
     getState,
     getServerSnapshot,
   );
+  // Reusing `subscribe` is enough: after subscribing, React re-reads the
+  // snapshot, which flips from false to true once the store initialized.
+  const hydrated = useSyncExternalStore(subscribe, getHydrated, getHydratedServer);
 
   const addToCart = useCallback(
     (product: ProductCardData, quantity = 1) => {
@@ -196,7 +252,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       0,
     );
     return {
-      hydrated: isClient,
+      hydrated,
       lines,
       count,
       total,
@@ -226,7 +282,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "clear" });
       },
     };
-  }, [lines, isClient, addToCart, setQuantity]);
+  }, [lines, hydrated, addToCart, setQuantity]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
