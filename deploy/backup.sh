@@ -27,11 +27,15 @@ docker compose --env-file .env -f "${compose_file}" exec -T database \
   > "${backup_dir}/directus-${timestamp}.dump"
 
 # Fail the run when the dump is not a readable custom-format archive (empty
-# file, truncated TOC) instead of silently archiving garbage. The TOC lives
-# at the start of a custom archive, so pg_restore --list can stream it.
-docker compose --env-file .env -f "${compose_file}" exec -T database \
-  pg_restore --list /dev/stdin \
-  < "${backup_dir}/directus-${timestamp}.dump" > /dev/null
+# file, truncated TOC) instead of silently archiving garbage. The backups
+# directory is mounted read-only into a postgres container so pg_restore
+# reads a regular file — piping the dump through `compose exec -T ... 
+# /dev/stdin` does not deliver the header bytes on this setup (verified on
+# the VPS: "did not find magic string in file header" against a valid dump).
+docker run --rm \
+  -v "${backup_dir}:/verify:ro" \
+  postgres:17-alpine \
+  pg_restore --list "/verify/directus-${timestamp}.dump" > /dev/null
 
 docker run --rm \
   -v jd-landing_directus_uploads:/source:ro \
