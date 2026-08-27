@@ -8,6 +8,8 @@ const collectionTags = {
   categories: ["categories", "homepage", "sitemap"],
   products: ["products", "homepage", "sitemap"],
   pages: ["pages", "homepage", "sitemap"],
+  faq_items: ["faq"],
+  directus_files: ["files"],
   "page-sections": ["page-sections", "homepage"],
   page_sections: ["page-sections", "homepage"],
   "navigation-items": ["navigation", "homepage"],
@@ -18,7 +20,6 @@ const collectionTags = {
   site_settings: ["site-settings", "homepage"],
   "recent-supplies": ["recent-supplies", "homepage"],
   recent_supplies: ["recent-supplies", "homepage"],
-  orders: ["orders"],
   "home-page": ["homepage"],
   home_page: ["homepage"],
   homepage: ["homepage"],
@@ -33,6 +34,8 @@ const collectionIndexNowPaths = {
   categories: ["/catalog"],
   products: ["/catalog"],
   pages: ["/"],
+  faq_items: ["/"],
+  directus_files: [],
   "page-sections": ["/"],
   page_sections: ["/"],
   "navigation-items": ["/"],
@@ -43,7 +46,6 @@ const collectionIndexNowPaths = {
   site_settings: ["/"],
   "recent-supplies": ["/"],
   recent_supplies: ["/"],
-  orders: [],
   "home-page": ["/"],
   home_page: ["/"],
   homepage: ["/"],
@@ -73,6 +75,12 @@ const itemLookupFields: Partial<Record<Collection, string>> = {
   categories: "slug",
   products: "slug,category.slug",
 };
+
+// Per-file cache tags used by the media proxy route (app/media/[fileId]).
+// A replaced/renamed asset must expire these alongside the shared "files"
+// tag, otherwise the CDN keeps serving stale bytes for up to a day. Keep the
+// prefixes in sync with that route.
+const FILE_TAG_PREFIXES = ["file", "section-image", "asset"] as const;
 
 /**
  * Normalizes an optional item field. Directus flow templates render missing
@@ -176,6 +184,12 @@ export async function POST(request: Request) {
   }
   const extraTags = body.tags as string[] | undefined;
   extraTags?.forEach((tag) => revalidateTag(tag, { expire: 0 }));
+
+  if (collection === "directus_files" && id) {
+    for (const prefix of FILE_TAG_PREFIXES) {
+      revalidateTag(`${prefix}:${id}`, { expire: 0 });
+    }
+  }
 
   const paths = new Set<string>();
   const buildSlugPath = slugPathBuilders[collection];

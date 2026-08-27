@@ -11,6 +11,7 @@ export const REVALIDATION_COLLECTIONS = [
   "pages",
   "faq_items",
   "recent_supplies",
+  "directus_files",
 ];
 
 const FLOW_NAME = "Ревалидация сайта";

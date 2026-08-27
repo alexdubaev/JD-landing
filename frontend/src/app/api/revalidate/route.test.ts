@@ -124,6 +124,47 @@ describe("POST /api/revalidate", () => {
     expect(revalidateTag).toHaveBeenCalledWith("site-settings", { expire: 0 });
     expect(revalidateTag).toHaveBeenCalledWith("recent-supplies", { expire: 0 });
   });
+
+  it("invalidates FAQ content edited in the CMS", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("https://site.test/api/revalidate", {
+        method: "POST",
+        headers: { "x-revalidate-secret": "test-secret" },
+        body: JSON.stringify({ collection: "faq_items" }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(revalidateTag).toHaveBeenCalledWith("faq", { expire: 0 });
+  });
+
+  it("expires per-file media cache tags when a directus file changes", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("https://site.test/api/revalidate", {
+        method: "POST",
+        headers: { "x-revalidate-secret": "test-secret" },
+        body: JSON.stringify({ collection: "directus_files", id: PRODUCT_ID }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(revalidateTag).toHaveBeenCalledWith("files", { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith(`file:${PRODUCT_ID}`, { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith(`section-image:${PRODUCT_ID}`, { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith(`asset:${PRODUCT_ID}`, { expire: 0 });
+  });
+
+  it("rejects the removed orders mapping", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("https://site.test/api/revalidate", {
+        method: "POST",
+        headers: { "x-revalidate-secret": "test-secret" },
+        body: JSON.stringify({ collection: "orders" }),
+      }),
+    );
+    expect(response.status).toBe(400);
+  });
 });
 
 describe("POST /api/revalidate item-aware payloads (Task 16)", () => {

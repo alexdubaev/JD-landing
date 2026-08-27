@@ -44,6 +44,10 @@ test("creates an active non-blocking event flow and request operation", async ()
   assert.ok(flow.options.collections.includes("home_page"));
   assert.ok(flow.options.collections.includes("page_sections"));
   assert.ok(flow.options.collections.includes("pages"));
+  // FAQ edits and asset replacements must reach the webhook too: the route
+  // maps them to the "faq"/"files" cache tags.
+  assert.ok(flow.options.collections.includes("faq_items"));
+  assert.ok(flow.options.collections.includes("directus_files"));
   assert.equal(operation.type, "request");
   assert.equal(operation.options.method, "POST");
   assert.deepEqual(operation.options.body, {
