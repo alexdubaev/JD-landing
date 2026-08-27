@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { pathToFileURL } from "node:url";
 
 import {
   buildRelationPayload,
@@ -148,11 +151,15 @@ test("builds translation and regular one-to-many relation metadata", () => {
 });
 
 test("recognizes a relative command path as the current main module", () => {
+  // Build the inputs from path primitives so the comparison holds on any
+  // platform: hardcoded "file:///D:/..." URLs never match on posix runners.
+  const cwd = join(tmpdir(), "repo", "directus");
+  const modulePath = join(cwd, "schema", "apply-schema.mjs");
   assert.equal(
     isMainModule(
-      "file:///D:/repo/directus/schema/apply-schema.mjs",
-      "schema/apply-schema.mjs",
-      "D:/repo/directus",
+      pathToFileURL(modulePath).href,
+      join("schema", "apply-schema.mjs"),
+      cwd,
     ),
     true,
   );

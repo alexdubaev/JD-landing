@@ -12,7 +12,11 @@ jobs:
       run:
         working-directory: frontend
     steps:
+      # lfs: brand-assets.test.ts reads the real bytes of the LFS-tracked
+      # logo PNG; a pointer file instead of the asset fails the suite.
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 20
