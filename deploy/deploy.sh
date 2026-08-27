@@ -22,7 +22,6 @@ set -euo pipefail
 ENV_FILE="${ENV_FILE:-/opt/jd-landing/.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-/opt/jd-landing/release/deploy/compose.production.yml}"
 CADDYFILE="${CADDYFILE:-/opt/jd-landing/release/deploy/Caddyfile}"
-FRONTEND_CONTAINER="jd-landing-frontend-1"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "ERROR: env file not found at $ENV_FILE" >&2
@@ -36,9 +35,6 @@ read_env() {
 }
 
 REVALIDATE_SECRET="$(read_env REVALIDATE_SECRET)"
-DIRECTUS_TOKEN="$(read_env DIRECTUS_TOKEN)"
-DIRECTUS_ADMIN_EMAIL="$(read_env DIRECTUS_ADMIN_EMAIL)"
-DIRECTUS_ADMIN_PASSWORD="$(read_env DIRECTUS_ADMIN_PASSWORD)"
 
 require_env_value() {
   local key="$1"
@@ -93,6 +89,13 @@ sudo docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build frontend
 
 echo "==> 2/4 Recreating frontend container..."
 sudo docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d frontend
+# Resolve the container id through compose instead of hardcoding the
+# project-prefixed name, which breaks if the project name ever changes.
+FRONTEND_CONTAINER="$(sudo docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps -q frontend)"
+if [[ -z "$FRONTEND_CONTAINER" ]]; then
+  echo "ERROR: frontend container is not running" >&2
+  exit 1
+fi
 # The production Caddyfile deliberately has `admin off`, so it cannot receive
 # a hot reload through port 2019. Recreate only Caddy to pick up its bind-mounted
 # configuration after the frontend becomes healthy.

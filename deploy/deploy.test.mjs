@@ -39,3 +39,15 @@ test("deploy runs optional security preflight before any compose mutation", () =
   assert.match(script, /read_env ENABLE_RESTIC_BACKUP \|\| true/u);
   assert.doesNotMatch(script, /echo\s+.*\$DIRECTUS_CMS_AUTH_HASH/u);
 });
+
+test("deploy reads only the secrets it actually uses", () => {
+  assert.match(script, /read_env REVALIDATE_SECRET/u);
+  assert.doesNotMatch(script, /DIRECTUS_ADMIN_PASSWORD/u);
+  assert.doesNotMatch(script, /DIRECTUS_ADMIN_EMAIL/u);
+  assert.doesNotMatch(script, /read_env DIRECTUS_TOKEN/u);
+});
+
+test("deploy resolves the frontend container through compose instead of a hardcoded name", () => {
+  assert.match(script, /ps -q frontend/u);
+  assert.doesNotMatch(script, /FRONTEND_CONTAINER="jd-landing-/u);
+});

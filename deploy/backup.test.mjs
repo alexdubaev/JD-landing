@@ -11,6 +11,19 @@ test("backup keeps the working local PostgreSQL and uploads artifacts", () => {
   assert.match(script, /mtime \+14/u);
 });
 
+test("backup points docker compose at the release checkout, not the project root", () => {
+  assert.match(script, /release\/deploy\/compose\.production\.yml/u);
+  assert.match(script, /-f "\$\{compose_file\}"/u);
+  assert.doesNotMatch(script, /-f compose\.production\.yml/u);
+});
+
+test("backup verifies the dump archive before finishing", () => {
+  assert.match(script, /pg_restore --list/u);
+  const dump = script.indexOf("directus-${timestamp}.dump");
+  const verify = script.indexOf("pg_restore --list");
+  assert.ok(dump >= 0 && verify > dump, "verification runs on the produced dump");
+});
+
 test("backup does not unconditionally switch to restic-only storage", () => {
   assert.doesNotMatch(script, /restic backup/u);
   assert.doesNotMatch(script, /RESTIC_REPOSITORY/u);
