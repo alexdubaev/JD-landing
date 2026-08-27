@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 test("validator fails when an input file is missing", () => {
@@ -13,8 +14,14 @@ test("validator fails when an input file is missing", () => {
   try {
     const result = spawnSync(
       process.execPath,
-      ["scripts/validate-import.mjs", missingProducts, missingCategories],
-      { cwd: process.cwd(), encoding: "utf8" },
+      // Resolve the script relative to this test file, not the caller's cwd:
+      // node --test may run from any directory (repo root, CI, a package).
+      [
+        fileURLToPath(new URL("./validate-import.mjs", import.meta.url)),
+        missingProducts,
+        missingCategories,
+      ],
+      { encoding: "utf8" },
     );
 
     assert.notEqual(result.status, 0);
