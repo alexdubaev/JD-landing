@@ -25,18 +25,11 @@ import {
   validateLeadAttachment,
   type AttachmentKind,
 } from "@/lib/leads/attachments";
-import {
-  clearGeneratedProductRequestLines,
-  PRODUCT_REQUEST_LIST_EVENT,
-  reconcileProductRequestDraft,
-  setProductRequestList,
-} from "@/lib/leads/product-request-list";
+import { usePartsRequestDraft } from "@/lib/leads/use-parts-request-draft";
 import { collectUtmAttribution, trackEvent } from "@/lib/analytics";
 import { useFormSubmit } from "@/lib/forms/use-form-submit";
 import { MarketingConsent } from "./MarketingConsent";
 import { TurnstileField, type TurnstileFieldHandle } from "./TurnstileField";
-
-const storageKey = "deere-shop:parts-request-draft";
 
 export type PartsRequestMode = "list" | "excel" | "photo";
 
@@ -45,17 +38,12 @@ const readableSize = (bytes: number) =>
     ? `${(bytes / (1024 * 1024)).toFixed(1)} МБ`
     : `${Math.max(1, Math.ceil(bytes / 1024))} КБ`;
 
-const initialDraft = () =>
-  typeof window === "undefined"
-    ? ""
-    : reconcileProductRequestDraft(localStorage.getItem(storageKey) ?? "");
-
 export function BulkPartsRequest({
   initialMode = "list",
 }: {
   initialMode?: PartsRequestMode;
 }) {
-  const [draft, setDraft] = useState(initialDraft);
+  const { draft, setDraft, clear } = usePartsRequestDraft();
   const [spreadsheet, setSpreadsheet] = useState<File | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,18 +55,6 @@ export function BulkPartsRequest({
   const photoControl = useRef<HTMLButtonElement>(null);
   const turnstile = useRef<TurnstileFieldHandle>(null);
   const parsed = useMemo(() => parsePartsRequest(draft), [draft]);
-
-  useEffect(() => {
-    if (draft) localStorage.setItem(storageKey, draft);
-    else localStorage.removeItem(storageKey);
-  }, [draft]);
-
-  useEffect(() => {
-    const syncProducts = () =>
-      setDraft((current) => reconcileProductRequestDraft(current));
-    window.addEventListener(PRODUCT_REQUEST_LIST_EVENT, syncProducts);
-    return () => window.removeEventListener(PRODUCT_REQUEST_LIST_EVENT, syncProducts);
-  }, []);
 
   useEffect(() => {
     const focusTimer = window.setTimeout(() => {
@@ -120,10 +96,7 @@ export function BulkPartsRequest({
   }
 
   function clearDraft() {
-    setDraft("");
-    localStorage.removeItem(storageKey);
-    clearGeneratedProductRequestLines();
-    setProductRequestList([]);
+    clear();
     setError(null);
   }
 
@@ -151,9 +124,7 @@ export function BulkPartsRequest({
       () => fetch("/api/leads", { method: "POST", body: form }),
       () => {
         trackEvent("lead_submit", { source: "parts_request" });
-        localStorage.removeItem(storageKey);
-        clearGeneratedProductRequestLines();
-        setProductRequestList([]);
+        clear();
       },
       "Не удалось отправить список. Попробуйте ещё раз.",
     );
