@@ -16,6 +16,7 @@ import type {
   ContactChannel,
   ContentPage,
   FaqItem,
+  PageSection,
   RecentSupply,
   SectionType,
   SiteSettings,
@@ -42,8 +43,26 @@ export function HomePageView({
 }) {
   const find = (type: SectionType) =>
     page.sections.find((section) => section.type === type);
-  const hero = find("hero");
-  if (!hero) throw new Error("Homepage hero section is required");
+  // A missing hero section degrades to a minimal fallback instead of taking
+  // the whole homepage down — every other section already degrades this way.
+  const hero =
+    find("hero") ??
+    ({
+      id: "hero-fallback",
+      type: "hero",
+      title: null,
+      subtitle: null,
+      text: null,
+      imageId: null,
+      buttonText: null,
+      buttonUrl: null,
+      items: [],
+      settings: {},
+      sortOrder: 0,
+    } satisfies PageSection);
+  if (!find("hero")) {
+    console.warn("[home] hero section missing, rendering fallback");
+  }
   const supportingTypes = new Set<SectionType>([
     "hero", "advantages", "cta", "lead_form", "seo_text", "parts_request",
   ]);

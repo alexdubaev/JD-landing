@@ -40,7 +40,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const rawSearchParams = await searchParams;
   const query = parseCatalogSearchParams(rawSearchParams);
-  const page = await getPageSeoBySlug("catalog");
+  const page = await getPageSeoBySlug("catalog").catch(() => null);
 
   const title = page?.seoTitle || page?.title || "Каталог продукции";
   const description = page?.seoDescription;
@@ -67,10 +67,12 @@ export default async function CatalogPage({
 }) {
   const rawSearchParams = await searchParams;
   const query = parseCatalogSearchParams(rawSearchParams);
+  // Directus hiccups degrade to the static catalog shell (same contract as
+  // the category page); only the product query itself stays strict.
   const [catalog, categories, page] = await Promise.all([
     getCatalogPage(query),
-    getCategories(),
-    getPageSeoBySlug("catalog"),
+    getCategories().catch(() => []),
+    getPageSeoBySlug("catalog").catch(() => null),
   ]);
 
   // 404 for out-of-range page numbers

@@ -44,12 +44,15 @@ const isBenefit = (value: unknown): value is BenefitItem => {
   return typeof item.title === "string" && typeof item.text === "string";
 };
 
-const settingText = (section: PageSection, key: string) => {
+// Local fallback when the CMS hero image is missing/broken — the homepage
+// must degrade, never go to the error page over one incomplete section.
+const HERO_FALLBACK_IMAGE = "/images/home/deere-shop-hero-v2.webp";
+
+const settingText = (section: PageSection, key: string, fallback: string) => {
   const value = section.settings[key];
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`Homepage hero setting is required: ${key}`);
-  }
-  return value.trim();
+  if (typeof value === "string" && value.trim()) return value.trim();
+  console.warn(`[home] hero setting missing, using fallback: ${key}`);
+  return fallback;
 };
 
 const optionalSettingText = (section: PageSection, key: string) => {
@@ -84,17 +87,20 @@ export function HomeHero({
   settings: SiteSettings;
 }) {
   const benefits = (benefitsSection?.items ?? []).filter(isBenefit).slice(0, 4);
-  const title = section.title?.trim();
-  const description = section.text?.trim();
-  const imageAlt = section.imageAlt?.trim();
-  const imageUrl = directusAssetUrl(section.imageId, {
+  const title = section.title?.trim() || "Запчасти John Deere";
+  const description =
+    section.text?.trim() ||
+    "Подбор комплектующих по артикулу и модели техники. Отправьте заявку — менеджер подтвердит совместимость и условия поставки.";
+  const imageAlt = section.imageAlt?.trim() || title;
+  const cmsImageUrl = directusAssetUrl(section.imageId, {
     format: "webp",
     quality: 84,
     width: 1920,
   });
-  if (!title || !description || !imageUrl || !imageAlt) {
-    throw new Error("Homepage hero content is incomplete");
+  if (!section.title?.trim() || !section.text?.trim() || !cmsImageUrl) {
+    console.warn("[home] hero content incomplete, rendering fallbacks");
   }
+  const imageUrl = cmsImageUrl ?? HERO_FALLBACK_IMAGE;
 
   const phone = contacts.find((channel) => channel.type === "phone")?.value ?? settings.phone;
   const messengers = contacts
@@ -132,21 +138,29 @@ export function HomeHero({
           <p className="commerce-hero__description">{description}</p>
           <HeroPartSearch
             bulkLink={{
-              text: settingText(section, "bulk_link_text"),
-              url: settingText(section, "bulk_link_url"),
+              text: settingText(section, "bulk_link_text", "Поиск по списку"),
+              url: settingText(section, "bulk_link_url", "/parts-request"),
             }}
-            bulkPrompt={settingText(section, "bulk_prompt")}
-            buttonText={settingText(section, "search_button_text")}
+            bulkPrompt={settingText(
+              section,
+              "bulk_prompt",
+              "Вставьте список артикулов — подберём каждую позицию",
+            )}
+            buttonText={settingText(section, "search_button_text", "Найти")}
             excelLink={{
-              text: settingText(section, "excel_link_text"),
-              url: settingText(section, "excel_link_url"),
+              text: settingText(section, "excel_link_text", "Загрузить Excel"),
+              url: settingText(section, "excel_link_url", "/parts-request?mode=excel"),
             }}
-            label={settingText(section, "search_label")}
+            label={settingText(section, "search_label", "Поиск по артикулу")}
             photoLink={{
-              text: settingText(section, "photo_link_text"),
-              url: settingText(section, "photo_link_url"),
+              text: settingText(section, "photo_link_text", "Или пришлите фото детали"),
+              url: settingText(section, "photo_link_url", "/parts-request?mode=photo"),
             }}
-            placeholder={settingText(section, "search_placeholder")}
+            placeholder={settingText(
+              section,
+              "search_placeholder",
+              "Артикул или название детали",
+            )}
           />
           <div className="commerce-hero__contacts commerce-hero__contacts--desktop-only">
             {phone ? (
