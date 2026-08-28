@@ -94,9 +94,9 @@ TD-09 → 16; TD-04 → 17; TD-03 ↔ TD-09 (search-функции).
       `6702980` — TD-16, `c61cfee` — TD-17 (пункты 1–3), `ffb225b` — TD-18
       (безопасные пункты)). Полный прогон всех наборов зелёный (frontend 503
       теста + typecheck + lint; seo-worker 88; directus 490; deploy/scripts 18).
-      **Отложено на решение владельца** (TD-17.4, TD-18.1/4):
-      untrack `commit-push.bat`; судьба CSV-пайплайна build-/import-directus-
-      products-csv.mjs (архивировать или оставить живыми); архивация one-off'ов
-      sync-brand/upload-logo; `git rm -r --cached` одноразовых outputs и
-      рассинхрон `.gitignore` (`outputs/`, `docs/superpowers/`).
+      Решения владельца 2026-08-28: `commit-push.bat` убран из git
+      (`83e0f90`); CSV-пайплайн архивирован в `scripts/archive/` (`36e1077`);
+      P3 запушен и задеплоен. Ещё открыты (без «да» владельца не делать):
+      архивация one-off'ов sync-brand/upload-logo, untrack одноразовых
+      outputs и рассинхрон `.gitignore` (`outputs/`, `docs/superpowers/`).
 - [ ] Stage-2: обсуждение S-1…S-12
