@@ -9,16 +9,22 @@ const {
   getFilesByIdsMock,
   getProductBySlugsMock,
   getProductsByIdsMock,
+  fetchProductAnalogsMock,
 } = vi.hoisted(() => ({
   getFilesByIdsMock: vi.fn(),
   getProductBySlugsMock: vi.fn(),
   getProductsByIdsMock: vi.fn(),
+  fetchProductAnalogsMock: vi.fn(),
 }));
 
 vi.mock("@/lib/directus/catalog", () => ({
   getFilesByIds: getFilesByIdsMock,
   getProductBySlugs: getProductBySlugsMock,
   getProductsByIds: getProductsByIdsMock,
+}));
+
+vi.mock("@/lib/directus/product-analogs", () => ({
+  fetchProductAnalogs: fetchProductAnalogsMock,
 }));
 
 const product: Product = {
@@ -56,6 +62,7 @@ describe("product page", () => {
     getProductBySlugsMock.mockResolvedValue(product);
     getFilesByIdsMock.mockResolvedValue([]);
     getProductsByIdsMock.mockResolvedValue([]);
+    fetchProductAnalogsMock.mockResolvedValue({ analogs: [], supersededBy: [] });
   });
 
   it("renders one H1, SKU, request price, and the branded gallery fallback", async () => {
@@ -200,5 +207,120 @@ describe("product page", () => {
       "href",
       "/media/legacy-doc-1",
     );
+  });
+
+  it("renders the analogs block and shadows the legacy related products (R8 dual-read)", async () => {
+    fetchProductAnalogsMock.mockResolvedValue({
+      analogs: [
+        {
+          relationType: "analog",
+          direction: "from",
+          product: {
+            id: "product-2",
+            title: "Насос-аналог",
+            slug: "analog-pump",
+            sku: "RE111111",
+            category: null,
+            shortDescription: null,
+            mainImageId: null,
+            imageAlt: null,
+            price: null,
+            currency: "RUB",
+            priceStatus: "on_request",
+            availabilityStatus: "on_request",
+          },
+          sourceName: null,
+          note: null,
+          verifiedAt: null,
+        },
+      ],
+      supersededBy: [],
+    });
+    getProductsByIdsMock.mockResolvedValue([
+      {
+        id: "product-3",
+        title: "Похожий товар",
+        slug: "similar",
+        sku: "RE222222",
+        category: null,
+        shortDescription: null,
+        mainImageId: null,
+        imageAlt: null,
+        price: null,
+        currency: "RUB",
+        priceStatus: "on_request",
+        availabilityStatus: "on_request",
+      },
+    ]);
+
+    render(
+      await ProductPage({
+        params: Promise.resolve({
+          categorySlug: "hydraulics",
+          productSlug: "hydraulic-pump",
+        }),
+      }),
+    );
+
+    expect(fetchProductAnalogsMock).toHaveBeenCalledWith("product-1");
+    expect(screen.getByRole("heading", { name: "Аналоги" })).toBeInTheDocument();
+    expect(screen.getByText("Насос-аналог")).toBeInTheDocument();
+    // Non-empty analog view wins: the legacy block must not render.
+    expect(
+      screen.queryByRole("heading", { name: "Похожие товары" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("falls back to the legacy related products when the analog view is empty", async () => {
+    getProductsByIdsMock.mockResolvedValue([
+      {
+        id: "product-3",
+        title: "Похожий товар",
+        slug: "similar",
+        sku: "RE222222",
+        category: null,
+        shortDescription: null,
+        mainImageId: null,
+        imageAlt: null,
+        price: null,
+        currency: "RUB",
+        priceStatus: "on_request",
+        availabilityStatus: "on_request",
+      },
+    ]);
+
+    render(
+      await ProductPage({
+        params: Promise.resolve({
+          categorySlug: "hydraulics",
+          productSlug: "hydraulic-pump",
+        }),
+      }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Похожие товары" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Аналоги" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders no related section at all when both analogs and legacy lists are empty", async () => {
+    render(
+      await ProductPage({
+        params: Promise.resolve({
+          categorySlug: "hydraulics",
+          productSlug: "hydraulic-pump",
+        }),
+      }),
+    );
+
+    expect(
+      screen.queryByRole("heading", { name: "Похожие товары" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Аналоги" }),
+    ).not.toBeInTheDocument();
   });
 });

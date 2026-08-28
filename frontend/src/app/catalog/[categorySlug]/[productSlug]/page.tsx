@@ -16,6 +16,7 @@ import {
   getProductsByIds,
 } from "@/lib/directus/catalog";
 import { getFaqItems, getSiteSettings } from "@/lib/directus/content";
+import { fetchProductAnalogs } from "@/lib/directus/product-analogs";
 import { buildSocialMetadata } from "@/lib/seo/social-metadata";
 import { absoluteUrl } from "@/lib/seo/url";
 import {
@@ -82,12 +83,17 @@ export default async function ProductPage({ params }: ProductRouteProps) {
   const { categorySlug, productSlug } = await params;
   const product = await getProductBySlugs(categorySlug, productSlug);
   if (!product) notFound();
-  const [documents, relatedProducts, faq, settings] = await Promise.all([
-    getFilesByIds(product.documentIds),
-    getProductsByIds(product.relatedProductIds),
-    getFaqItems({ productId: product.id }).catch(() => []),
-    getProductPageSettings(),
-  ]);
+  const [documents, relatedProducts, analogs, faq, settings] = await Promise.all(
+    [
+      getFilesByIds(product.documentIds),
+      getProductsByIds(product.relatedProductIds),
+      // Degradable fetch: an unreadable products_analogs collection resolves
+      // to an empty view inside the module, so the page never 500s on it.
+      fetchProductAnalogs(product.id),
+      getFaqItems({ productId: product.id }).catch(() => []),
+      getProductPageSettings(),
+    ],
+  );
 
   const breadcrumbItems = [
     { name: "Главная", url: absoluteUrl("/") },
@@ -142,7 +148,7 @@ export default async function ProductPage({ params }: ProductRouteProps) {
             <AnimatedAccordion items={faq} />
           </section>
         ) : null}
-        <RelatedProducts products={relatedProducts} />
+        <RelatedProducts products={relatedProducts} analogs={analogs} />
         <section
           aria-labelledby="product-consultation"
           className="product-section product-consultation"
