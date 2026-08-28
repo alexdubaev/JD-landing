@@ -2,7 +2,8 @@
 
 Единый ранбук: что деплоим, куда, как и что проверять после. Документ
 собирает в одном месте всё, что раньше было размазано по `deploy/README.md`,
-`HANDOFF.md` и комментариям в `deploy/deploy.sh`.
+архивному `docs/implementation/handoff-2026-08-13.md` и комментариям в
+`deploy/deploy.sh`.
 
 ---
 
@@ -63,7 +64,8 @@ Directus зафиксирован на `12.1.1`. Число кастомных �
 
 ## 3. Перед деплоем — обязательно локально
 
-> Правило из `HANDOFF.md`: «Не выполнять deploy до локальной проверки».
+> Правило (изначально из архива `docs/implementation/handoff-2026-08-13.md`,
+> теперь часть `AGENTS.md`): «Не выполнять deploy до локальной проверки».
 
 ```bash
 cd frontend
@@ -163,21 +165,35 @@ git lfs pull
 
 ---
 
-## 7. Directus revalidation webhook (один раз + проверка)
+## 7. Ревалидация Directus (управляемый Flow)
 
-CMS должна дёргать фронтенд при изменении коллекций, иначе ISR-страницы
-обновляются не быстрее чем раз в 300с.
+CMS должна сбрасывать ISR-кэш фронтенда при изменении коллекций, иначе
+страницы обновляются не быстрее чем раз в 300 с. Механизм — **управляемый
+Directus Flow** (`directus/flows/apply-revalidation-flow.mjs`), а не ручной
+webhook в Settings: Flow сам создаётся/обновляется скриптом и дергает
+`/api/revalidate` на create/update/delete всех поддерживаемых коллекций.
 
-**Настройка в Directus (Settings → Webhooks):**
-- URL: `https://deere-shop.ru/api/revalidate`
-- Метод: `POST`
-- Заголовок: `x-revalidate-secret: <значение REVALIDATE_SECRET>`
-- Тело: `{"collection": "products"}` (аналогично для `categories`,
-  `pages`, `page-sections`, `navigation-items`, `contact-channels`,
-  `site-settings`, `recent-supplies`)
+**Применение на VPS** (node на хосте нет — запуск внутри контейнера
+Directus с маунтом чекаута релиза):
 
-Без `REVALIDATE_SECRET` webhook открыт (任何人 может сбросить кэш) —
-переменная обязательна.
+```bash
+sudo bash -c 'set -a; . /opt/jd-landing/.env; set +a; \
+  docker run --rm --network jd-landing_backend \
+  -v /opt/jd-landing/release/directus:/work -w /work \
+  --env DIRECTUS_URL=http://directus:8055 \
+  --env NEXT_REVALIDATE_URL=http://frontend:3000/api/revalidate \
+  --env REVALIDATE_SECRET \
+  --env DIRECTUS_ADMIN_EMAIL --env DIRECTUS_ADMIN_PASSWORD \
+  directus/directus:12.1.1 node flows/apply-revalidation-flow.mjs'
+```
+
+- `REVALIDATE_SECRET` обязателен и должен совпадать с одноимённой
+  переменной фронтенда: без неё эндпоинт отвечает 401, и кэш не сбрасывается.
+- Флоу ходит на `http://frontend:3000/api/revalidate` внутри приватной сети
+  `backend` — наружу webhook не торчит.
+- Добавить `-- --dry-run`, чтобы увидеть дрейф без записи в API.
+- Проверка после применения: сохранить любую коллекцию в CMS (или curl'ом
+  POST с заголовком `x-revalidate-secret`) — ответ должен быть `{"ok":true}`.
 
 ---
 

@@ -38,9 +38,10 @@ Files:
   `--status=published` is explicitly supplied.
 
 The public Directus policy is intentionally closed. Only a server-side Next.js
-client may use the `Frontend API` role. See
-[`../DIRECTUS_COLLECTIONS_PLAN.md`](../DIRECTUS_COLLECTIONS_PLAN.md) for the
-collection model, license constraints, and security boundaries.
+client may use the `Frontend API` role. This README is the canonical
+reference for the collection model, license constraints, and security
+boundaries (the former root-level DIRECTUS_COLLECTIONS_PLAN.md duplicated it
+and has been removed).
 
 After schema, Studio metadata, and access are applied, provision the managed
 cache invalidation flow with `npm run flows:revalidation`. Set

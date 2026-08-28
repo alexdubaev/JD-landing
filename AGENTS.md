@@ -191,6 +191,9 @@ For each section:
 
 ## Directus Collections
 
+Canonical schema reference: `directus/README.md` (fields, relationships,
+license constraints). The list below is the original planning requirement.
+
 Create or plan the following Directus collections:
 
 - `site_settings`
