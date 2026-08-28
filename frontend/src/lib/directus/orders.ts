@@ -16,9 +16,9 @@ type RawOrderItem = {
  * cart so the historical record stays accurate even if a product later changes
  * its price/SKU or is deleted.
  *
- * On any failure after the order row is created the caller is responsible for
- * compensating via {@link deleteOrder} (see the API route). This mirrors the
- * leads attachment upload/rollback pattern.
+ * If the line-item write fails after the order row exists, the order is
+ * deleted right here (compensating delete) and the error is rethrown, so no
+ * orphaned half-orders remain even though the API route never learns the id.
  */
 export async function createOrder(
   input: OrderInput,
@@ -56,22 +56,30 @@ export async function createOrder(
     cache: "no-store",
   });
 
-  // Create line items sequentially to keep the compensating-delete story
-  // simple and predictable. Order sizes are small (capped at 100 lines).
-  for (const item of input.items) {
-    await directusRequest<RawOrderItem>("/items/order_items", {
+  // One batch POST writes all line items in a single round-trip (Directus
+  // accepts an array body on /items/<collection>; verified against the live
+  // 12.1.1 instance). On failure the catch below compensates by deleting the
+  // order — the FK cascade removes whatever the batch managed to write.
+  try {
+    await directusRequest<RawOrderItem[]>("/items/order_items", {
       method: "POST",
-      body: JSON.stringify({
-        order: order.id,
-        product: item.product ?? null,
-        sku_snapshot: item.sku,
-        title_snapshot: item.title,
-        unit_price: Number(item.unit_price.toFixed(2)),
-        quantity: item.quantity,
-        currency: "RUB",
-      }),
+      body: JSON.stringify(
+        input.items.map((item) => ({
+          order: order.id,
+          product: item.product ?? null,
+          sku_snapshot: item.sku,
+          title_snapshot: item.title,
+          unit_price: Number(item.unit_price.toFixed(2)),
+          quantity: item.quantity,
+          currency: "RUB",
+        })),
+      ),
       cache: "no-store",
     });
+  } catch (error) {
+    // Best-effort rollback: a failed delete must not mask the original error.
+    await deleteOrder(order.id).catch(() => undefined);
+    throw error;
   }
 
   return { id: order.id };
