@@ -96,7 +96,8 @@ TD-09 → 16; TD-04 → 17; TD-03 ↔ TD-09 (search-функции).
       теста + typecheck + lint; seo-worker 88; directus 490; deploy/scripts 18).
       Решения владельца 2026-08-28: `commit-push.bat` убран из git
       (`83e0f90`); CSV-пайплайн архивирован в `scripts/archive/` (`36e1077`);
-      P3 запушен и задеплоен. Ещё открыты (без «да» владельца не делать):
-      архивация one-off'ов sync-brand/upload-logo, untrack одноразовых
-      outputs и рассинхрон `.gitignore` (`outputs/`, `docs/superpowers/`).
+      P3 запушен и задеплоен. Все отложенные пункты закрыты решениями владельца 2026-08-28:
+      one-off'ы архивированы (`197ddf6`), одноразовые outputs выведены из
+      git с согласованием ignore (`681e10e`), plans/specs полностью
+      затреканы. Бэклог TD-01…TD-19 закрыт полностью.
 - [ ] Stage-2: обсуждение S-1…S-12
