@@ -52,6 +52,19 @@ describe("notifyIndexNow", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("warns and skips instead of throwing when the site URL is malformed", async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = "not-a-valid-url";
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(notifyIndexNow(["/catalog"])).resolves.toBeUndefined();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("NEXT_PUBLIC_SITE_URL"),
+    );
+    warnSpy.mockRestore();
+  });
+
   it("does nothing for an empty path list", async () => {
     await notifyIndexNow([]);
     expect(fetchMock).not.toHaveBeenCalled();

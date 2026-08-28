@@ -37,6 +37,23 @@ describe("POST /api/revalidate", () => {
     expect(revalidateTag).not.toHaveBeenCalled();
   });
 
+  it("rejects a same-length wrong secret and a missing one", async () => {
+    const { POST } = await import("./route");
+    for (const header of ["test-secret!", undefined]) {
+      const response = await POST(
+        new Request("https://site.test/api/revalidate", {
+          method: "POST",
+          headers: header
+            ? { "x-revalidate-secret": header }
+            : undefined,
+          body: JSON.stringify({ collection: "articles" }),
+        }),
+      );
+      expect(response.status).toBe(401);
+    }
+    expect(revalidateTag).not.toHaveBeenCalled();
+  });
+
   it("rejects collections outside the allowlist", async () => {
     const { POST } = await import("./route");
     const response = await POST(

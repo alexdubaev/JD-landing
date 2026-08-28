@@ -104,4 +104,25 @@ describe("notifyNewLead", () => {
     const args = sendMail.mock.calls[0][0];
     expect(args.from).toContain("sender@example.test");
   });
+
+  it("creates the transport with bounded connection and socket timeouts", async () => {
+    enableSmtp();
+    const transportOptions: Array<{
+      connectionTimeout?: number;
+      socketTimeout?: number;
+    }> = [];
+    const createTransport = vi.fn((options: {
+      connectionTimeout?: number;
+      socketTimeout?: number;
+    }) => {
+      transportOptions.push(options);
+      return { sendMail: vi.fn().mockResolvedValue({}) };
+    });
+    vi.doMock("nodemailer", () => ({ createTransport }));
+
+    await notifyNewLead(baseLead);
+
+    expect(transportOptions[0].connectionTimeout).toBe(5_000);
+    expect(transportOptions[0].socketTimeout).toBe(5_000);
+  });
 });

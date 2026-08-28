@@ -2,7 +2,7 @@ import "server-only";
 
 import type { PartsRequestItem } from "@/lib/leads/parts-request";
 
-import { getSmtpEnv, isNotificationsEnabled, type SmtpEnv } from "./env";
+import { getSmtpEnv, type CompleteSmtpEnv } from "./env";
 import { renderLeadEmail, type LeadEmailModel } from "./render";
 
 export type { LeadEmailModel };
@@ -46,7 +46,7 @@ const textRow = (label: string, value: string | undefined) =>
  * it out of bundles that never send mail, and lets tests stub the transport
  * without loading the real module.
  */
-async function createTransport(env: SmtpEnv) {
+async function createTransport(env: CompleteSmtpEnv) {
   const nodemailer = await import("nodemailer");
   return nodemailer.createTransport({
     host: env.SMTP_HOST,
@@ -56,6 +56,10 @@ async function createTransport(env: SmtpEnv) {
       user: env.SMTP_USER,
       pass: env.SMTP_PASSWORD,
     },
+    // A hung SMTP connection must never stall the lead route that awaits
+    // this send.
+    connectionTimeout: 5_000,
+    socketTimeout: 5_000,
   });
 }
 
@@ -69,10 +73,10 @@ export async function notifyNewLead(
   lead: NewLeadPayload,
 ): Promise<string | null> {
   const env = getSmtpEnv();
-  if (!isNotificationsEnabled(env)) return null;
+  if (!env) return null;
 
   const senderName = "DEERE-SHOP";
-  const from = env.SMTP_FROM || env.SMTP_USER!;
+  const from = env.SMTP_FROM || env.SMTP_USER;
   const subject = `Новая заявка — ${lead.name}`;
   const text = renderLeadPlainText(lead);
   const html = renderLeadEmail(toEmailModel(lead));
@@ -81,12 +85,12 @@ export async function notifyNewLead(
     const transport = await createTransport(env);
     await transport.sendMail({
       from: `${senderName} <${from}>`,
-      to: env.NOTIFY_EMAIL_TO!,
+      to: env.NOTIFY_EMAIL_TO,
       subject,
       text,
       html,
     });
-    return env.NOTIFY_EMAIL_TO!;
+    return env.NOTIFY_EMAIL_TO;
   } catch (error) {
     console.error("[notifications] lead email failed", error);
     return null;

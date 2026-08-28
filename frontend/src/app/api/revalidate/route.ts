@@ -1,6 +1,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 
 import { directusRequest, isUuid } from "@/lib/directus/client";
+import { secretsMatch } from "@/lib/security/secrets";
 import { notifyIndexNow } from "@/lib/seo/indexnow";
 
 const collectionTags = {
@@ -131,7 +132,12 @@ async function resolveItemPaths(
 
 export async function POST(request: Request) {
   const secret = process.env.REVALIDATE_SECRET;
-  if (!secret || request.headers.get("x-revalidate-secret") !== secret) {
+  const providedSecret = request.headers.get("x-revalidate-secret");
+  if (
+    !secret ||
+    !providedSecret ||
+    !secretsMatch(providedSecret, secret)
+  ) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

@@ -38,9 +38,19 @@ export async function notifyIndexNow(
   options: IndexNowOptions = {},
 ): Promise<void> {
   const key = process.env.INDEXNOW_KEY;
-  const host = process.env.NEXT_PUBLIC_SITE_URL
-    ? new URL(process.env.NEXT_PUBLIC_SITE_URL).host
-    : undefined;
+  let host: string | undefined;
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    try {
+      host = new URL(process.env.NEXT_PUBLIC_SITE_URL).host;
+    } catch {
+      // The revalidate webhook calls this after a successful cache flush;
+      // a malformed site URL must degrade to a skipped ping, never a 500.
+      console.warn(
+        "[indexnow] invalid NEXT_PUBLIC_SITE_URL — ping skipped",
+      );
+      return;
+    }
+  }
 
   if (!key || !host) {
     // Not configured — skip silently. This is the expected state in dev.

@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import { cookies, draftMode } from "next/headers";
 
 import {
@@ -11,6 +10,7 @@ import {
   signPreviewToken,
   type PreviewContext,
 } from "@/lib/directus/client";
+import { secretsMatch } from "@/lib/security/secrets";
 
 /**
  * Secure Live Preview entry point (Task 16).
@@ -53,12 +53,6 @@ const SAFE_VERSION_KEY = /^[\w][\w.-]*$/u;
 
 const forbidden = () =>
   Response.json({ ok: false, error: "Forbidden" }, { status: 403 });
-
-const secretsMatch = (provided: string, secret: string) => {
-  const a = Buffer.from(provided, "utf8");
-  const b = Buffer.from(secret, "utf8");
-  return a.length === b.length && timingSafeEqual(a, b);
-};
 
 const versionNotFound = () =>
   Response.json({ ok: false, error: "Version not found" }, { status: 404 });

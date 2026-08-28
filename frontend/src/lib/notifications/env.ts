@@ -28,23 +28,59 @@ const smtpEnvSchema = z.object({
 
 export type SmtpEnv = z.infer<typeof smtpEnvSchema>;
 
-export function getSmtpEnv(
-  environment: Partial<NodeJS.ProcessEnv> = process.env,
-): SmtpEnv {
-  return smtpEnvSchema.parse(environment);
-}
+/** The subset of SmtpEnv that is guaranteed when notifications are enabled. */
+export type CompleteSmtpEnv = SmtpEnv & {
+  SMTP_HOST: string;
+  SMTP_PORT: number;
+  SMTP_USER: string;
+  SMTP_PASSWORD: string;
+  NOTIFY_EMAIL_TO: string;
+};
+
+let partialConfigWarned = false;
 
 /**
  * Notifications are enabled only when the full SMTP set is present.
  * A partial configuration is treated as "disabled" to avoid sending mail from
- * the wrong account or to the wrong recipient.
+ * the wrong account or to the wrong recipient — but unlike a fully empty
+ * environment (the expected dev state) it is almost certainly a typo, so it
+ * is reported once per process.
  */
 export function isNotificationsEnabled(env: SmtpEnv): boolean {
-  return Boolean(
+  const complete = Boolean(
     env.SMTP_HOST &&
       env.SMTP_PORT &&
       env.SMTP_USER &&
       env.SMTP_PASSWORD &&
       env.NOTIFY_EMAIL_TO,
   );
+  if (!complete && !partialConfigWarned) {
+    const anySet = Boolean(
+      env.SMTP_HOST ||
+        env.SMTP_PORT ||
+        env.SMTP_USER ||
+        env.SMTP_PASSWORD ||
+        env.SMTP_FROM ||
+        env.NOTIFY_EMAIL_TO,
+    );
+    if (anySet) {
+      partialConfigWarned = true;
+      console.warn(
+        "[notifications] partially configured — disabled. Check SMTP_* / NOTIFY_* vars",
+      );
+    }
+  }
+  return complete;
+}
+
+/**
+ * Returns the SMTP configuration only when it is complete enough to send
+ * mail, or null otherwise. Callers never need non-null assertions on the
+ * required fields.
+ */
+export function getSmtpEnv(
+  environment: Partial<NodeJS.ProcessEnv> = process.env,
+): CompleteSmtpEnv | null {
+  const env = smtpEnvSchema.parse(environment);
+  return isNotificationsEnabled(env) ? (env as CompleteSmtpEnv) : null;
 }

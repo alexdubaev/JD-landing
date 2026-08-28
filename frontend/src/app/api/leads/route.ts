@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { DirectusRequestError } from "@/lib/directus/client";
 import {
   createLead,
   deleteLeadAttachment,
@@ -181,6 +182,13 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    // A Directus outage must be visible in the logs, not just a faceless 503.
+    console.error(
+      "[leads] submit failed",
+      error instanceof DirectusRequestError
+        ? { status: error.status, path: error.path }
+        : error,
+    );
     return NextResponse.json(
       { error: "Не удалось отправить заявку. Попробуйте ещё раз." },
       { status: 503 },
