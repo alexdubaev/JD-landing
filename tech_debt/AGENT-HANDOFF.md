@@ -1,4 +1,4 @@
-# Handoff: продолжение tech-debt бэклога — состояние на 2026-08-28
+# Handoff: продолжение tech-debt бэклога — состояние на 2026-08-28 (вечер)
 
 Репозиторий: `D:\codex\JD_landing`, ветка `main`. Этот файл — актуальная точка передачи
 агенту, продолжающему работу в новом чате. Читай его целиком перед любыми правками.
@@ -13,74 +13,71 @@
 
 ## Текущее состояние git
 
-- HEAD `main` = коммит TD-11 (см. лог ниже). Рабочее дерево чистое.
-- **Весь P1 задеплоен на прод** (см. «Состояние VPS»). P2-коммиты локально/на GitHub,
-  на прод НЕ выкачаны — потребуется релиз после завершения P2.
-- Коммиты этой сессии (все CI-зелёные, каждый = одна задача, по allowed-files):
+- HEAD `main` = docs-коммит статуса P2 (после `8024235`). Рабочее дерево чистое,
+  всё запушено, CI на GitHub зелёный.
+- **Весь P1 + весь P2 (TD-07…TD-14, TD-19) задеплоены на прод 2026-08-28** и проверены
+  (см. «Состояние VPS»). Продакшн-чекут = main.
+- Коммиты P2 (каждый = одна задача, по allowed-files):
 
 | Коммит | Задача |
 |---|---|
-| `5539b17` | docs: бэклог TD-01..TD-19 + этот handoff |
-| `ca958fb` | TD-01 CI (.github/workflows/ci.yml; checkout с `lfs: true`) |
-| `2ee4623` | TD-02 корзина: restore после F5, cross-tab, валидация (8 тестов) |
-| `be66788` | TD-03 rate-limit suggestions 60/мин + /media/ 600/мин, нормализация кэш-ключа, кэпы id (20/100) |
-| `462eb49` | TD-04 backup.sh путь compose + pg_restore-проверка; deploy.sh без мёртвых секретов |
-| `0c493ea` | TD-05 seo-worker: createDaemon, per-item catch, тесты |
-| `307ccdd` | TD-06 revalidate: faq_items + directus_files (+ флоу на VPS применён) |
-| `1e60bff` | фикс cwd-хрупкости scripts/validate-import.test.mjs |
-| `288b2aa` | docs: статусы P1 |
-| `312082e` | ci: LFS + платформо-независимый isMainModule-тест |
-| `87eeef7` | backup: pg_restore через маунт каталога (stdin через compose exec НЕ работает) |
 | `04be869` | TD-07 удаление мёртвого кода (−250 строк) |
-| `6753660` | TD-08 формат-хелперы: lib/format/{price,catalog-labels,tel,date} + collectUtmAttribution |
-| `212442d` | TD-19 UTM-persistence: persistUtmOnce в Analytics (consent-независимо), фолбэк в collect |
-| `426e0d1` | TD-09 разрез catalog.ts 987→605 + query.ts + product-media/product-analogs/search |
-| `38e98c6` | TD-10 useFormSubmit: единый контракт сабмита 3 форм; CheckoutForm показывает server error |
-| `79d0329` | TD-11 hero без throw (фолбэки+warn), каталог-корень деградирует, product loading.tsx, error.tsx Container |
+| `6753660` | TD-08 формат-хелперы + collectUtmAttribution |
+| `212442d` | TD-19 UTM-persistence |
+| `426e0d1` | TD-09 разрез catalog.ts + query.ts + media/analogs/search |
+| `38e98c6` | TD-10 useFormSubmit — единый контракт 3 форм |
+| `79d0329` | TD-11 hero/каталог без throw, loading.tsx продукта |
+| `a668dd0` | TD-12 тесты money-пути + батч-запись позиций + фикс мёртвой компенсации |
+| `10d435a` | TD-13 hardening: secretsMatch, логи 503, IndexNow/SMTP/env guards |
+| `a0a34df` | TD-14 опция A: аналоги подключены в карточку товара |
+| `8024235` | docs: P2 полностью закрыт |
 
-## Что осталось сделать (порядок важен)
+## Что осталось сделать
 
-### P2 — остаток (2 задачи + финал)
+### P3 (следующий шаг): TD-15 → TD-18 (см. файлы задач)
+- TD-15 BulkPartsRequest draft-hook; TD-16 тесты data-слоя; TD-17 противоречия доков
+  (в т.ч. этот файл обновить по факту); TD-18 гигиена скриптов/репо.
 
-1. **TD-12** (`TD-12-orders-money-path-tests.md`): orders.ts не имеет тестов (money-путь!).
-   Сначала характеристические тесты (total-округление 0.1+0.2, снапшоты, компенсирующий
-   DELETE при отказе item-write), затем батч-запись позиций одним POST `/items/order_items`
-   с массивом. Осторожно: формат batch у живого Directus (см. подводные камни в задаче).
-   Расширить `app/api/orders/route.test.ts` (400-валидация, отказ Turnstile).
-2. **TD-13** (`TD-13-server-hardening.md`): timingSafeEqual-хелпер в lib/security (переезд
-   из preview-роута), console.error в generic-catch leads/orders, IndexNow URL-парсинг внутрь
-   guard (сейчас кривой env → 500 вебхука ПОСЛЕ успешной ревалидации), warn при частичной
-   SMTP-конфигурации, connection/socketTimeout в nodemailer, getSmtpEnv → null вместо `!`.
-   Примечание: мемоизация env (бывший 13.6) исключена ревью — НЕ делать.
-3. **Финал P2**: полный прогон всех наборов, обновить чекбоксы в `tech_debt/README.md`,
-   спросить владельца про TD-14 (аналоги: подключить опцию A или похоронить опцию B).
+### Stage-2 S-1…S-12 — только обсуждение с владельцем, НЕ код без решения.
 
-### P3 (после P2): TD-15 → TD-18 (см. файлы задач).
+### Новые находки этой сессии (кандидаты в бэклог, решения владельца не спрашивали)
+1. **Soft-404 на динамических страницах**: неизвестный slug под известным префиксом
+   (например `/catalog/xxx-yyy` или `/articles/xxx`) отдаёт контент not-found со
+   статусом 200 (стриминг: layout-shell уходит с 200 до notFound()). Системное
+   поведение, НЕ регрессия P2. SEO-риска немного (страница содержит noindex? —
+   проверить при взятии в работу), но стоит внести в бэклог.
+2. **Лицензия Directus 12**: поле-специфичные права (`fields != ["*"]`) — платный
+   entitlement «custom permission rules». Всё, что выдают этой роли, — только `["*"]`
+   по полям, минимализация на уровне действий. Если владелец купит лицензию —
+   ужесточить create на orders/order_items до списка полей из orders.ts.
+3. **Данные аналогов**: в `products_analogs` на проде 0 строк — блок аналогов
+   (TD-14) задеплоен, но невидим до импорта рёбер аналогов. Владельцу напомнить,
+   что фича оживёт с данными.
 
-### Затем: stage-2 S-1…S-12 — только обсуждение с владельцем, НЕ код без решения.
-
-## Состояние VPS (91.227.68.68.176 — доступ см. ниже)
+## Состояние VPS (91.227.68.176)
 
 - SSH: `ssh -i /c/Users/Elena/.ssh/jd_landing_deploy codex-deploy@91.227.68.176`
-  (из Git Bash; BatchMode=yes работает).
-- Release-checkout: `/opt/jd-landing/release`, на `main` @ `87eeef7`. ВАЖНО: раньше стоял
-  на устаревшей ветке `agent/production-infrastructure` (f831004) — проверено, что её контент
-  входит в main через squash `7a3c402`, отката не было; владение файла чекаута поправлено
-  chown'ом на codex-deploy (файлы от root ломали git pull — чистить через `sudo git clean`,
-  затем `git reset --hard origin/main`).
-- **Задеплоено и проверено (P1)**: deploy.sh отработал (frontend healthy, ISR прогрет),
-  реvalidация-флоу обновлён через контейнер (node на VPS НЕТ — запускать так:
-  `sudo bash -c 'set -a; . /opt/jd-landing/.env; set +a; docker run --rm --network jd-landing_backend -v /opt/jd-landing/release/directus:/work -w /work --env DIRECTUS_URL=http://directus:8055 --env NEXT_REVALIDATE_URL=http://frontend:3000/api/revalidate --env REVALIDATE_SECRET --env DIRECTUS_ADMIN_EMAIL --env DIRECTUS_ADMIN_PASSWORD directus/directus:12.1.1 node flows/apply-revalidation-flow.mjs'`),
-  вебхуки faq_items/directus_files проверены curl'ом (`{"ok":true}`), backup.sh end-to-end
-  (дамп 18M + pg_restore + тарбол 102M), seo-worker пересобран с TD-05 (`--profile seo-factory up -d --build seo-worker`; фабрика включена: enabled=true, schedule=true).
-- Роуты проверены: `/`, `/catalog`, карточка продукта — 200; suggestions работает.
-- **P2-коммиты (04be869..79d0329) на прод НЕ выкачаны.** Релиз после P2:
-  `git pull --ff-only && git lfs pull` в release, затем `sudo bash deploy.sh` из
-  `/opt/jd-landing/release/deploy`. Остатки на VPS (косметика, спросить владельца):
-  устаревшая ветка-указатель, копия compose в `/opt/jd-landing/`, осиротевший дамп
+  (из Git Bash; BatchMode=yes работает; иногда таймаутит — просто ретрай).
+- Release-checkout: `/opt/jd-landing/release`, на `main`. Деплой 2026-08-28:
+  `git pull --ff-only && git lfs pull`, затем `sudo bash deploy.sh` из
+  `/opt/jd-landing/release/deploy` — прошёл полностью (frontend healthy, ISR прогрет,
+  stub-проверки ок).
+- **Прод-верификация этой сессии**: `/`, `/catalog`, `/contacts`, `/about`,
+  `/delivery`, `/privacy-policy`, `/thank-you` — 200; карточка товара — 200;
+  sitemap/robots ок; `POST /api/orders` с мусором → 400 «Проверьте заполнение формы»;
+  E2E money-путь (прямой прогон токеном фронта, как делает orders.ts): заказ
+  создан, батч из 2 позиций одним POST записан, админка видела строки, заказ удалён
+  (204), каскад не оставил сирот. Реальный сабмит с сайта не проверялся —
+  Turnstile включён (нет токена), но роут-контракт и Directus-путь покрыты.
+- **Права (решение владельца 2026-08-28)**: политике «API фронтенда» выданы
+  create `orders`, create `order_items`, read `products_analogs` (все fields `["*"]`).
+  Выдача идемпотентным скриптом через admin-login + POST /permissions (скрипт удалён,
+  воспроизвести по описанию в README бэклога).
+- Остатки на VPS (косметика, вопрос владельцу всё ещё открыт): устаревшая
+  ветка-указатель, копия compose в `/opt/jd-landing/`, осиротевший дамп
   `directus-20260827T114438Z.dump` (сам удалится за 14 дней).
 
-## Процесс и правила исполнения (выработаны сессией)
+## Процесс и правила исполнения (выработаны сессиями)
 
 1. Одна задача = один коммит = файлы строго из «Allowed files» задачи. Перед коммитом —
    `git diff --cached --name-only` против списка.
@@ -91,33 +88,37 @@
    cd frontend && npm run typecheck && npm test && npm run lint
    ```
    seo-worker/directus: `npm test` в их папках; из корня репо: `node --test deploy/ scripts/`.
-4. **НЕ маскировать коды возврата пайпами**: `npm run typecheck | tail` возвращает 0 всегда —
-   один коммит уже ушёл с тайп-ошибкой из-за этого (поправлено amend'ом). Используй
-   `cmd && echo OK` без пайпов, или проверяй `$?`.
-5. Коммитить по задачам, пушить после готовности пакета (владелец ранее приказал
-   «коммит и пуш» — пуш после завершения P2 согласовать, CI на GitHub проверяет всё).
-6. Решения владельца обязательны для: TD-14, любых untrack/drop файлов (TD-17/18),
+4. **НЕ маскировать коды возврата пайпами** (`npm run typecheck | tail` всегда 0).
+   Используй `cmd && echo OK` или проверяй `$?`.
+5. Коммитить по задачам; пуш/релиз — по явному указанию владельца.
+6. Решения владельца обязательны для: прав/ролей Directus, любых untrack/drop файлов,
    изменений в deploy/directus-зонах сверх описанного в задачах.
 
-## Известные подводные камни (найдены в этой сессии)
+## Известные подводные камни (накопленные)
 
-- `docker compose exec -T ... /dev/stdin` НЕ передаёт байты в pg_restore — верификация дампа
-  только через маунт каталога в `postgres:17-alpine`.
-- Directus batch-формат POST `/items/<collection>` с массивом тел — сверить с живым инстансом
-  перед TD-12 (в задаче описано).
-- Циклические импорты catalog ↔ search/product-analogs работают (обращения только на вызове),
-  но не добавляй top-level зависимости между ними.
-- `export *` не вводит имена в локальный скоуп модуля — нужен отдельный `import` для
-  внутреннего использования.
+- `docker compose exec -T ... /dev/stdin` НЕ передаёт байты в pg_restore — верификация
+  дампа только через маунт каталога в `postgres:17-alpine`.
+- **Directus 12 licenses**: POST /permissions с `fields != ["*"]` → 403
+  «custom_permission_rules_enabled is a restricted resource». См. находку №2 выше.
+- Сложные кавычки через `ssh ... sudo bash -c` не выживают — скрипты на VPS запускать
+  паттерном: scp → `docker cp` в контейнер → `docker exec -e VAR=... node /tmp/x.mjs`
+  → rm в контейнере и на хосте.
+- Directus batch-формат `POST /items/<collection>` с массивом тел подтверждён на живом
+  12.1.1 (ошибка валидации по полям элемента, ничего не пишет).
+- Циклические импорты catalog ↔ search/product-analogs работают (обращения только на
+  вызове), но не добавляй top-level зависимости между ними.
+- `export *` не вводит имена в локальный скоуп модуля — нужен отдельный `import`.
 - Тесты запускаются только из `frontend/`; CWD между bash-вызовами сохраняется — всегда
   `cd` явно.
 - seo-factory.env.example: строки `SEO_FACTORY_ALLOW_*` НЕ удалять — их ассертит
   `deploy/seo-factory.test.mjs` (вне скоупа задач).
+- У роли «API фронтенда» теперь есть create на orders/order_items — при локальных
+  тестах против прода помни, что прямой POST пишет реальные строки (E2E этой сессии
+  создал и удалил один тестовый заказ).
 
-## Контрольный список завершения P2
+## Контрольный список следующей сессии
 
-- [ ] TD-12 сделан, заказы покрыты тестами, батч-запись проверена
-- [ ] TD-13 сделан (6 подпунктов; 13.6-мемоизацию не делать)
-- [ ] Полный прогон: frontend + seo-worker + directus + deploy/scripts зелёные
-- [ ] `tech_debt/README.md` статусы обновлены, коммит docs
-- [ ] Вопрос владельцу: TD-14 (A: подключить аналоги / B: похоронить) + пуш P2 + релиз на VPS
+- [ ] Взять TD-15 (или по указанию владельца), следуя правилам выше
+- [ ] P3-задачи: TD-15 → TD-16 → TD-17 → TD-18
+- [ ] Спросить владельца: остатки на VPS (косметика), импорт данных аналогов,
+      stage-2 S-1…S-12 (обсуждение)
