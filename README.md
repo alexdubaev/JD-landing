@@ -37,7 +37,7 @@ revalidates the Next.js cache.
 ## Product data
 
 - Original price lists and image archives are stored in `data/price`.
-- Prepared XLSX, CSV, JSON, and image imports are stored in `outputs/jd-product-import-2026-07-28`.
+- One-off import artifacts live in `outputs/` on the owner's machine only; they are gitignored (kept in git history up to 2026-08-28) and are not part of fresh clones.
 - Large binary files are managed with Git LFS.
 
 Do not position the website as an official John Deere representative unless that status is explicitly confirmed.
