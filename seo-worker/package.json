@@ -9,8 +9,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/cli.mjs && node --check src/config.mjs && node --check src/content-drafts.mjs && node --check src/daemon.mjs && node --check src/directus-client.mjs && node --check src/evidence.mjs && node --check src/planner.mjs && node --check src/qa-audit.mjs && node --check src/work-items.mjs && node --check src/worker.mjs && node --check scripts/create-token.mjs",
-    "build": "node --check src/config.mjs && node --check src/planner.mjs && node --check src/directus-client.mjs && node --check src/worker.mjs && node --check src/daemon.mjs && node --check scripts/create-token.mjs && node --check src/cli.mjs",
+    "check": "node -e \"const{readdirSync}=require('node:fs');const{execFileSync}=require('node:child_process');let failed=0;for(const dir of ['src','scripts'])for(const f of readdirSync(dir))if(f.endsWith('.mjs')){try{execFileSync(process.execPath,['--check',dir+'/'+f],{stdio:'inherit'})}catch{failed=1}}process.exit(failed)\"",
     "dry-run": "node src/cli.mjs --dry-run"
   },
   "dependencies": {}

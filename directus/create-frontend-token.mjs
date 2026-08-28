@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 import { DirectusAdminClient } from "./schema/apply-schema.mjs";
 
 async function main() {
@@ -15,7 +17,7 @@ async function main() {
   console.log("Found Frontend API role:", frontendRole.id);
 
   // Create a static token user for the Frontend API role
-  const token = "jd-frontend-static-token-" + Date.now();
+  const token = randomBytes(32).toString("hex");
 
   // Check if a frontend API user already exists
   const users = await client.request(

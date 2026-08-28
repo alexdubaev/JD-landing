@@ -1,3 +1,8 @@
+// SUPERSEDED: this one-shot launcher importer (the 299-product initial
+// import) has been replaced by the field-level `directus/importer/` pipeline
+// (idempotent, with rollback and tests). Run only by an explicit owner
+// decision; for ongoing catalog work use directus/importer.
+
 import { access, readFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, extname, isAbsolute, relative, resolve } from "node:path";
