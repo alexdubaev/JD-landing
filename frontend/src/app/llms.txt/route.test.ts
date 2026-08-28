@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getCategoriesMock, getFeaturedArticlesMock } = vi.hoisted(() => ({
-  getCategoriesMock: vi.fn(),
+const { getCategoryLinksMock, getFeaturedArticlesMock } = vi.hoisted(() => ({
+  getCategoryLinksMock: vi.fn(),
   getFeaturedArticlesMock: vi.fn(),
 }));
 
 vi.mock("@/lib/directus/catalog", () => ({
-  getCategories: getCategoriesMock,
+  getCategoryLinks: getCategoryLinksMock,
 }));
 
 vi.mock("@/lib/directus/articles", () => ({
@@ -17,7 +17,7 @@ import { GET } from "./route";
 
 describe("GET /llms.txt", () => {
   beforeEach(() => {
-    getCategoriesMock.mockResolvedValue([
+    getCategoryLinksMock.mockResolvedValue([
       { title: "Гидравлика", slug: "gidravlika", isIndexable: true },
       { title: "Скрытая категория", slug: "hidden", isIndexable: false },
     ]);

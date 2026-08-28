@@ -1,6 +1,6 @@
 import { siteOrigin } from "@/lib/seo/url";
 import { getFeaturedArticles } from "@/lib/directus/articles";
-import { getCategories } from "@/lib/directus/catalog";
+import { getCategoryLinks } from "@/lib/directus/catalog";
 
 export const revalidate = 3600;
 
@@ -14,7 +14,7 @@ export const revalidate = 3600;
 export async function GET() {
   const origin = siteOrigin();
   const [categories, articles] = await Promise.all([
-    getCategories().catch(() => []),
+    getCategoryLinks().catch(() => []),
     getFeaturedArticles(3).catch(() => []),
   ]);
   const indexableCategories = categories

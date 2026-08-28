@@ -14,8 +14,7 @@ import { BRAND_NAME } from "@/lib/brand";
 import { parseSeoJson, resolveSeo } from "@/lib/seo/directus-seo";
 
 import { directusRequest, directusVersionedRequest, readPreviewContext } from "./client";
-
-type FileRelation = string | { id: string } | null;
+import { fileId, queryString, type FileRelation } from "./query";
 
 type RawSiteSettings = {
   city: string | null;
@@ -124,23 +123,12 @@ const sectionTypes = new Set<SectionType>([
   "seo_text",
 ]);
 
-const fileId = (relation: FileRelation) =>
-  typeof relation === "string" ? relation : (relation?.id ?? null);
-
 const toItems = (value: unknown) => (Array.isArray(value) ? value : []);
 
 const toSettings = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
-
-const queryString = (parameters: Record<string, string | undefined>) => {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(parameters)) {
-    if (value) search.set(key, value);
-  }
-  return search.toString();
-};
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   const raw = await directusRequest<RawSiteSettings>(

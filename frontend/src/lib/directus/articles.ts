@@ -13,8 +13,7 @@ import type {
 import { parseSeoJson, resolveSeo } from "@/lib/seo/directus-seo";
 
 import { directusEnvelopeRequest, directusRequest, directusVersionedRequest, readPreviewContext } from "./client";
-
-type FileRelation = string | { id: string } | null;
+import { fileId, queryString, type FileRelation } from "./query";
 
 type RawArticle = {
   id: string;
@@ -39,9 +38,6 @@ type RawArticle = {
   updated_at?: string | null;
 };
 
-const fileId = (relation: FileRelation | undefined) =>
-  typeof relation === "string" ? relation : (relation?.id ?? null);
-
 const sourceList = (value: unknown): unknown[] =>
   Array.isArray(value) ? value : [];
 
@@ -52,14 +48,6 @@ const cardFields =
 // a nested field the role cannot read would fail the whole request. Junction
 // rows are fetched separately (failure-isolated) in resolveArticleRelations.
 const detailFields = `${cardFields},content,content_blocks,author,reviewer,sources,seo_title,seo_description,og_image,seo,updated_at`;
-
-const queryString = (parameters: Record<string, string | undefined>) => {
-  const search = new URLSearchParams();
-  Object.entries(parameters).forEach(([key, value]) => {
-    if (value !== undefined && value !== "") search.set(key, value);
-  });
-  return search.toString();
-};
 
 const mapCard = (raw: RawArticle): ArticleCardData => ({
   id: raw.id,
