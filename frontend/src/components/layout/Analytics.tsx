@@ -4,7 +4,10 @@ import Link from "next/link";
 import Script from "next/script";
 import { useEffect, useState } from "react";
 
-import { COOKIE_CONSENT_STORAGE_KEY } from "@/lib/analytics";
+import {
+  COOKIE_CONSENT_STORAGE_KEY,
+  persistUtmOnce,
+} from "@/lib/analytics";
 
 export { COOKIE_CONSENT_STORAGE_KEY } from "@/lib/analytics";
 
@@ -43,6 +46,11 @@ export function Analytics({ yandexMetricaId, gtmId }: AnalyticsProps) {
   const gtm = gtmId?.trim();
 
   useEffect(() => {
+    // Lead attribution from the landing URL — runs before and independently
+    // of the consent choice: it fills utm fields the visitor themselves
+    // brought, it is not analytics loading.
+    persistUtmOnce();
+
     const storedConsent = readConsent();
     if (!storedConsent) return;
 
