@@ -31,7 +31,8 @@ import {
   reconcileProductRequestDraft,
   setProductRequestList,
 } from "@/lib/leads/product-request-list";
-import { trackEvent } from "@/lib/analytics";
+import { collectUtmAttribution, trackEvent } from "@/lib/analytics";
+import { useFormSubmit } from "@/lib/forms/use-form-submit";
 import { MarketingConsent } from "./MarketingConsent";
 import { TurnstileField, type TurnstileFieldHandle } from "./TurnstileField";
 
@@ -58,7 +59,7 @@ export function BulkPartsRequest({
   const [spreadsheet, setSpreadsheet] = useState<File | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [state, setState] = useState<"idle" | "sending" | "success">("idle");
+  const { state, serverError, submit } = useFormSubmit();
   const spreadsheetInput = useRef<HTMLInputElement>(null);
   const photoInput = useRef<HTMLInputElement>(null);
   const listInput = useRef<HTMLTextAreaElement>(null);
@@ -126,14 +127,13 @@ export function BulkPartsRequest({
     setError(null);
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const hasAttachment = Boolean(spreadsheet || photo);
     if (parsed.error && !hasAttachment) {
       setError(parsed.error);
       return;
     }
-    setState("sending");
     setError(null);
     const form = new FormData(event.currentTarget);
     form.delete("consent");
@@ -141,35 +141,23 @@ export function BulkPartsRequest({
       form.set("request_items", JSON.stringify(parsed.items));
     }
     form.set("page_url", window.location.href);
-    const attribution = new URLSearchParams(window.location.search);
-    for (const key of [
-      "utm_source",
-      "utm_medium",
-      "utm_campaign",
-      "utm_content",
-      "utm_term",
-    ]) {
-      const value = attribution.get(key);
-      if (value) form.set(key, value);
+    for (const [key, value] of Object.entries(collectUtmAttribution())) {
+      form.set(key, value);
     }
     if (spreadsheet) form.set("spreadsheet", spreadsheet, spreadsheet.name);
     if (photo) form.set("photo", photo, photo.name);
 
-    const response = await fetch("/api/leads", { method: "POST", body: form }).catch(
-      () => null,
+    const ok = await submit(
+      () => fetch("/api/leads", { method: "POST", body: form }),
+      () => {
+        trackEvent("lead_submit", { source: "parts_request" });
+        localStorage.removeItem(storageKey);
+        clearGeneratedProductRequestLines();
+        setProductRequestList([]);
+      },
+      "Не удалось отправить список. Попробуйте ещё раз.",
     );
-    if (response?.ok) {
-      trackEvent("lead_submit", { source: "parts_request" });
-      setState("success");
-      localStorage.removeItem(storageKey);
-      clearGeneratedProductRequestLines();
-      setProductRequestList([]);
-      return;
-    }
-    const body = await response?.json().catch(() => null);
-    turnstile.current?.reset();
-    setError(body?.error ?? "Не удалось отправить список. Попробуйте ещё раз.");
-    setState("idle");
+    if (!ok) turnstile.current?.reset();
   }
 
   if (state === "success") {
@@ -185,7 +173,7 @@ export function BulkPartsRequest({
   }
 
   return (
-    <form className="parts-request" onSubmit={submit}>
+    <form className="parts-request" onSubmit={handleSubmit}>
       <label className="parts-request__label" htmlFor="parts-request-list">
         Список артикулов
       </label>
@@ -283,7 +271,11 @@ export function BulkPartsRequest({
         <Upload aria-hidden="true" />
         {state === "sending" ? "Отправляем…" : "Отправить список на расчёт"}
       </button>
-      {error ? <p className="parts-request__error" role="alert">{error}</p> : null}
+      {error ?? (state === "error" ? serverError : null) ? (
+        <p className="parts-request__error" role="alert">
+          {error ?? serverError}
+        </p>
+      ) : null}
     </form>
   );
 }

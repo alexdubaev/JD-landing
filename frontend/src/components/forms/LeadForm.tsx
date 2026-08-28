@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, type FormEvent } from "react";
 
-import { trackEvent } from "@/lib/analytics";
+import { collectUtmAttribution, trackEvent } from "@/lib/analytics";
+import { useFormSubmit } from "@/lib/forms/use-form-submit";
 import { MarketingConsent } from "./MarketingConsent";
 import { TurnstileField, type TurnstileFieldHandle } from "./TurnstileField";
 
@@ -14,47 +15,32 @@ export function LeadForm({
   categoryId?: string;
   productId?: string;
 }) {
-  const [state, setState] = useState<"idle" | "sending" | "success" | "error">(
-    "idle",
-  );
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { state, serverError, submit } = useFormSubmit();
   const turnstile = useRef<TurnstileFieldHandle>(null);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setState("sending");
-    setErrorMessage(null);
     const form = new FormData(event.currentTarget);
     const payload = Object.fromEntries(form.entries());
     delete payload.consent;
-    const attribution = new URLSearchParams(window.location.search);
-    const response = await fetch("/api/leads", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        ...payload,
-        marketing_consent: form.has("marketing_consent"),
-        product: productId,
-        category: categoryId,
-        page_url: window.location.href,
-        utm_source: attribution.get("utm_source") ?? undefined,
-        utm_medium: attribution.get("utm_medium") ?? undefined,
-        utm_campaign: attribution.get("utm_campaign") ?? undefined,
-        utm_content: attribution.get("utm_content") ?? undefined,
-        utm_term: attribution.get("utm_term") ?? undefined,
-      }),
-    }).catch(() => null);
-    if (response?.ok) {
-      trackEvent("lead_submit", { source: "lead_form" });
-      setState("success");
-      return;
-    }
-    const body = await response?.json().catch(() => null);
-    turnstile.current?.reset();
-    setErrorMessage(
-      body?.error ?? "Не удалось отправить заявку. Проверьте данные и попробуйте ещё раз.",
+    const ok = await submit(
+      () =>
+        fetch("/api/leads", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            ...payload,
+            ...collectUtmAttribution(),
+            marketing_consent: form.has("marketing_consent"),
+            product: productId,
+            category: categoryId,
+            page_url: window.location.href,
+          }),
+        }),
+      () => trackEvent("lead_submit", { source: "lead_form" }),
+      "Не удалось отправить заявку. Проверьте данные и попробуйте ещё раз.",
     );
-    setState("error");
+    if (!ok) turnstile.current?.reset();
   }
 
   if (state === "success") {
@@ -68,7 +54,7 @@ export function LeadForm({
   }
 
   return (
-    <form className="lead-form" onSubmit={submit}>
+    <form className="lead-form" onSubmit={handleSubmit}>
       <label>
         Имя
         <input autoComplete="name" maxLength={100} name="name" required />
@@ -111,9 +97,9 @@ export function LeadForm({
       >
         {state === "sending" ? "Отправляем…" : "Отправить заявку"}
       </button>
-      {state === "error" && errorMessage ? (
+      {state === "error" && serverError ? (
         <p className="lead-form__error" role="alert">
-          {errorMessage}
+          {serverError}
         </p>
       ) : null}
     </form>
