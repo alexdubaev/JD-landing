@@ -46,3 +46,4 @@ directus/uploads/*
 Thumbs.db
 .idea/
 .vscode/
+commit-push.bat
