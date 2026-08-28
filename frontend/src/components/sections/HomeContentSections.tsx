@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Reveal } from "@/components/motion/Reveal";
 import { AnimatedAccordion } from "@/components/ui/AnimatedAccordion";
 import { Container } from "@/components/ui/Container";
+import { telHref } from "@/lib/format/tel";
 import type { FaqItem, PageSection, SiteSettings } from "@/types/content";
 
 export function HomeCta({ section }: { section: PageSection }) {
@@ -52,8 +53,6 @@ export function HomeFaq({
   );
 }
 
-const phoneHref = (phone: string) => phone.replace(/[^\d+]/gu, "");
-
 export function HomeContacts({
   section,
   settings,
@@ -72,7 +71,7 @@ export function HomeContacts({
           </div>
           <address>
             {settings.phone ? (
-              <a href={`tel:${phoneHref(settings.phone)}`}>
+              <a href={`tel:${telHref(settings.phone)}`}>
                 <Phone aria-hidden="true" />
                 {settings.phone}
               </a>

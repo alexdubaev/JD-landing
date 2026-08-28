@@ -5,6 +5,12 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { Modal } from "@/components/ui/Modal";
+import {
+  AVAILABILITY_FILTERS,
+  PART_TYPE_FILTERS,
+  PRICE_FILTERS,
+  type CatalogFilterOption,
+} from "@/lib/format/catalog-labels";
 import type { Category } from "@/types/catalog";
 
 export function CatalogControls({
@@ -70,9 +76,11 @@ export function CatalogControls({
           }
         >
           <option value="">Любое</option>
-          <option value="in_stock">В наличии</option>
-          <option value="on_request">Под заказ</option>
-          <option value="out_of_stock">Нет в наличии</option>
+          {AVAILABILITY_FILTERS.map((filter) => (
+            <option key={filter.value} value={filter.value}>
+              {filter.optionLabel}
+            </option>
+          ))}
         </select>
       </label>
       <label>
@@ -82,8 +90,11 @@ export function CatalogControls({
           onChange={(event) => replaceParameter("price", event.target.value)}
         >
           <option value="">Любая</option>
-          <option value="fixed">Указана</option>
-          <option value="on_request">По запросу</option>
+          {PRICE_FILTERS.map((filter) => (
+            <option key={filter.value} value={filter.value}>
+              {filter.optionLabel}
+            </option>
+          ))}
         </select>
       </label>
       <label>
@@ -95,9 +106,11 @@ export function CatalogControls({
           }
         >
           <option value="">Любой</option>
-          <option value="original">Оригинал</option>
-          <option value="oem">OEM</option>
-          <option value="analog">Аналог</option>
+          {PART_TYPE_FILTERS.map((filter) => (
+            <option key={filter.value} value={filter.value}>
+              {filter.optionLabel}
+            </option>
+          ))}
         </select>
       </label>
       <label>
@@ -117,6 +130,14 @@ export function CatalogControls({
   const activeCategory = categories?.find(
     (category) => category.slug === searchParams.get("category"),
   );
+  const activeFilterChip = (
+    filters: CatalogFilterOption[],
+    param: string,
+  ): { key: string; label: string } | null => {
+    const value = searchParams.get(param);
+    const match = filters.find((filter) => filter.value === value);
+    return match ? { key: param, label: match.chipLabel } : null;
+  };
   const activeFilters = [
     searchParams.get("q")
       ? { key: "q", label: `Поиск: ${searchParams.get("q")}` }
@@ -124,25 +145,9 @@ export function CatalogControls({
     activeCategory
       ? { key: "category", label: `Категория: ${activeCategory.title}` }
       : null,
-    searchParams.get("availability") === "in_stock"
-      ? { key: "availability", label: "В наличии" }
-      : searchParams.get("availability") === "on_request"
-        ? { key: "availability", label: "Под заказ" }
-        : searchParams.get("availability") === "out_of_stock"
-          ? { key: "availability", label: "Нет в наличии" }
-          : null,
-    searchParams.get("price") === "fixed"
-      ? { key: "price", label: "Цена указана" }
-      : searchParams.get("price") === "on_request"
-        ? { key: "price", label: "Цена по запросу" }
-        : null,
-    searchParams.get("part_type") === "original"
-      ? { key: "part_type", label: "Оригинал" }
-      : searchParams.get("part_type") === "oem"
-        ? { key: "part_type", label: "OEM" }
-        : searchParams.get("part_type") === "analog"
-          ? { key: "part_type", label: "Аналог" }
-          : null,
+    activeFilterChip(AVAILABILITY_FILTERS, "availability"),
+    activeFilterChip(PRICE_FILTERS, "price"),
+    activeFilterChip(PART_TYPE_FILTERS, "part_type"),
   ].filter((item): item is { key: string; label: string } => item !== null);
 
   return (

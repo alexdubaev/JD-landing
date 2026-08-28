@@ -3,7 +3,7 @@
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 
-import { useCart } from "@/lib/cart/context";
+import { useCart, QUANTITY_MAX, isPurchasable } from "@/lib/cart/context";
 import { trackEvent } from "@/lib/analytics";
 import type { Product } from "@/types/catalog";
 
@@ -16,9 +16,7 @@ export function AddToCartButton({ product }: { product: Product }) {
   const { addToCart, has: hasInCart, quantityOf } = useCart();
   const [qty, setQty] = useState(1);
 
-  const purchasable =
-    product.priceStatus === "fixed" && product.price != null;
-  if (!purchasable) return null;
+  if (!isPurchasable(product)) return null;
 
   const inCart = hasInCart(product.id);
   const cartQty = quantityOf(product.id);
@@ -53,7 +51,7 @@ export function AddToCartButton({ product }: { product: Product }) {
         <button
           aria-label="Увеличить количество"
           className="qty-stepper__btn"
-          onClick={() => setQty((q) => Math.min(10_000, q + 1))}
+          onClick={() => setQty((q) => Math.min(QUANTITY_MAX, q + 1))}
           type="button"
         >
           <Plus aria-hidden="true" />

@@ -54,3 +54,26 @@ export function trackEvent(
   }
   window.dataLayer.push({ event, ...properties });
 }
+
+const UTM_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+] as const;
+
+/**
+ * UTM attribution from the current URL for lead/order payloads — only
+ * non-empty values, so forms never submit empty utm fields.
+ */
+export function collectUtmAttribution(): Record<string, string> {
+  const attribution: Record<string, string> = {};
+  if (typeof window === "undefined") return attribution;
+  const params = new URLSearchParams(window.location.search);
+  for (const key of UTM_KEYS) {
+    const value = params.get(key);
+    if (value) attribution[key] = value;
+  }
+  return attribution;
+}

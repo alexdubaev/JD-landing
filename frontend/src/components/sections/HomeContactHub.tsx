@@ -8,13 +8,12 @@ import {
   MobileContactBar,
   TrackedPhoneLink,
 } from "@/components/sections/HomeContactActions";
+import { telHref } from "@/lib/format/tel";
 import type {
   ContactChannel,
   PageSection,
   SiteSettings,
 } from "@/types/content";
-
-const phoneHref = (phone: string) => phone.replace(/[^\d+]/gu, "");
 
 export function HomeContactHub({
   contacts,
@@ -37,7 +36,7 @@ export function HomeContactHub({
           type: "phone",
           label: "Телефон",
           value: settings.phone,
-          url: `tel:${phoneHref(settings.phone)}`,
+          url: `tel:${telHref(settings.phone)}`,
           icon: null,
         }]
       : [];

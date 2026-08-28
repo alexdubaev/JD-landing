@@ -5,9 +5,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { trackEvent } from "@/lib/analytics";
+import { telHref } from "@/lib/format/tel";
 import type { ContactChannel } from "@/types/content";
-
-const phoneHref = (phone: string) => phone.replace(/[^\d+]/gu, "");
 
 const messengerTypes = new Set(["messenger", "telegram", "whatsapp"]);
 
@@ -29,7 +28,7 @@ export function ContactChannelLink({ channel }: { channel: ContactChannel }) {
   const href =
     channel.url ??
     (channel.type === "phone"
-      ? `tel:${phoneHref(channel.value)}`
+      ? `tel:${telHref(channel.value)}`
       : null);
   if (!href) return <span>{channel.value}</span>;
 
@@ -61,7 +60,7 @@ export function TrackedPhoneLink({
   return (
     <a
       className={className}
-      href={`tel:${phoneHref(phone)}`}
+      href={`tel:${telHref(phone)}`}
       onClick={() => trackEvent("phone_click", { label: "final_cta" })}
     >
       {children}
@@ -81,7 +80,7 @@ export function MobileContactBar({
     <nav aria-label="Быстрые действия" className="mobile-contact-bar">
       {phone ? (
         <a
-          href={`tel:${phoneHref(phone)}`}
+          href={`tel:${telHref(phone)}`}
           onClick={() => trackEvent("phone_click", { label: "mobile_bar" })}
         >
           <Phone aria-hidden="true" />

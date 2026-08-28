@@ -14,8 +14,8 @@ describe("HeaderNavigation", () => {
     render(
       <HeaderNavigation
         navigation={[
-          { label: "Запчасти", url: "/catalog" },
-          { label: "Компания", url: "/about" },
+          { id: "nav-catalog", label: "Запчасти", url: "/catalog" },
+          { id: "nav-about", label: "Компания", url: "/about" },
         ]}
       />,
     );
@@ -33,7 +33,7 @@ describe("HeaderNavigation", () => {
     pathname.value = "/";
     render(
       <HeaderNavigation
-        navigation={[{ label: "Подбор", url: "/#consultation" }]}
+        navigation={[{ id: "nav-consult", label: "Подбор", url: "/#consultation" }]}
       />,
     );
 

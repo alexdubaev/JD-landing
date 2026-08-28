@@ -2,27 +2,12 @@ import Link from "next/link";
 
 import type { Product, ProductImageItem, PublicFile } from "@/types/catalog";
 
+import { AVAILABILITY_LABELS } from "@/lib/format/catalog-labels";
+import { formatProductPrice } from "@/lib/format/price";
+
 import { AddToCartButton } from "./AddToCartButton";
 import { ProductGallery } from "./ProductGallery";
 import { ProductVerification } from "./ProductVerification";
-
-const availabilityLabels: Record<Product["availabilityStatus"], string> = {
-  in_stock: "В наличии",
-  on_request: "Под заказ",
-  out_of_stock: "Нет в наличии",
-};
-
-const productPrice = (product: Product) => {
-  if (product.priceStatus === "on_request") return "Цена по запросу";
-  if (product.priceStatus === "hidden" || product.price == null) {
-    return "Уточнить условия";
-  }
-  return new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: product.currency,
-    maximumFractionDigits: 0,
-  }).format(product.price);
-};
 
 export function ProductDetail({
   documents,
@@ -74,8 +59,8 @@ export function ProductDetail({
             </p>
           ) : null}
           <div className="product-detail__commercial">
-            <strong>{productPrice(product)}</strong>
-            <span>{availabilityLabels[product.availabilityStatus]}</span>
+            <strong>{formatProductPrice(product)}</strong>
+            <span>{AVAILABILITY_LABELS[product.availabilityStatus]}</span>
           </div>
           <AddToCartButton product={product} />
           <Link

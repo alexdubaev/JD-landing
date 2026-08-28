@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   COOKIE_CONSENT_STORAGE_KEY,
+  collectUtmAttribution,
   hasAnalyticsConsent,
   trackEvent,
 } from "./analytics";
@@ -43,5 +44,30 @@ describe("trackEvent", () => {
 
   it("does not throw when analytics is not installed", () => {
     expect(() => trackEvent("lead_submit")).not.toThrow();
+  });
+});
+
+describe("collectUtmAttribution", () => {
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("returns only non-empty utm params from the current URL", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?utm_source=yandex&utm_campaign=spring&utm_content=",
+    );
+
+    expect(collectUtmAttribution()).toEqual({
+      utm_source: "yandex",
+      utm_campaign: "spring",
+    });
+  });
+
+  it("returns an empty object without utm params", () => {
+    window.history.replaceState(null, "", "/catalog");
+
+    expect(collectUtmAttribution()).toEqual({});
   });
 });

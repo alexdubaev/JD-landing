@@ -6,37 +6,17 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { InteractiveCard } from "@/components/motion/InteractiveCard";
-import { useCart } from "@/lib/cart/context";
+import { isPurchasable, useCart } from "@/lib/cart/context";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import { trackEvent } from "@/lib/analytics";
+import { AVAILABILITY_LABELS } from "@/lib/format/catalog-labels";
+import { formatProductPrice } from "@/lib/format/price";
 import {
   getProductRequestList,
   PRODUCT_REQUEST_LIST_EVENT,
   toggleProductRequestItem,
 } from "@/lib/leads/product-request-list";
 import type { ProductCardData } from "@/types/catalog";
-
-const availabilityLabels: Record<
-  ProductCardData["availabilityStatus"],
-  string
-> = {
-  in_stock: "В наличии",
-  on_request: "Под заказ",
-  out_of_stock: "Нет в наличии",
-};
-
-const formatPrice = (product: ProductCardData) => {
-  if (product.priceStatus === "on_request") return "Цена по запросу";
-  if (product.priceStatus === "hidden" || product.price == null) {
-    return "Уточнить условия";
-  }
-
-  return new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: product.currency,
-    maximumFractionDigits: 0,
-  }).format(product.price);
-};
 
 const partTypeLabels = {
   analog: "Аналог",
@@ -57,7 +37,7 @@ export function ProductCard({
   const [requestCount, setRequestCount] = useState(0);
   const { addToCart, has: hasInCart, quantityOf } = useCart();
   const Heading = headingLevel === 3 ? "h3" : "h2";
-  const purchasable = product.priceStatus === "fixed" && product.price != null;
+  const purchasable = isPurchasable(product);
   const inCart = hasInCart(product.id);
   const cartQty = quantityOf(product.id);
   const imageUrl = directusAssetUrl(product.mainImageId, {
@@ -147,12 +127,12 @@ export function ProductCard({
           </p>
         ) : null}
         <div className="product-card__commercial">
-          <strong className="product-card__price">{formatPrice(product)}</strong>
+          <strong className="product-card__price">{formatProductPrice(product)}</strong>
           {product.availabilityStatus !== "on_request" ? (
             <span
               className={`product-card__availability product-card__availability--${product.availabilityStatus}`}
             >
-              {availabilityLabels[product.availabilityStatus]}
+              {AVAILABILITY_LABELS[product.availabilityStatus]}
             </span>
           ) : null}
           {product.deliveryStatus ? (

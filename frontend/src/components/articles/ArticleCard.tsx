@@ -6,13 +6,8 @@ import Link from "next/link";
 
 import { directusAssetUrl } from "@/lib/directus/assets";
 import { trackEvent } from "@/lib/analytics";
+import { formatRuDate } from "@/lib/format/date";
 import type { ArticleCardData } from "@/types/catalog";
-
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  day: "2-digit",
-  month: "long",
-  year: "numeric",
-});
 
 export function ArticleCard({ article }: { article: ArticleCardData }) {
   const cover = directusAssetUrl(article.coverImageId, {
@@ -43,7 +38,7 @@ export function ArticleCard({ article }: { article: ArticleCardData }) {
         <div className="article-card__meta">
           {article.categoryLabel ? <span>{article.categoryLabel}</span> : null}
           <time dateTime={article.publishedAt}>
-            {dateFormatter.format(new Date(article.publishedAt))}
+            {formatRuDate(article.publishedAt)}
           </time>
           {article.readingTimeMinutes ? (
             <span>{article.readingTimeMinutes} мин чтения</span>

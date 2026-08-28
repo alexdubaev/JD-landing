@@ -16,15 +16,10 @@ import {
   resolveArticleRelations,
 } from "@/lib/directus/articles";
 import { getSiteSettings } from "@/lib/directus/content";
+import { formatRuDate } from "@/lib/format/date";
 import { buildSocialMetadata } from "@/lib/seo/social-metadata";
 import { absoluteUrl } from "@/lib/seo/url";
 import { buildBreadcrumbSchema, buildOrganizationSchema } from "@/lib/seo/schema";
-
-const formatDate = new Intl.DateTimeFormat("ru-RU", {
-  day: "2-digit",
-  month: "long",
-  year: "numeric",
-});
 
 export async function generateMetadata({
   params,
@@ -142,7 +137,7 @@ export default async function ArticlePage({
         <article className="article-detail">
           <header>
             <time dateTime={article.publishedAt}>
-              {formatDate.format(new Date(article.publishedAt))}
+              {formatRuDate(article.publishedAt)}
             </time>
             <h1>{article.title}</h1>
             <p>{article.excerpt}</p>

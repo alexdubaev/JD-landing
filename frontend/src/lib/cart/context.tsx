@@ -13,7 +13,7 @@ import type { CartLine, ProductCardData } from "@/types/catalog";
 
 const STORAGE_KEY = "deere-shop:cart";
 const EVENT_NAME = "deere-shop:cart-change";
-const QUANTITY_MAX = 10_000;
+export const QUANTITY_MAX = 10_000;
 
 type CartState = CartLine[];
 const EMPTY_CART: CartState = [];

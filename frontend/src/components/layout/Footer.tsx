@@ -8,6 +8,7 @@ import {
   BRAND_NAME,
 } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
+import { telHref } from "@/lib/format/tel";
 
 import type { NavigationItem } from "./types";
 
@@ -60,7 +61,7 @@ export function Footer({
         <div className="site-footer__contacts">
           <strong>Связаться с нами</strong>
           {phone ? (
-            <a href={`tel:${phone.replace(/[^\d+]/gu, "")}`}>{phone}</a>
+            <a href={`tel:${telHref(phone)}`}>{phone}</a>
           ) : null}
           <Link href="/parts-request">Написать нам</Link>
           <Link href="/privacy-policy">Политика конфиденциальности</Link>

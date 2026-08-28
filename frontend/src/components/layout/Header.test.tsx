@@ -12,12 +12,12 @@ describe("Header", () => {
   it("keeps a non-empty published CMS navigation exactly as configured", () => {
     expect(
       getHeaderNavigation([
-        { label: "Запчасти", url: "/catalog" },
-        { label: "О компании", url: "/about" },
+        { id: "cms-parts", label: "Запчасти", url: "/catalog" },
+        { id: "cms-about", label: "О компании", url: "/about" },
       ]),
     ).toEqual([
-      { label: "Запчасти", url: "/catalog" },
-      { label: "О компании", url: "/about" },
+      { id: "cms-parts", label: "Запчасти", url: "/catalog" },
+      { id: "cms-about", label: "О компании", url: "/about" },
     ]);
   });
   it("renders the wide DEERE-SHOP logo and accessible navigation", () => {

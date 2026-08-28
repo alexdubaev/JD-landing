@@ -16,6 +16,7 @@ import { HeroMotion } from "@/components/motion/HeroMotion";
 import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
 import { directusAssetUrl } from "@/lib/directus/assets";
+import { telHref } from "@/lib/format/tel";
 import type { ContactChannel, PageSection, SiteSettings } from "@/types/content";
 
 import { HeroPartSearch } from "./HeroPartSearch";
@@ -149,7 +150,7 @@ export function HomeHero({
           />
           <div className="commerce-hero__contacts commerce-hero__contacts--desktop-only">
             {phone ? (
-              <a href={`tel:${phone.replace(/[^\d+]/gu, "")}`}>
+              <a href={`tel:${telHref(phone)}`}>
                 <Phone aria-hidden="true" />
                 {phone}
               </a>

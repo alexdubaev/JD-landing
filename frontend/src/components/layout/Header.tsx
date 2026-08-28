@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { BRAND_LOGO_PATH, BRAND_NAME } from "@/lib/brand";
 import { directusAssetUrl } from "@/lib/directus/assets";
+import { telHref } from "@/lib/format/tel";
 
 import { CartBadge } from "./CartBadge";
 import { HeaderChrome } from "./HeaderChrome";
@@ -12,17 +13,17 @@ import { HeaderNavigation } from "./HeaderNavigation";
 import { MobileNavigation } from "./MobileNavigation";
 import type { NavigationItem } from "./types";
 
-const normalizePhone = (phone: string) => phone.replace(/[^\d+]/gu, "");
 
 const FALLBACK_NAVIGATION = [
-  { label: "Каталог", url: "/catalog" },
+  { id: "fallback-catalog", label: "Каталог", url: "/catalog" },
   {
+    id: "fallback-delivery",
     label: "Доставка и оплата",
     url: "/delivery",
   },
-  { label: "Компания", url: "/about" },
-  { label: "Статьи", url: "/articles" },
-  { label: "Контакты", url: "/contacts" },
+  { id: "fallback-about", label: "Компания", url: "/about" },
+  { id: "fallback-articles", label: "Статьи", url: "/articles" },
+  { id: "fallback-contacts", label: "Контакты", url: "/contacts" },
 ] as const;
 
 export const getHeaderNavigation = (navigation: NavigationItem[]) =>
@@ -72,7 +73,7 @@ export function Header({
             {phone ? (
               <a
                 className="site-header__phone"
-                href={`tel:${normalizePhone(phone)}`}
+                href={`tel:${telHref(phone)}`}
               >
                 {phone}
               </a>

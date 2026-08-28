@@ -5,6 +5,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { telHref } from "@/lib/format/tel";
+
 import type { NavigationItem } from "./types";
 
 export function MobileNavigation({
@@ -53,7 +55,7 @@ export function MobileNavigation({
             {phone ? (
               <a
                 className="mobile-navigation__phone"
-                href={`tel:${phone.replace(/[^\d+]/gu, "")}`}
+                href={`tel:${telHref(phone)}`}
                 onClick={() => setIsOpen(false)}
               >
                 {phone}

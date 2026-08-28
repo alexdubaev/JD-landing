@@ -1,3 +1,4 @@
+import { formatRuDate } from "@/lib/format/date";
 import type { Product } from "@/types/catalog";
 
 type VerificationProduct = Pick<
@@ -9,7 +10,7 @@ const formattedDate = (value: string | null | undefined) => {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("ru-RU", { dateStyle: "long" }).format(date);
+  return formatRuDate(value);
 };
 
 const validSourceUrl = (value: string | null | undefined) => {
