@@ -90,5 +90,13 @@ TD-09 → 16; TD-04 → 17; TD-03 ↔ TD-09 (search-функции).
       поле-специфичные права в Directus 12 — платный entitlement «custom permission
       rules», инстанс без лицензии; минимализация сохранена на уровне действий —
       только create, без update/delete/фильтров).
-- [ ] P3: TD-15…TD-18
+- [x] P3: TD-15…TD-18 — реализовано 2026-08-28 (коммиты `8c3cb06` — TD-15,
+      `6702980` — TD-16, `c61cfee` — TD-17 (пункты 1–3), `ffb225b` — TD-18
+      (безопасные пункты)). Полный прогон всех наборов зелёный (frontend 503
+      теста + typecheck + lint; seo-worker 88; directus 490; deploy/scripts 18).
+      **Отложено на решение владельца** (TD-17.4, TD-18.1/4):
+      untrack `commit-push.bat`; судьба CSV-пайплайна build-/import-directus-
+      products-csv.mjs (архивировать или оставить живыми); архивация one-off'ов
+      sync-brand/upload-logo; `git rm -r --cached` одноразовых outputs и
+      рассинхрон `.gitignore` (`outputs/`, `docs/superpowers/`).
 - [ ] Stage-2: обсуждение S-1…S-12
