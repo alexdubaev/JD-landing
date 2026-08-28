@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ProductCardData } from "@/types/catalog";
 
@@ -13,10 +13,14 @@ import {
   getCatalogPage,
   getCatalogSuggestions,
   getCategories,
+  getCategoryRedirect,
+  getCategorySitemapEntries,
   getFeaturedProducts,
+  getFilesByIds,
   getHomepageCategories,
   getPageSeoBySlug,
   getProductBySlugs,
+  getProductSitemapEntries,
 } from "./catalog";
 
 vi.mock("./client", async () => {
@@ -994,5 +998,143 @@ describe("fetchProductAnalogs (R8 dual-read)", () => {
     const view = await fetchProductAnalogs("product-1");
 
     expect(view).toEqual({ analogs: [], supersededBy: [] });
+  });
+});
+
+describe("getCategoryRedirect", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns the trimmed redirect target for an archived category", async () => {
+    requestMock.mockResolvedValue([
+      { status: "archived", redirect_target: " new-slug " },
+    ]);
+
+    await expect(getCategoryRedirect("old-slug")).resolves.toBe("new-slug");
+
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("filter[slug][_eq]")).toBe("old-slug");
+    expect(url.searchParams.get("filter[redirect_target][_null]")).toBe("false");
+    expect(url.searchParams.get("fields")).toBe("status,redirect_target");
+    expect(url.searchParams.get("limit")).toBe("1");
+  });
+
+  it("returns null for a published category, a missing row or a blank target", async () => {
+    requestMock.mockResolvedValueOnce([
+      { status: "published", redirect_target: "somewhere" },
+    ]);
+    await expect(getCategoryRedirect("live")).resolves.toBeNull();
+
+    requestMock.mockResolvedValueOnce([]);
+    await expect(getCategoryRedirect("ghost")).resolves.toBeNull();
+
+    requestMock.mockResolvedValueOnce([
+      { status: "archived", redirect_target: "   " },
+    ]);
+    await expect(getCategoryRedirect("blank")).resolves.toBeNull();
+  });
+});
+
+describe("getFilesByIds", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv("DIRECTUS_URL", "https://cms.example.test");
+    vi.stubEnv("DIRECTUS_TOKEN", "server-token-for-tests-only");
+    vi.stubEnv(
+      "DIRECTUS_PUBLIC_FOLDER_ID",
+      "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a",
+    );
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.test");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("skips the request entirely for an empty id list", async () => {
+    expect(await getFilesByIds([])).toEqual([]);
+    expect(requestMock).not.toHaveBeenCalled();
+  });
+
+  it("returns public-folder documents mapped for the download UI", async () => {
+    requestMock.mockResolvedValue([
+      {
+        id: "file-1",
+        filename_download: "pasport.pdf",
+        title: "Паспорт",
+        type: "application/pdf",
+      },
+    ]);
+
+    const files = await getFilesByIds(["file-1", "file-1", ""]);
+
+    expect(files).toEqual([
+      {
+        id: "file-1",
+        filename: "pasport.pdf",
+        title: "Паспорт",
+        type: "application/pdf",
+      },
+    ]);
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("filter[id][_in]")).toBe("file-1");
+    expect(url.searchParams.get("filter[folder][_eq]")).toBe(
+      "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a",
+    );
+  });
+});
+
+describe("sitemap entries", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("lists only indexable published products with a category", async () => {
+    requestMock.mockResolvedValue([
+      {
+        slug: "nasos",
+        updated_at: "2026-08-10T10:00:00Z",
+        category: { slug: "nasosy" },
+      },
+      { slug: "orphan", updated_at: "2026-08-10T10:00:00Z", category: null },
+    ]);
+
+    const entries = await getProductSitemapEntries();
+
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.searchParams.get("filter[status][_eq]")).toBe("published");
+    expect(url.searchParams.get("filter[is_indexable][_neq]")).toBe("false");
+    expect(url.searchParams.get("limit")).toBe("-1");
+    expect(entries).toEqual([
+      {
+        categorySlug: "nasosy",
+        productSlug: "nasos",
+        updatedAt: "2026-08-10T10:00:00Z",
+      },
+    ]);
+  });
+
+  it("lists category slugs with their lastmod timestamps", async () => {
+    requestMock.mockResolvedValue([
+      { slug: "gidravlika", updated_at: "2026-08-01T00:00:00Z" },
+    ]);
+
+    const entries = await getCategorySitemapEntries();
+
+    const url = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    expect(url.pathname).toBe("/items/categories");
+    expect(url.searchParams.get("filter[is_indexable][_neq]")).toBe("false");
+    expect(entries).toEqual([
+      { slug: "gidravlika", updatedAt: "2026-08-01T00:00:00Z" },
+    ]);
+  });
+});
+
+describe("catalog page count fallback", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("falls back to the page length when filter_count meta is missing", async () => {
+    envelopeRequestMock.mockResolvedValue({
+      data: [rawProduct("p1"), rawProduct("p2")],
+    });
+
+    const result = await getCatalogPage({ search: "", sort: "relevance", page: 1, pageSize: 24 });
+
+    expect(result.total).toBe(2);
   });
 });
