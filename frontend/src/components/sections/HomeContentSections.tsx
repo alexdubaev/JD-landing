@@ -1,7 +1,6 @@
 import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
 
-import { LeadForm } from "@/components/forms/LeadForm";
 import { Reveal } from "@/components/motion/Reveal";
 import { AnimatedAccordion } from "@/components/ui/AnimatedAccordion";
 import { Container } from "@/components/ui/Container";
@@ -24,28 +23,6 @@ export function HomeCta({ section }: { section: PageSection }) {
               <ArrowRight aria-hidden="true" />
             </Link>
           ) : null}
-        </Reveal>
-      </Container>
-    </section>
-  );
-}
-
-export function HomeSeoText({
-  pageText,
-  section,
-}: {
-  pageText: string | null;
-  section: PageSection;
-}) {
-  const text = section.text ?? pageText;
-  if (!text) return null;
-
-  return (
-    <section className="home-section home-seo">
-      <Container>
-        <Reveal>
-          <h2>{section.title ?? "Подбор комплектующих John Deere"}</h2>
-          <p>{text}</p>
         </Reveal>
       </Container>
     </section>
@@ -113,26 +90,6 @@ export function HomeContacts({
               </span>
             ) : null}
           </address>
-        </Reveal>
-      </Container>
-    </section>
-  );
-}
-
-export function HomeLeadForm({ section }: { section: PageSection }) {
-  return (
-    <section className="home-section home-lead" id="consultation">
-      <Container>
-        <Reveal className="home-lead__grid">
-          <div>
-            {section.subtitle ? <p>{section.subtitle}</p> : null}
-            <h2>{section.title ?? "Оставьте заявку на подбор"}</h2>
-            <p>
-              {section.text ??
-                "Укажите контакты и задачу — менеджер уточнит совместимость и условия поставки."}
-            </p>
-          </div>
-          <LeadForm />
         </Reveal>
       </Container>
     </section>

@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { InteractiveCard } from "./InteractiveCard";
 import { Reveal } from "./Reveal";
 import { RouteTransition } from "./RouteTransition";
-import { Stagger, StaggerItem } from "./Stagger";
 
 describe("motion primitives", () => {
   it("reveals a whole section without blur or scale", () => {
@@ -20,23 +19,6 @@ describe("motion primitives", () => {
     expect(reveal).toHaveAttribute("data-motion-direction", "up");
     expect(reveal).not.toHaveStyle({ filter: "blur(6px)" });
     expect(reveal?.getAttribute("style") ?? "").not.toContain("scale");
-  });
-
-  it("renders stagger items without blur, scale, or translated positions", () => {
-    render(
-      <Stagger as="ul" aria-label="Категории">
-        <StaggerItem as="li">Двигатели</StaggerItem>
-        <StaggerItem as="li">Гидравлика</StaggerItem>
-      </Stagger>,
-    );
-
-    const list = screen.getByRole("list", { name: "Категории" });
-    expect(list).toHaveAttribute("data-motion-group", "stagger");
-    const item = screen.getByText("Гидравлика");
-    expect(item).toHaveAttribute("data-motion-item", "stagger");
-    expect(item.getAttribute("style") ?? "").not.toMatch(
-      /blur|scale|translate/iu,
-    );
   });
 
   it("preserves a card link without applying an inline transform", () => {

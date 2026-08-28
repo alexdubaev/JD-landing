@@ -9,8 +9,6 @@ export function Reveal({
   accent?: boolean;
   children: ReactNode;
   className?: string;
-  delay?: number;
-  distance?: number;
   direction?: "left" | "right" | "up";
 }) {
   return (

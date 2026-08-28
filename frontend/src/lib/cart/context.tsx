@@ -296,5 +296,3 @@ export function useCart(): CartContextValue {
 }
 
 export { isPurchasable };
-export const CART_STORAGE_KEY = STORAGE_KEY;
-export const CART_CHANGE_EVENT = EVENT_NAME;
