@@ -23,7 +23,7 @@ describe("catalog heading layout", () => {
       /\.breadcrumbs\s*\{[^}]*min-height:\s*2rem;[^}]*padding-block:\s*0\.5rem;[^}]*border-bottom:\s*0;/u,
     );
     expect(styles).toMatch(
-      /\.catalog-heading\s*\{[^}]*max-width:\s*none;[^}]*margin:\s*clamp\(1\.5rem,\s*3vw,\s*2\.5rem\) 0 1\.5rem;[^}]*padding-bottom:\s*0;[^}]*border-bottom:\s*0;/u,
+      /\.catalog-heading\s*\{[^}]*max-width:\s*none;[^}]*margin:\s*0\.75rem 0 1rem;[^}]*padding-bottom:\s*0;[^}]*border-bottom:\s*0;/u,
     );
     expect(styles).toMatch(
       /\.catalog-controls\s*\{[^}]*gap:\s*0;[^}]*margin-bottom:\s*0;/u,
