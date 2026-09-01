@@ -8,6 +8,7 @@ import { directusAssetUrl } from "@/lib/directus/assets";
 import { telHref } from "@/lib/format/tel";
 
 import { CartBadge } from "./CartBadge";
+import { ContactRequestDialog } from "../forms/ContactRequestDialog";
 import { HeaderChrome } from "./HeaderChrome";
 import { HeaderNavigation } from "./HeaderNavigation";
 import { MobileNavigation } from "./MobileNavigation";
@@ -82,9 +83,7 @@ export function Header({
                 Консультация
               </Link>
             )}
-            <Link className="site-header__request" href="/parts-request">
-              Отправить запрос
-            </Link>
+            <ContactRequestDialog />
           </div>
           <CartBadge />
           <MobileNavigation navigation={headerNavigation} phone={phone} />

@@ -35,6 +35,37 @@ afterEach(() => {
 });
 
 describe("POST /api/leads", () => {
+  it("sends a contact-only request by email without creating a Directus lead", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    notifyNewLead.mockResolvedValue("info@cmteh.ru");
+
+    const response = await POST(
+      new Request("https://example.test/api/leads", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          submission_type: "contact",
+          name: "Иван",
+          email: "ivan@example.test",
+          message: "Подскажите условия поставки",
+          website: "",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(notifyNewLead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Иван",
+        email: "ivan@example.test",
+        phone: undefined,
+        message: "Подскажите условия поставки",
+        storedInDirectus: false,
+      }),
+    );
+  });
+
   it("validates and stores a lead without exposing the Directus response", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ data: { id: "lead-1" } }), {

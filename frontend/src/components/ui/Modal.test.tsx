@@ -19,4 +19,14 @@ describe("Modal", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it("can render as a centered dialog instead of a filter drawer", () => {
+    render(
+      <Modal isOpen onClose={vi.fn()} title="Связаться с нами" variant="dialog">
+        <p>Форма обратной связи</p>
+      </Modal>,
+    );
+
+    expect(screen.getByRole("dialog")).toHaveClass("modal__dialog--dialog");
+  });
 });

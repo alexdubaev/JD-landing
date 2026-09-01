@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { leadSchema } from "./schema";
+import { contactRequestSchema, leadSchema } from "./schema";
 
 describe("leadSchema", () => {
   it("normalizes a valid lead and keeps attribution data", () => {
@@ -38,6 +38,31 @@ describe("leadSchema", () => {
         phone: "1",
         email: "bad",
         website: "spam.example",
+      }),
+    ).toThrow();
+  });
+});
+
+describe("contactRequestSchema", () => {
+  it("accepts either an email address or a phone number", () => {
+    expect(
+      contactRequestSchema.parse({
+        submission_type: "contact",
+        name: "Иван",
+        email: "ivan@example.test",
+        message: "Нужна консультация",
+        website: "",
+      }),
+    ).toMatchObject({ email: "ivan@example.test" });
+  });
+
+  it("rejects a request without both contact methods", () => {
+    expect(() =>
+      contactRequestSchema.parse({
+        submission_type: "contact",
+        name: "Иван",
+        message: "Нужна консультация",
+        website: "",
       }),
     ).toThrow();
   });

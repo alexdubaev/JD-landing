@@ -2,7 +2,7 @@ import type { PartsRequestItem } from "@/lib/leads/parts-request";
 
 export type LeadEmailModel = {
   name: string;
-  phone: string;
+  phone?: string;
   email?: string;
   message?: string;
   product?: string;
@@ -17,6 +17,7 @@ export type LeadEmailModel = {
   };
   requestItems?: PartsRequestItem[];
   attachmentCount?: number;
+  storedInDirectus?: boolean;
   escape: (value: string) => string;
 };
 
@@ -91,7 +92,7 @@ export function renderLeadEmail(model: LeadEmailModel): string {
           </table>
         </td></tr>
         <tr><td style="padding:12px 24px 20px;font-size:12px;color:#8a8a8a;">
-          Это автоматическое уведомление. Ответлять на письмо не нужно — все данные сохранены в Directus.
+          ${model.storedInDirectus === false ? "Это автоматическое уведомление с формы обратной связи." : "Это автоматическое уведомление. Ответлять на письмо не нужно — все данные сохранены в Directus."}
         </td></tr>
       </table>
     </td></tr>

@@ -13,7 +13,7 @@ export type { LeadEmailModel };
  */
 export type NewLeadPayload = {
   name: string;
-  phone: string;
+  phone?: string;
   email?: string;
   message?: string;
   product?: string;
@@ -28,6 +28,7 @@ export type NewLeadPayload = {
   };
   requestItems?: PartsRequestItem[];
   attachments?: string[];
+  storedInDirectus?: boolean;
 };
 
 const escapeHtml = (value: string) =>
@@ -77,7 +78,7 @@ export async function notifyNewLead(
 
   const senderName = "DEERE-SHOP";
   const from = env.SMTP_FROM || env.SMTP_USER;
-  const subject = `Новая заявка — ${lead.name}`;
+  const subject = `${lead.storedInDirectus === false ? "Новое сообщение" : "Новая заявка"} — ${lead.name}`;
   const text = renderLeadPlainText(lead);
   const html = renderLeadEmail(toEmailModel(lead));
 
@@ -109,6 +110,7 @@ function toEmailModel(lead: NewLeadPayload): LeadEmailModel {
     utm: lead.utm,
     requestItems: lead.requestItems,
     attachmentCount: lead.attachments?.length ?? 0,
+    storedInDirectus: lead.storedInDirectus,
     escape: escapeHtml,
   };
 }

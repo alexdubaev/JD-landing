@@ -10,11 +10,13 @@ export function Modal({
   isOpen,
   onClose,
   title,
+  variant = "drawer",
 }: {
   children: ReactNode;
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  variant?: "dialog" | "drawer";
 }) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -43,7 +45,7 @@ export function Modal({
       {isOpen ? (
         <motion.div
           animate={{ opacity: 1 }}
-          className="modal"
+          className={`modal modal--${variant}`}
           exit={{ opacity: 0 }}
           initial={reduceMotion ? false : { opacity: 0 }}
           onMouseDown={(event) => {
@@ -54,7 +56,7 @@ export function Modal({
             aria-labelledby={titleId}
             aria-modal="true"
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="modal__dialog"
+            className={`modal__dialog modal__dialog--${variant}`}
             exit={{ opacity: 0, scale: 0.98, y: 12 }}
             initial={
               reduceMotion ? false : { opacity: 0, scale: 0.98, y: 12 }

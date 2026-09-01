@@ -45,8 +45,8 @@ describe("Header", () => {
       screen.getByRole("link", { name: "+7 900 000-00-00" }),
     ).toHaveAttribute("href", "tel:+79000000000");
     expect(
-      screen.getAllByRole("link", { name: "Отправить запрос" }).at(-1),
-    ).toHaveAttribute("href", "/parts-request");
+      screen.getByRole("button", { name: "Связаться с нами" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Доставка" }),
     ).toHaveAttribute("href", "/delivery");

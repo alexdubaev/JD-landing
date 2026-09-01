@@ -14,7 +14,7 @@ import {
   validateLeadAttachment,
   type AttachmentKind,
 } from "@/lib/leads/attachments";
-import { leadSchema } from "@/lib/leads/schema";
+import { contactRequestSchema, leadSchema } from "@/lib/leads/schema";
 import { notifyNewLead } from "@/lib/notifications/notify";
 import {
   RequestTooLargeError,
@@ -101,9 +101,57 @@ export async function POST(request: Request) {
           marketing_consent: form.has("marketing_consent"),
           turnstile_token: stringValue(form, "turnstile_token"),
           website: stringValue(form, "website"),
+          ...(stringValue(form, "submission_type")
+            ? { submission_type: stringValue(form, "submission_type") }
+            : {}),
           request_items: parseRequestItems(stringValue(form, "request_items")),
         }
       : await boundedRequest.json();
+    const isContactRequest =
+      typeof input === "object" &&
+      input !== null &&
+      "submission_type" in input &&
+      input.submission_type === "contact";
+    if (isContactRequest) {
+      const parsed = contactRequestSchema.safeParse(input);
+      if (!parsed.success) {
+        throw new LeadValidationError();
+      }
+      if (
+        !(await verifyTurnstile({
+          token: parsed.data.turnstile_token,
+          remoteIp: getTrustedClientIp(request.headers),
+        }))
+      ) {
+        return NextResponse.json(
+          { error: "Не удалось подтвердить отправку" },
+          { status: 400 },
+        );
+      }
+      const recipient = await notifyNewLead({
+        name: parsed.data.name,
+        phone: parsed.data.phone,
+        email: parsed.data.email,
+        message: parsed.data.message,
+        pageUrl: parsed.data.page_url,
+        utm: {
+          source: parsed.data.utm_source,
+          medium: parsed.data.utm_medium,
+          campaign: parsed.data.utm_campaign,
+          content: parsed.data.utm_content,
+          term: parsed.data.utm_term,
+        },
+        storedInDirectus: false,
+      });
+      if (!recipient) {
+        return NextResponse.json(
+          { error: "Не удалось отправить сообщение. Попробуйте ещё раз." },
+          { status: 503 },
+        );
+      }
+      return NextResponse.json({ ok: true }, { status: 201 });
+    }
+
     const parsed = leadSchema.safeParse(input);
     if (!parsed.success) {
       throw new LeadValidationError();
