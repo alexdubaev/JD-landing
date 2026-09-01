@@ -2,7 +2,8 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 
 export function Modal({
@@ -21,6 +22,11 @@ export function Modal({
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const reduceMotion = useReducedMotion();
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -40,7 +46,7 @@ export function Modal({
     };
   }, [isOpen, onClose]);
 
-  return (
+  const content = (
     <AnimatePresence>
       {isOpen ? (
         <motion.div
@@ -80,4 +86,6 @@ export function Modal({
       ) : null}
     </AnimatePresence>
   );
+
+  return mounted ? createPortal(content, document.body) : content;
 }

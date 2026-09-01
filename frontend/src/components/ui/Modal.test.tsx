@@ -29,4 +29,16 @@ describe("Modal", () => {
 
     expect(screen.getByRole("dialog")).toHaveClass("modal__dialog--dialog");
   });
+
+  it("mounts the modal outside transformed or filtered page chrome", () => {
+    render(
+      <Modal isOpen onClose={vi.fn()} title="Контакты">
+        <p>Форма</p>
+      </Modal>,
+    );
+
+    expect(document.body.querySelector(".modal")?.parentElement).toBe(
+      document.body,
+    );
+  });
 });
