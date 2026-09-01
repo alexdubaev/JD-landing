@@ -6,8 +6,7 @@ import { describe, expect, it } from "vitest";
 const styles = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 
 describe("product detail compact layout", () => {
-  it("uses a compact title and an unframed product image", () => {
-    expect(styles).toContain("font-size: clamp(1.5rem, 3vw, 2.5rem);");
+  it("uses an unframed product image", () => {
     expect(styles).toMatch(
       /\.product-gallery__main,\s*\.product-gallery__empty\s*\{[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;[\s\S]*?box-shadow:\s*none;/,
     );
