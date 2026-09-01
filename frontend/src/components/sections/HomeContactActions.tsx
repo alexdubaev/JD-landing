@@ -1,7 +1,6 @@
 "use client";
 
 import { MessageCircle, Phone, Send } from "lucide-react";
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { trackEvent } from "@/lib/analytics";
@@ -14,27 +13,17 @@ const messengerChannel = (contacts: ContactChannel[]) =>
   contacts.find((channel) => messengerTypes.has(channel.type) && channel.url);
 
 export function ContactChannelLink({ channel }: { channel: ContactChannel }) {
-  if (channel.type === "email") {
-    return (
-      <Link
-        href="/parts-request"
-        onClick={() => trackEvent("lead_form_open", { label: channel.label })}
-      >
-        Написать нам
-      </Link>
-    );
-  }
-
   const href =
     channel.url ??
-    (channel.type === "phone"
-      ? `tel:${telHref(channel.value)}`
-      : null);
+    (channel.type === "phone" ? `tel:${telHref(channel.value)}` :
+      channel.type === "email" ? `mailto:${channel.value}` : null);
   if (!href) return <span>{channel.value}</span>;
 
   const event =
     channel.type === "phone"
       ? "phone_click"
+      : channel.type === "email"
+        ? "email_click"
       : messengerTypes.has(channel.type)
           ? "messenger_click"
           : null;

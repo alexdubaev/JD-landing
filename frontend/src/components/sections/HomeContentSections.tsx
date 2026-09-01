@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Reveal } from "@/components/motion/Reveal";
 import { AnimatedAccordion } from "@/components/ui/AnimatedAccordion";
 import { Container } from "@/components/ui/Container";
+import { FRONTEND_CONTACT_EMAIL, uniqueContactPhones } from "@/lib/contact-config";
 import { telHref } from "@/lib/format/tel";
 import type { FaqItem, PageSection, SiteSettings } from "@/types/content";
 
@@ -70,18 +71,16 @@ export function HomeContacts({
             {section.text ? <p>{section.text}</p> : null}
           </div>
           <address>
-            {settings.phone ? (
-              <a href={`tel:${telHref(settings.phone)}`}>
+            {uniqueContactPhones(settings.phone).map((phone) => (
+              <a href={`tel:${telHref(phone)}`} key={phone}>
                 <Phone aria-hidden="true" />
-                {settings.phone}
+                {phone}
               </a>
-            ) : null}
-            {settings.email ? (
-              <Link href="/parts-request">
+            ))}
+            <a href={`mailto:${FRONTEND_CONTACT_EMAIL}`}>
                 <Mail aria-hidden="true" />
-                Написать нам
-              </Link>
-            ) : null}
+                {FRONTEND_CONTACT_EMAIL}
+            </a>
             {settings.address ? (
               <span>
                 <MapPin aria-hidden="true" />

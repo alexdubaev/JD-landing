@@ -1,8 +1,9 @@
-import { Clock3, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Clock3, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 
 import { LeadForm } from "@/components/forms/LeadForm";
 import { Container } from "@/components/ui/Container";
+import { FRONTEND_CONTACT_EMAIL, uniqueContactPhones } from "@/lib/contact-config";
 import {
   ContactChannelLink,
   MobileContactBar,
@@ -26,23 +27,33 @@ export function HomeContactHub({
   formSection?: PageSection;
   settings: SiteSettings;
 }) {
-  const communicationTypes = new Set(["phone", "messenger", "telegram", "whatsapp"]);
+  const communicationTypes = new Set(["phone", "email", "messenger", "telegram", "whatsapp"]);
   const publishedChannels = contacts.filter((item) => communicationTypes.has(item.type));
   const publishedPhones = publishedChannels.filter((item) => item.type === "phone");
-  const phoneFallback =
-    publishedPhones.length === 0 && settings.phone
-      ? [{
-          id: "settings-phone",
-          type: "phone",
-          label: "Телефон",
-          value: settings.phone,
-          url: `tel:${telHref(settings.phone)}`,
-          icon: null,
-        }]
-      : [];
+  const publishedEmails = publishedChannels.filter((item) => item.type === "email");
+  const phoneFallback = publishedPhones.length === 0
+    ? uniqueContactPhones(settings.phone).map((phone, index) => ({
+        id: `settings-phone-${index}`,
+        type: "phone",
+        label: "Телефон",
+        value: phone,
+        url: `tel:${telHref(phone)}`,
+        icon: null,
+      }))
+    : [];
+  const emailFallback = publishedEmails.length === 0
+    ? [{
+        id: "settings-email",
+        type: "email",
+        label: "Email",
+        value: FRONTEND_CONTACT_EMAIL,
+        url: `mailto:${FRONTEND_CONTACT_EMAIL}`,
+        icon: null,
+      }]
+    : [];
   const channels = [...publishedPhones, ...phoneFallback, ...publishedChannels.filter(
     (item) => item.type !== "phone",
-  )].filter((channel, index, all) =>
+  ), ...emailFallback].filter((channel, index, all) =>
     all.findIndex((item) => `${item.type}:${item.value}` === `${channel.type}:${channel.value}`) === index,
   );
   const primaryPhone = channels.find((channel) => channel.type === "phone");
@@ -69,6 +80,8 @@ export function HomeContactHub({
               const Icon =
                 channel.type === "phone"
                   ? Phone
+                  : channel.type === "email"
+                    ? Mail
                   : MessageCircle;
               return (
                 <span key={channel.id}>

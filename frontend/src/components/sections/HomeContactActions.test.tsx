@@ -45,7 +45,7 @@ describe("MobileContactBar", () => {
     });
   });
 
-  it("routes an email contact to the protected request form", () => {
+  it("renders an email contact as a mailto link", () => {
     window.localStorage.setItem("deere-shop:cookie-consent", "accepted");
     window.dataLayer = [];
     render(
@@ -58,12 +58,11 @@ describe("MobileContactBar", () => {
       </>,
     );
 
-    const email = screen.getByRole("link", { name: "Написать нам" });
-    expect(email).toHaveAttribute("href", "/parts-request");
-    expect(screen.queryByText("info@example.test")).not.toBeInTheDocument();
+    const email = screen.getByRole("link", { name: "info@example.test" });
+    expect(email).toHaveAttribute("href", "mailto:info@example.test");
     email.addEventListener("click", (event) => event.preventDefault());
     fireEvent.click(email);
-    expect(window.dataLayer).toContainEqual({ event: "lead_form_open", label: "Email" });
+    expect(window.dataLayer).toContainEqual({ event: "email_click", label: "Email" });
     expect(screen.getByRole("link", { name: "Написать" })).toHaveAttribute("href", "https://wa.me/79000000000");
   });
 
