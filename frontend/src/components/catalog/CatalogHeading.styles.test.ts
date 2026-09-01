@@ -17,4 +17,19 @@ describe("catalog heading layout", () => {
       /@media \(max-width:\s*68rem\)[\s\S]*?\.catalog-heading h1\s*\{[^}]*white-space:\s*normal;/u,
     );
   });
+
+  it("uses compact spacing without decorative separators", () => {
+    expect(styles).toMatch(
+      /\.breadcrumbs\s*\{[^}]*min-height:\s*2rem;[^}]*padding-block:\s*0\.5rem;[^}]*border-bottom:\s*0;/u,
+    );
+    expect(styles).toMatch(
+      /\.catalog-heading\s*\{[^}]*max-width:\s*none;[^}]*margin:\s*clamp\(1\.5rem,\s*3vw,\s*2\.5rem\) 0 1\.5rem;[^}]*padding-bottom:\s*0;[^}]*border-bottom:\s*0;/u,
+    );
+    expect(styles).toMatch(
+      /\.catalog-controls\s*\{[^}]*gap:\s*0;[^}]*margin-bottom:\s*0;/u,
+    );
+    expect(styles).toMatch(
+      /\.catalog-results\s*\{[^}]*justify-content:\s*flex-end;[^}]*margin:\s*0;[^}]*padding-block:\s*0\.5rem;[^}]*border-bottom:\s*0;/u,
+    );
+  });
 });

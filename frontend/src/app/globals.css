@@ -4052,11 +4052,15 @@ p {
   padding-block: 2rem var(--technical-section);
 }
 
+.catalog-page {
+  padding-top: 1rem;
+}
+
 .breadcrumbs {
-  min-height: 3rem;
+  min-height: 2rem;
   margin: 0;
-  padding-block: 0.75rem;
-  border-bottom: 1px solid var(--border);
+  padding-block: 0.5rem;
+  border-bottom: 0;
   font-size: 0.6875rem;
   letter-spacing: 0.04em;
 }
@@ -4066,9 +4070,9 @@ p {
   max-width: none;
   grid-template-columns: 1fr;
   gap: 1rem;
-  margin: clamp(3rem, 7vw, 6rem) 0 3rem;
-  padding-bottom: 3rem;
-  border-bottom: 1px solid var(--border);
+  margin: clamp(1.5rem, 3vw, 2.5rem) 0 1.5rem;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .catalog-heading__eyebrow {
@@ -4094,7 +4098,7 @@ p {
 
 .catalog-controls {
   gap: 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 0;
@@ -4199,9 +4203,9 @@ p {
 
 .catalog-results {
   justify-content: flex-end;
-  margin-bottom: 0.75rem;
-  padding-block: 0.75rem;
-  border-bottom: 1px solid var(--border);
+  margin: 0;
+  padding-block: 0.5rem;
+  border-bottom: 0;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.6875rem;
   letter-spacing: 0.04em;
