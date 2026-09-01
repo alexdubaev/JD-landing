@@ -65,8 +65,14 @@ describe("CategoryTree", () => {
       "href",
       "/catalog/engine",
     );
+    expect(screen.getByRole("link", { name: "Двигатель" })).toHaveClass(
+      "category-tree__link--parent",
+    );
     expect(
       screen.getByRole("link", { name: "Фильтры двигателя" }),
     ).toHaveAttribute("href", "/catalog/engine-filters");
+    expect(
+      screen.getByRole("link", { name: "Фильтры двигателя" }),
+    ).toHaveClass("category-tree__link--category");
   });
 });

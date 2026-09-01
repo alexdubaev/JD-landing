@@ -10,11 +10,26 @@ function CategoryTreeList({
   nested?: boolean;
 }) {
   return (
-    <ul className={nested ? "category-tree__list category-tree__list--nested" : "category-tree__list"}>
+    <ul
+      className={
+        nested
+          ? "category-tree__list category-tree__list--nested"
+          : "category-tree__list category-tree__list--root"
+      }
+    >
       {nodes.map((node) => (
-        <li className="category-tree__item" key={node.id}>
-          <Link className="category-tree__link" href={`/catalog/${node.slug}`}>
+        <li
+          className={`category-tree__item${node.children.length ? " category-tree__item--branch" : ""}`}
+          key={node.id}
+        >
+          <Link
+            className={`category-tree__link ${node.children.length ? "category-tree__link--parent" : "category-tree__link--category"}`}
+            href={`/catalog/${node.slug}`}
+          >
             {node.title}
+            <span className="category-tree__arrow" aria-hidden="true">
+              →
+            </span>
           </Link>
           {node.children.length ? (
             <CategoryTreeList nested nodes={node.children} />
