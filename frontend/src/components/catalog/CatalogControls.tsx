@@ -48,7 +48,9 @@ export function CatalogControls({
   };
 
   const filters = (
-    <div className="catalog-filters">
+    <div
+      className={`catalog-filters${categorySlug ? "" : " catalog-filters--with-category"}`}
+    >
       {categories && !categorySlug ? (
         <label>
           Категория

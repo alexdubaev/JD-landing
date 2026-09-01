@@ -4146,6 +4146,10 @@ p {
   gap: 0;
 }
 
+.catalog-filters--with-category {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .catalog-filters label {
   gap: 0.625rem;
   padding: 1.25rem;
