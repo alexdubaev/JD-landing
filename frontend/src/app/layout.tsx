@@ -15,7 +15,7 @@ import type { NavigationItem, SiteSettings } from "@/types/content";
 
 import "./globals.css";
 
-export const metadataBase = new URL(
+const metadataBase = new URL(
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://deere-shop.ru",
 );
 
