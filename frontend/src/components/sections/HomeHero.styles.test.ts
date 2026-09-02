@@ -21,4 +21,13 @@ describe("homepage hero", () => {
     );
     expect(styles).toMatch(/\.commerce-hero__mobile-media\s*\{[\s\S]*?display:\s*block;/u);
   });
+
+  it("uses at most three title-only proof cells on tablet and mobile", () => {
+    expect(styles).toMatch(
+      /@media \(max-width: 68rem\)\s*\{[\s\S]*?\.commerce-hero__benefits-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);[\s\S]*?\.commerce-hero__benefit:nth-child\(n \+ 4\)\s*\{[^}]*display:\s*none;/u,
+    );
+    expect(styles).toMatch(
+      /@media \(max-width: 68rem\)\s*\{[\s\S]*?\.commerce-hero__benefit span\s*\{[^}]*display:\s*none;/u,
+    );
+  });
 });
