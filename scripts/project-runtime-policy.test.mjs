@@ -22,3 +22,14 @@ test("the repository records its exact @Sites project identity", () => {
     project_id: "appgprj_6a986fcb2fd88191b43032da5dcb12bb",
   });
 });
+
+test("the isolated @Sites review deployment uses an OpenNext Worker artifact", async () => {
+  const openNextConfig = await readFile(new URL("frontend/open-next.config.ts", root), "utf8");
+  const wranglerConfig = await readFile(new URL("frontend/wrangler.jsonc", root), "utf8");
+
+  assert.match(packageJson.scripts["sites:build"], /opennextjs-cloudflare build/u);
+  assert.match(packageJson.scripts["sites:package"], /sites-review-package\.mjs/u);
+  assert.match(openNextConfig, /defineCloudflareConfig/u);
+  assert.match(wranglerConfig, /\.open-next\/worker\.js/u);
+  assert.match(wranglerConfig, /\.open-next\/assets/u);
+});

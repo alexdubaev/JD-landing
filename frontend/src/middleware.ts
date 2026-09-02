@@ -44,7 +44,7 @@ export function resolveRateLimitPolicy(
 }
 
 /** Reject unknown routes before the async root layout starts streaming. */
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const policy = resolveRateLimitPolicy(
     request.nextUrl.pathname,
     request.method,

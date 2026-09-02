@@ -2,13 +2,13 @@ import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { resetRateLimits } from "@/lib/security/rate-limit";
-import { proxy, resolveRateLimitPolicy } from "./proxy";
+import { middleware, resolveRateLimitPolicy } from "./middleware";
 
 afterEach(() => resetRateLimits());
 
 describe("SEO proxy", () => {
   it("returns a 404 response before rendering an unknown top-level route", () => {
-    const response = proxy(new NextRequest("https://deere-shop.ru/not-a-real-page"));
+    const response = middleware(new NextRequest("https://deere-shop.ru/not-a-real-page"));
 
     expect(response?.status).toBe(404);
     expect(response?.headers.get("content-type")).toContain("text/html");
@@ -19,7 +19,7 @@ describe("SEO proxy", () => {
 describe("API rate limiting", () => {
   it("limits lead submissions to five requests per window", () => {
     const request = () =>
-      proxy(
+      middleware(
         new NextRequest("https://deere-shop.ru/api/leads", {
           method: "POST",
           headers: { "x-forwarded-for": "203.0.113.8" },
@@ -36,7 +36,7 @@ describe("API rate limiting", () => {
 
   it("uses the shared unknown bucket for spoofed forwarded chains", () => {
     const request = (forwarded: string) =>
-      proxy(
+      middleware(
         new NextRequest("https://deere-shop.ru/api/revalidate", {
           method: "POST",
           headers: { "x-forwarded-for": forwarded },
@@ -51,7 +51,7 @@ describe("API rate limiting", () => {
 
   it("limits order submissions to ten requests per window", () => {
     const request = () =>
-      proxy(
+      middleware(
         new NextRequest("https://deere-shop.ru/api/orders", {
           method: "POST",
           headers: { "x-forwarded-for": "203.0.113.8" },
@@ -98,13 +98,13 @@ describe("resolveRateLimitPolicy", () => {
 describe("GET rate limiting for Directus-fanout routes", () => {
   it("returns 429 with Retry-After once the suggest budget is exhausted", async () => {
     const request = () =>
-      proxy(
+      middleware(
         new NextRequest("https://deere-shop.ru/api/catalog/suggestions?q=filter", {
           headers: { "x-forwarded-for": "203.0.113.7" },
         }),
       );
 
-    let blocked: ReturnType<typeof proxy> | undefined;
+    let blocked: ReturnType<typeof middleware> | undefined;
     for (let index = 0; index < 61; index += 1) {
       blocked = request();
     }
@@ -116,7 +116,7 @@ describe("GET rate limiting for Directus-fanout routes", () => {
 
   it("tracks budgets per IP, so another client is not blocked", () => {
     for (let index = 0; index < 61; index += 1) {
-      proxy(
+      middleware(
         new NextRequest("https://deere-shop.ru/api/catalog/suggestions?q=x", {
           headers: { "x-forwarded-for": "203.0.113.7" },
         }),
@@ -124,7 +124,7 @@ describe("GET rate limiting for Directus-fanout routes", () => {
     }
 
     expect(
-      proxy(
+      middleware(
         new NextRequest("https://deere-shop.ru/api/catalog/suggestions?q=x", {
           headers: { "x-forwarded-for": "198.51.100.9" },
         }),
@@ -135,7 +135,7 @@ describe("GET rate limiting for Directus-fanout routes", () => {
   it("lets regular page loads through without a policy", () => {
     for (let index = 0; index < 700; index += 1) {
       expect(
-        proxy(
+        middleware(
           new NextRequest("https://deere-shop.ru/catalog", {
             headers: { "x-forwarded-for": "203.0.113.7" },
           }),

@@ -40,6 +40,9 @@ describe("getTrustedClientIp", () => {
     expect(
       getTrustedClientIp(new Headers({ "x-forwarded-for": "203.0.113.8" })),
     ).toBe("203.0.113.8");
+    expect(
+      getTrustedClientIp(new Headers({ "x-forwarded-for": "2001:db8::8" })),
+    ).toBe("2001:db8::8");
   });
 
   it("rejects ambiguous, malformed, and missing forwarded addresses", () => {
@@ -50,6 +53,9 @@ describe("getTrustedClientIp", () => {
     ).toBeNull();
     expect(
       getTrustedClientIp(new Headers({ "x-forwarded-for": "attacker" })),
+    ).toBeNull();
+    expect(
+      getTrustedClientIp(new Headers({ "x-forwarded-for": "999.0.113.8" })),
     ).toBeNull();
     expect(getTrustedClientIp(new Headers())).toBeNull();
   });
