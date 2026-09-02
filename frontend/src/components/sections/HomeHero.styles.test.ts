@@ -12,12 +12,13 @@ describe("homepage hero", () => {
     );
   });
 
-  it("keeps the transparent assembly separate from the hero background and hides it below 68rem", () => {
+  it("keeps the transparent assembly separate from the hero background and preserves a mobile media composition", () => {
     expect(styles).toMatch(
       /\.commerce-hero__assembly\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?pointer-events:\s*none;/u,
     );
     expect(styles).toMatch(
-      /@media\s*\(max-width:\s*68rem\)\s*\{[\s\S]*?\.commerce-hero__assembly\s*\{[\s\S]*?display:\s*none;/u,
+      /@media\s*\(max-width:\s*68rem\)\s*\{[\s\S]*?\.commerce-hero__media\s*\{[\s\S]*?display:\s*block;/u,
     );
+    expect(styles).toMatch(/\.commerce-hero__mobile-media\s*\{[\s\S]*?display:\s*block;/u);
   });
 });
