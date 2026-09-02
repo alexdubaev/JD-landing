@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ContentPageView } from "@/components/pages/ContentPageView";
+import { ServicePageView } from "@/components/pages/ServicePageView";
 import { JsonLdSchema } from "@/components/seo/JsonLdSchema";
 import {
   getFaqItems,
@@ -27,6 +28,7 @@ const informationSlugs = new Set([
 ]);
 
 const noindexSlugs = new Set(["thank-you"]);
+const servicePageSlugs = new Set(["about", "delivery", "contacts"]);
 
 type Props = { params: Promise<{ infoSlug: string }> };
 
@@ -128,7 +130,11 @@ export default async function InformationPage({ params }: Props) {
         />
       ) : null}
       {faqSchema ? <JsonLdSchema data={faqSchema} /> : null}
-      <ContentPageView {...data} />
+      {servicePageSlugs.has(infoSlug) ? (
+        <ServicePageView {...data} />
+      ) : (
+        <ContentPageView {...data} />
+      )}
     </>
   );
 }

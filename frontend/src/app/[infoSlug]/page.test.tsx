@@ -40,7 +40,11 @@ vi.mock("@/lib/seo/trust-pages", () => ({
 }));
 
 vi.mock("@/components/pages/ContentPageView", () => ({
-  ContentPageView: ({ page }: { page: ContentPage }) => <h1>{page.h1}</h1>,
+  ContentPageView: ({ page }: { page: ContentPage }) => <div data-testid="content-page">{page.h1}</div>,
+}));
+
+vi.mock("@/components/pages/ServicePageView", () => ({
+  ServicePageView: ({ page }: { page: ContentPage }) => <h1 data-testid="service-page">{page.h1}</h1>,
 }));
 
 describe("information page fallback", () => {
@@ -51,10 +55,11 @@ describe("information page fallback", () => {
     getSiteSettingsMock.mockResolvedValue({});
   });
 
-  it("renders a fallback page without querying FAQs by its non-CMS identifier", async () => {
+  it("uses the service presentation for a fallback service route without querying FAQs by its non-CMS identifier", async () => {
     render(await InformationPage({ params: Promise.resolve({ infoSlug: "about" }) }));
 
-    expect(screen.getByRole("heading", { level: 1, name: "О компании DEERE-SHOP" })).toBeInTheDocument();
+    expect(screen.getByTestId("service-page")).toHaveTextContent("О компании DEERE-SHOP");
+    expect(screen.queryByTestId("content-page")).not.toBeInTheDocument();
     expect(getFaqItemsMock).not.toHaveBeenCalled();
   });
 });
