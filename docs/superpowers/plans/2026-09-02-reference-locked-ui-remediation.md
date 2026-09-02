@@ -166,4 +166,3 @@
 
 - [ ] Step 6 — commit only CSS and listed style tests:
   git commit -m "fix(frontend): lock responsive reference layout"
-

@@ -36,4 +36,3 @@ Verification routes: /, /catalog, /catalog/[categorySlug], representative produc
 ## Explicit residual
 
 The references use a condensed display face that is not installed or licensed in the project. The implementation retains Inter and matches hierarchy, spacing, contrast, and composition without adding a font dependency.
-
