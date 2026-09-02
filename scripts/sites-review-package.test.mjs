@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveSourceCommit, validateReviewArtifact } from "./sites-review-package.mjs";
+import { copyWorkerOutputOptions, resolveSourceCommit, validateReviewArtifact } from "./sites-review-package.mjs";
 
 test("review artifact must contain the Sites identity and the OpenNext Worker entrypoint", () => {
   assert.deepEqual(
@@ -31,4 +31,11 @@ test("a container package may use only an explicitly verified source SHA", () =>
     () => resolveSourceCommit(() => { throw new Error("no git metadata"); }, "not-a-commit"),
     /SITES_REVIEW_SOURCE_COMMIT/u,
   );
+});
+
+test("review packaging resolves OpenNext symlinks before handing the archive to Sites", () => {
+  assert.deepEqual(copyWorkerOutputOptions(), {
+    recursive: true,
+    dereference: true,
+  });
 });

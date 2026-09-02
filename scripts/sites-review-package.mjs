@@ -27,6 +27,13 @@ export function validateReviewArtifact(files) {
   };
 }
 
+export function copyWorkerOutputOptions() {
+  return {
+    recursive: true,
+    dereference: true,
+  };
+}
+
 async function listFiles(directory, prefix = "") {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -72,7 +79,7 @@ async function main() {
   await rm(staging, { recursive: true, force: true });
   await mkdir(path.dirname(output), { recursive: true });
   await mkdir(staging, { recursive: true });
-  await cp(workerDirectory, path.join(staging, ".open-next"), { recursive: true });
+  await cp(workerDirectory, path.join(staging, ".open-next"), copyWorkerOutputOptions());
   await mkdir(path.join(staging, ".openai"), { recursive: true });
   await cp(hostingFile, path.join(staging, ".openai", "hosting.json"));
   await cp(path.join(frontend, "wrangler.jsonc"), path.join(staging, "wrangler.jsonc"));
