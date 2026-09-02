@@ -58,6 +58,23 @@ describe("HomeCompanyTrust", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it("does not render a trust block from whitespace-only legal data", () => {
+    const { container } = render(
+      <HomeCompanyTrust
+        section={companySection}
+        settings={{
+          ...emptySettings,
+          documentsUrl: "  ",
+          inn: "\t",
+          legalName: "   ",
+          requisitesUrl: "\n",
+        }}
+      />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it("renders only available factual company details and document links", () => {
     window.localStorage.setItem("deere-shop:cookie-consent", "accepted");
     window.dataLayer = [];

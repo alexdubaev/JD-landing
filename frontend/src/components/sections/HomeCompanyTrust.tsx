@@ -21,12 +21,11 @@ export function HomeCompanyTrust({ section, settings }: { section: PageSection; 
       : null,
   ].filter((fact): fact is { id: string; label: string; value: string } => fact !== null);
 
-  const hasCompanyProof = Boolean(
-    settings.legalName ||
-      settings.inn ||
-      settings.requisitesUrl ||
-      settings.documentsUrl,
-  );
+  const hasCompanyProof =
+    hasValue(settings.legalName) ||
+    hasValue(settings.inn) ||
+    hasValue(settings.requisitesUrl) ||
+    hasValue(settings.documentsUrl);
   if (!hasCompanyProof) return null;
 
   const imageUrl = directusAssetUrl(settings.companyImageId, {
@@ -44,7 +43,7 @@ export function HomeCompanyTrust({ section, settings }: { section: PageSection; 
           {section.subtitle ? <p>{section.subtitle}</p> : null}
           {section.title ? <h2>{section.title}</h2> : null}
           {section.text ? <p>{section.text}</p> : null}
-          {facts.length || settings.phone || settings.workingHours ? (
+          {facts.length || hasValue(settings.phone) || hasValue(settings.workingHours) ? (
             <dl className="home-company-trust__facts">
               {facts.map((fact) => (
                 <div key={fact.id}>
@@ -65,12 +64,12 @@ export function HomeCompanyTrust({ section, settings }: { section: PageSection; 
               ) : null}
             </dl>
           ) : null}
-          {settings.requisitesUrl || settings.documentsUrl ? (
+          {hasValue(settings.requisitesUrl) || hasValue(settings.documentsUrl) ? (
             <div className="home-company-trust__links">
-              {settings.requisitesUrl ? (
+              {hasValue(settings.requisitesUrl) ? (
                 <Link href={settings.requisitesUrl}>Реквизиты</Link>
               ) : null}
-              {settings.documentsUrl ? (
+              {hasValue(settings.documentsUrl) ? (
                 <Link href={settings.documentsUrl}>Документы</Link>
               ) : null}
             </div>
