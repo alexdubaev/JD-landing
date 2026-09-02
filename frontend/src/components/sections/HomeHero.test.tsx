@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { PageSection, SiteSettings } from "@/types/content";
@@ -73,6 +73,30 @@ describe("HomeHero", () => {
     );
   });
 
+  it("provides the configured hero asset in a dedicated mobile media band", () => {
+    render(
+      <HomeHero
+        contacts={[]}
+        section={heroSection}
+        settings={{ phone: null } as SiteSettings}
+      />,
+    );
+
+    const mobileMedia = screen.getByTestId("hero-mobile-media");
+    expect(mobileMedia).toHaveClass("commerce-hero__mobile-media");
+    expect(mobileMedia.querySelector("img")).toHaveAttribute(
+      "alt",
+      "Запчасти для техники John Deere",
+    );
+    expect(mobileMedia.querySelector("img")).toHaveAttribute(
+      "sizes",
+      "(max-width: 68rem) 100vw, 46vw",
+    );
+    expect(decodeURIComponent(mobileMedia.querySelector("img")?.getAttribute("src") ?? "")).toContain(
+      "/media/9af727df-c55a-48d9-bbd0-458a18237068?format=webp&quality=84&width=1920",
+    );
+  });
+
   it("renders only benefit cards configured in the CMS", () => {
     const benefitsSection: PageSection = {
       ...heroSection,
@@ -94,5 +118,8 @@ describe("HomeHero", () => {
     );
 
     expect(container.querySelectorAll(".commerce-hero__benefit")).toHaveLength(3);
+    expect(screen.getByRole("group", { name: "Преимущества" })).toHaveClass(
+      "commerce-hero__proof-rail",
+    );
   });
 });

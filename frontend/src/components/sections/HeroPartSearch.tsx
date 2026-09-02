@@ -144,7 +144,11 @@ export function HeroPartSearch({
         </div>
       ) : null}
 
-      <div className="hero-part-search__scenarios">
+      <div
+        aria-label="Способы отправить запрос"
+        className="hero-part-search__scenarios"
+        role="group"
+      >
         <span>{bulkPrompt}</span>
         <div>
           <Link href={bulkLink.url} onClick={() => trackEvent("parts_request_cta", { method: "paste" })}>{bulkLink.text}</Link>

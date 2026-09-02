@@ -41,6 +41,9 @@ describe("HeroPartSearch", () => {
       "href", "/parts-request?mode=photo#attachments",
     );
     expect(screen.getByText("Есть список деталей?")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Способы отправить запрос" })).toHaveClass(
+      "hero-part-search__scenarios",
+    );
   });
 
   it("submits the article query to the catalog with editable labels", () => {

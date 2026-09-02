@@ -3,7 +3,7 @@
 import { Menu, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { telHref } from "@/lib/format/tel";
 
@@ -17,8 +17,22 @@ export function MobileNavigation({
   phone?: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const reduceMotion = useReducedMotion();
   const label = isOpen ? "Закрыть меню" : "Открыть меню";
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIsOpen(false);
+      toggleRef.current?.focus();
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isOpen]);
 
   return (
     <div className="mobile-navigation">
@@ -28,6 +42,7 @@ export function MobileNavigation({
         aria-label={label}
         className="mobile-navigation__toggle"
         onClick={() => setIsOpen((current) => !current)}
+        ref={toggleRef}
         type="button"
       >
         {isOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}

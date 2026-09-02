@@ -120,13 +120,16 @@ export function HomeHero({
     <HeroMotion
       labelledBy="home-title"
       media={(
-        <div className="commerce-hero__assembly">
+        <div
+          className="commerce-hero__assembly commerce-hero__mobile-media"
+          data-testid="hero-mobile-media"
+        >
           <Image
             alt={imageAlt}
             className="commerce-hero__image"
             fill
             priority
-            sizes="(max-width: 68rem) 0px, 46vw"
+            sizes="(max-width: 68rem) 100vw, 46vw"
             src={imageUrl}
           />
         </div>
@@ -183,19 +186,21 @@ export function HomeHero({
 
       {benefits.length ? (
         <Container className="commerce-hero__benefits">
-          <div className="commerce-hero__benefits-grid">
-            {benefits.map(({ icon = "package", text, title: benefitTitle }) => {
-              const Icon = iconByName[icon] ?? PackageCheck;
-              return (
-                <div className="commerce-hero__benefit" key={benefitTitle}>
-                  <Icon aria-hidden="true" />
-                  <div>
-                    <strong>{benefitTitle}</strong>
-                    <span>{text}</span>
+          <div aria-label="Преимущества" className="commerce-hero__proof-rail" role="group">
+            <div className="commerce-hero__benefits-grid">
+              {benefits.map(({ icon = "package", text, title: benefitTitle }) => {
+                const Icon = iconByName[icon] ?? PackageCheck;
+                return (
+                  <div className="commerce-hero__benefit" key={benefitTitle}>
+                    <Icon aria-hidden="true" />
+                    <div>
+                      <strong>{benefitTitle}</strong>
+                      <span>{text}</span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </Container>
       ) : null}
