@@ -40,6 +40,29 @@ before making any write, commit or production deployment.
   unstaged diffs, run the declared checks, and ensure the working tree is clean after the
   commit. Prefer small, atomic commits with a clear purpose.
 
+## Runtime identity is mandatory for test work
+
+- Never start `next dev` directly for a review. Use `node scripts/start-test-runtime.mjs`
+  (or the guarded `npm run dev`) with an explicit worktree, branch, branch-local
+  `frontend/.env.local`, port and remote-pushed SHA. The guard builds once and starts
+  the immutable build; it must not use HMR for review.
+- A test branch must not use `main`, a dirty worktree, a local-only commit or an env file
+  from another checkout. The launcher must print its branch, SHA, Directus URL and local
+  URL before Next starts; do not call a result “current” without that receipt.
+- A Directus review origin is approved only by the `config/review-runtime-targets.json`
+  version at `origin/main`; a test-branch change to that file has no authority.
+- `@Sites` publication is permitted only through an owner-approved, repository-defined
+  test target. A raw VPS IP or port is never a substitute. Do not merge, push `main` or
+  deploy production to make a review build visible.
+- The exact Sites project is stored in `.openai/hosting.json`. Before saving or deploying
+  a Sites version, verify the worktree is clean and `HEAD` exactly equals the declared
+  remote branch SHA; pass that SHA as the version source. Sites deployment URLs are
+  public production URLs, not a hidden preview, so deployment needs the owner's explicit
+  instruction even when the source is a test branch.
+- Direct `git push` cannot be made safe by repository prose. Require remote branch
+  protection for `main`; until it is enabled, a human review remains mandatory before
+  any push or merge to `main`.
+
 Build a landing-page catalog for John Deere products using:
 
 - Frontend: Next.js
