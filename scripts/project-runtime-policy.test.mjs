@@ -19,6 +19,6 @@ test("project instructions prohibit unguarded local test launches and raw-port p
 
 test("the repository records its exact @Sites project identity", () => {
   assert.deepEqual(hosting, {
-    project_id: "appgprj_6a97c3b05f248191a2e57867c151df0b",
+    project_id: "appgprj_6a986fcb2fd88191b43032da5dcb12bb",
   });
 });
