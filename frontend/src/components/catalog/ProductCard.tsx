@@ -111,71 +111,73 @@ export function ProductCard({
         ) : (
           <span className="product-card__category">Без категории</span>
         )}
-        <Heading className="product-card__title">
-          <Link href={productUrl} onClick={() => trackEvent("product_open", { product_id: product.id })}>{product.title}</Link>
-        </Heading>
-        <p className="product-card__sku">Артикул: {product.sku}</p>
-        {product.brand || product.partType ? (
-          <div className="product-card__metadata">
-            {product.brand ? <span>{product.brand}</span> : null}
-            {product.partType ? <span>{partTypeLabels[product.partType]}</span> : null}
+        <div className="product-card__facts" data-testid="product-card-facts">
+          <Heading className="product-card__title">
+            <Link href={productUrl} onClick={() => trackEvent("product_open", { product_id: product.id })}>{product.title}</Link>
+          </Heading>
+          <p className="product-card__sku">Артикул: {product.sku}</p>
+          {product.brand || product.partType ? (
+            <div className="product-card__metadata">
+              {product.brand ? <span>{product.brand}</span> : null}
+              {product.partType ? <span>{partTypeLabels[product.partType]}</span> : null}
+            </div>
+          ) : null}
+          {variant === "catalog" && product.shortDescription ? (
+            <p className="product-card__description">
+              {product.shortDescription}
+            </p>
+          ) : null}
+          <div className="product-card__commercial">
+            <strong className="product-card__price">{formatProductPrice(product)}</strong>
+            {product.availabilityStatus !== "on_request" ? (
+              <span
+                className={`product-card__availability product-card__availability--${product.availabilityStatus}`}
+              >
+                {AVAILABILITY_LABELS[product.availabilityStatus]}
+              </span>
+            ) : null}
+            {product.deliveryStatus ? (
+              <span className="product-card__delivery">{product.deliveryStatus}</span>
+            ) : null}
           </div>
-        ) : null}
-        {variant === "catalog" && product.shortDescription ? (
-          <p className="product-card__description">
-            {product.shortDescription}
-          </p>
-        ) : null}
-        <div className="product-card__commercial">
-          <strong className="product-card__price">{formatProductPrice(product)}</strong>
-          {product.availabilityStatus !== "on_request" ? (
-            <span
-              className={`product-card__availability product-card__availability--${product.availabilityStatus}`}
-            >
-              {AVAILABILITY_LABELS[product.availabilityStatus]}
-            </span>
-          ) : null}
-          {product.deliveryStatus ? (
-            <span className="product-card__delivery">{product.deliveryStatus}</span>
-          ) : null}
-        </div>
-        <div className="product-card__actions">
-          <Link className="product-card__action" href={productUrl} onClick={() => trackEvent("product_open", { product_id: product.id })}>
-            Подробнее
-            <ArrowRight
-              aria-hidden="true"
-              data-testid="product-card-action-arrow"
-            />
-          </Link>
-          {purchasable ? (
+          <div className="product-card__actions">
+            <Link className="product-card__action" href={productUrl} onClick={() => trackEvent("product_open", { product_id: product.id })}>
+              Подробнее
+              <ArrowRight
+                aria-hidden="true"
+                data-testid="product-card-action-arrow"
+              />
+            </Link>
+            {purchasable ? (
+              <button
+                aria-label={inCart ? `В корзине: ${cartQty} шт.` : "В корзину"}
+                className={`product-card__cart${inCart ? " product-card__cart--active" : ""}`}
+                onClick={handleAddToCart}
+                type="button"
+              >
+                <ShoppingCart aria-hidden="true" />
+                {inCart ? `В корзине: ${cartQty}` : "В корзину"}
+              </button>
+            ) : null}
             <button
-              aria-label={inCart ? `В корзине: ${cartQty} шт.` : "В корзину"}
-              className={`product-card__cart${inCart ? " product-card__cart--active" : ""}`}
-              onClick={handleAddToCart}
+              aria-label={inRequest ? "Убрать из запроса" : "В запрос"}
+              className="product-card__request"
+              onClick={toggleRequest}
               type="button"
             >
-              <ShoppingCart aria-hidden="true" />
-              {inCart ? `В корзине: ${cartQty}` : "В корзину"}
+              <ListPlus aria-hidden="true" />
+              {inRequest ? "В запросе" : "В запрос"}
             </button>
-          ) : null}
-          <button
-            aria-label={inRequest ? "Убрать из запроса" : "В запрос"}
-            className="product-card__request"
-            onClick={toggleRequest}
-            type="button"
-          >
-            <ListPlus aria-hidden="true" />
-            {inRequest ? "В запросе" : "В запрос"}
-          </button>
-          {requestCount ? (
-            <Link
-              aria-label={`Перейти к списку запроса: ${requestCount} поз.`}
-              className="product-card__request-summary"
-              href="/parts-request"
-            >
-              В списке: {requestCount}
-            </Link>
-          ) : null}
+            {requestCount ? (
+              <Link
+                aria-label={`Перейти к списку запроса: ${requestCount} поз.`}
+                className="product-card__request-summary"
+                href="/parts-request"
+              >
+                В списке: {requestCount}
+              </Link>
+            ) : null}
+          </div>
         </div>
       </div>
       </article>

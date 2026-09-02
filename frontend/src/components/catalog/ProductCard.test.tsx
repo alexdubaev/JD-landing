@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { ProductCardData } from "@/types/catalog";
@@ -58,6 +58,16 @@ describe("ProductCard", () => {
       "href",
       "/catalog/filters/hydraulic-filter",
     );
+  });
+
+  it("groups the product decision facts without losing the SKU, price, or details action", () => {
+    render(<ProductCard product={product} />);
+
+    const facts = screen.getByTestId("product-card-facts");
+    expect(facts).toHaveTextContent("Фильтр гидравлический");
+    expect(facts).toHaveTextContent("Артикул: RE123456");
+    expect(facts).toHaveTextContent("125 000");
+    expect(within(facts).getByRole("link", { name: "Подробнее" })).toBeInTheDocument();
   });
 
   it("adds and removes a product from the persistent request list", () => {
