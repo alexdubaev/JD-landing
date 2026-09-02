@@ -6,7 +6,6 @@ import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { ContactChannelLink } from "@/components/sections/HomeContactActions";
 import { AnimatedAccordion } from "@/components/ui/AnimatedAccordion";
 import { Container } from "@/components/ui/Container";
-import { FRONTEND_CONTACT_EMAIL, uniqueContactPhones } from "@/lib/contact-config";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import { telHref } from "@/lib/format/tel";
 import type { ContentPage, FaqItem, PageSection, SiteSettings } from "@/types/content";
@@ -47,14 +46,12 @@ function ServiceTextSection({ section }: { section: PageSection }) {
   );
 }
 
-function ServiceHero({ page }: { page: ContentPage }) {
-  const lead = page.sections.find((section) => section.id.endsWith("-lead"));
-
+function ServiceHero({ hero, page }: { hero: PageSection | undefined; page: ContentPage }) {
   return (
     <header className="service-page__hero">
       <p className="section-eyebrow">{page.title}</p>
       <h1>{page.h1}</h1>
-      {paragraphs(lead?.text ?? null).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+      {paragraphs(hero?.text ?? null).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
     </header>
   );
 }
@@ -137,15 +134,20 @@ function AboutCompanyPanel({ settings }: { settings: SiteSettings }) {
 }
 
 function ContactPanel({ settings }: { settings: SiteSettings }) {
-  const phoneChannels = uniqueContactPhones(settings.phone).map((value, index) => ({
-    id: `service-phone-${index}`,
+  const phone = settings.phone?.trim() || null;
+  const email = settings.email?.trim() || null;
+  const phoneChannels = phone ? [{
+    id: "service-phone",
     type: "phone",
     label: "Телефон",
-    value,
-    url: `tel:${telHref(value)}`,
+    value: phone,
+    url: `tel:${telHref(phone)}`,
     icon: null,
-  }));
-  const email = settings.email?.trim() || FRONTEND_CONTACT_EMAIL;
+  }] : [];
+
+  if (!phoneChannels.length && !email && !hasValue(settings.workingHours) && !hasValue(settings.address)) {
+    return null;
+  }
 
   return (
     <section className="service-page__contacts" aria-label="Контактные данные">
@@ -156,20 +158,24 @@ function ContactPanel({ settings }: { settings: SiteSettings }) {
             <ContactChannelLink channel={channel} />
           </p>
         ))}
-        <p>
-          <span>Email</span>
-          <ContactChannelLink
-            channel={{ id: "service-email", type: "email", label: "Email", value: email, url: `mailto:${email}`, icon: null }}
-          />
-        </p>
+        {email ? (
+          <p>
+            <span>Email</span>
+            <ContactChannelLink
+              channel={{ id: "service-email", type: "email", label: "Email", value: email, url: `mailto:${email}`, icon: null }}
+            />
+          </p>
+        ) : null}
         {hasValue(settings.workingHours) ? <p><span>Режим работы</span>{settings.workingHours}</p> : null}
         {hasValue(settings.address) ? <p><span>Адрес</span>{settings.address}</p> : null}
       </div>
       <div className="service-page__contact-actions">
         {phoneChannels[0] ? <ContactChannelLink channel={phoneChannels[0]} /> : null}
-        <ContactChannelLink
-          channel={{ id: "service-email-action", type: "email", label: "Email", value: "Написать", url: `mailto:${email}`, icon: null }}
-        />
+        {email ? (
+          <ContactChannelLink
+            channel={{ id: "service-email-action", type: "email", label: "Email", value: "Написать", url: `mailto:${email}`, icon: null }}
+          />
+        ) : null}
       </div>
     </section>
   );
@@ -188,14 +194,17 @@ function ServiceCta({ section }: { section: PageSection }) {
 }
 
 export function ServicePageView({ faq, page, settings }: Props) {
-  const lead = page.sections.find((section) => section.id.endsWith("-lead"));
+  const hero = page.sections.find((section) => section.type === "hero") ??
+    (page.sections[0]?.title ? undefined : page.sections[0]);
   const cta = page.sections.find((section) => section.type === "cta");
   const faqSection = page.sections.find((section) => section.type === "faq");
   const leadFormSection = page.sections.find((section) => section.type === "lead_form");
-  const route = page.sections.find((section) => section.id === "delivery-order");
-  const contactRequest = page.sections.find((section) => section.id === "contacts-request");
+  const route = page.sections.find((section) => section.type === "process") ??
+    page.sections.find((section) => section.id === "delivery-order");
+  const contactRequest = page.sections.find((section) => section.type === "parts_request") ??
+    page.sections.find((section) => section.id === "contacts-request");
   const contentSections = page.sections.filter((section) =>
-    section !== lead &&
+    section !== hero &&
     section !== cta &&
     section !== faqSection &&
     section !== leadFormSection &&
@@ -207,7 +216,7 @@ export function ServicePageView({ faq, page, settings }: Props) {
     <main className={`service-page service-page--${page.slug}`} id="main-content">
       <Container>
         <Breadcrumbs items={[{ href: "/", label: "Главная" }, { label: page.title }]} />
-        <ServiceHero page={page} />
+        <ServiceHero hero={hero} page={page} />
 
         {page.slug === "delivery" ? <DeliveryRoute section={route} /> : null}
         {page.slug === "contacts" ? <ContactPanel settings={settings} /> : null}
