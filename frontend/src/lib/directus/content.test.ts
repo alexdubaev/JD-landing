@@ -200,6 +200,39 @@ describe("content queries", () => {
     expect(requestMock).toHaveBeenCalledTimes(1);
   });
 
+  it("retries the homepage without optional plugin SEO when that field is forbidden", async () => {
+    requestMock.mockImplementation((path) => {
+      const url = new URL(path, "https://cms.test");
+      if (url.pathname === "/items/home_page" && url.searchParams.get("fields")?.split(",").includes("seo")) {
+        return Promise.reject(Object.assign(new Error("Forbidden"), { status: 403 }));
+      }
+      if (url.pathname === "/items/home_page") {
+        return Promise.resolve({
+        id: "singleton-home",
+        status: "published",
+        source_page: "home",
+        h1: "Запчасти John Deere",
+        hero_title: "Редактируемый hero",
+        hero_text: "Текст из Directus",
+        hero_image: { id: "cms-hero-image" },
+        hero_image_alt: "Склад запчастей John Deere",
+        seo_title: "Каталог запчастей",
+        seo_description: "Описание",
+        });
+      }
+      return Promise.resolve([]);
+    });
+
+    await expect(getHomePage()).resolves.toEqual(
+      expect.objectContaining({ h1: "Запчасти John Deere" }),
+    );
+
+    const firstUrl = new URL(requestMock.mock.calls[0][0], "https://cms.test");
+    const fallbackUrl = new URL(requestMock.mock.calls[1][0], "https://cms.test");
+    expect(firstUrl.searchParams.get("fields")?.split(",")).toContain("seo");
+    expect(fallbackUrl.searchParams.get("fields")?.split(",")).not.toContain("seo");
+  });
+
   it("loads FAQ items scoped to a page", async () => {
     requestMock.mockResolvedValue([
       {

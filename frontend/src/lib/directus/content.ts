@@ -275,6 +275,10 @@ export async function getPageBySlug(slug: string): Promise<ContentPage | null> {
 
 const requiredText = (value: string | null) => value?.trim() || null;
 
+const hasForbiddenStatus = (error: unknown) =>
+  typeof error === "object" && error !== null && "status" in error &&
+  (error as { status?: unknown }).status === 403;
+
 export async function getHomePage(): Promise<ContentPage | null> {
   const fields = [
     "id", "status", "source_page", "h1", "hero_title", "hero_text",
@@ -286,6 +290,10 @@ export async function getHomePage(): Promise<ContentPage | null> {
     "hero_photo_link_text", "hero_photo_link_url", "seo_title", "seo_description",
     "seo",
   ].join(",");
+  const fieldsWithoutPluginSeo = fields
+    .split(",")
+    .filter((field) => field !== "seo")
+    .join(",");
   // Task 16 preview: the singleton is read through its version overlay when a
   // valid draft context exists; the published status gate only applies to the
   // published fetch so a draft main item can still be previewed. Sections stay
@@ -298,10 +306,18 @@ export async function getHomePage(): Promise<ContentPage | null> {
         `/items/home_page?${queryString({ fields })}`,
         { version: versionedPreview.versionKey },
       )
-    : await directusRequest<RawHomePage>(
-        `/items/home_page?${queryString({ fields })}`,
-        { next: { revalidate: 300, tags: ["homepage"] } },
-      );
+    : await (async () => {
+        const read = (requestedFields: string) => directusRequest<RawHomePage>(
+          `/items/home_page?${queryString({ fields: requestedFields })}`,
+          { next: { revalidate: 300, tags: ["homepage"] } },
+        );
+        try {
+          return await read(fields);
+        } catch (error) {
+          if (!hasForbiddenStatus(error)) throw error;
+          return read(fieldsWithoutPluginSeo);
+        }
+      })();
   if (!raw || (!versionedPreview && raw.status !== "published")) return null;
 
   const title = requiredText(raw.hero_title);
