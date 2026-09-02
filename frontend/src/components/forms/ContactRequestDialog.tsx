@@ -69,7 +69,13 @@ export function ContactRequestDialog() {
             </p>
             <label>
               Имя
-              <input autoComplete="name" maxLength={100} name="name" required />
+              <input
+                autoComplete="name"
+                maxLength={100}
+                minLength={2}
+                name="name"
+                required
+              />
             </label>
             <label>
               Телефон

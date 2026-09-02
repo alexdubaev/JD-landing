@@ -49,4 +49,12 @@ describe("ContactRequestDialog", () => {
     });
     expect(screen.getByRole("status")).toHaveTextContent("Сообщение отправлено");
   });
+
+  it("requires at least two characters in the name", () => {
+    render(<ContactRequestDialog />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Связаться с нами" }));
+
+    expect(screen.getByLabelText("Имя")).toHaveAttribute("minLength", "2");
+  });
 });
