@@ -65,11 +65,12 @@ export function MobileContactBar({
   phone: string | null;
 }) {
   const messenger = messengerChannel(contacts);
+  const availablePhone = phone?.trim() || null;
   return (
     <nav aria-label="Быстрые действия" className="mobile-contact-bar">
-      {phone ? (
+      {availablePhone ? (
         <a
-          href={`tel:${telHref(phone)}`}
+          href={`tel:${telHref(availablePhone)}`}
           onClick={() => trackEvent("phone_click", { label: "mobile_bar" })}
         >
           <Phone aria-hidden="true" />

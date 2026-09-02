@@ -35,6 +35,7 @@ describe("MobileContactBar", () => {
       "href",
       "#consultation",
     );
+    expect(screen.getByRole("navigation", { name: "Быстрые действия" }).querySelectorAll("a")).toHaveLength(2);
 
     const messageLink = screen.getByRole("link", { name: "Написать" });
     messageLink.addEventListener("click", (event) => event.preventDefault());
@@ -74,5 +75,12 @@ describe("MobileContactBar", () => {
     call.addEventListener("click", (event) => event.preventDefault());
     fireEvent.click(call);
     expect(window.dataLayer).toContainEqual({ event: "phone_click", label: "final_cta" });
+  });
+
+  it("does not offer a call action for a blank published phone", () => {
+    render(<MobileContactBar contacts={[]} phone="   " />);
+
+    expect(screen.queryByRole("link", { name: "Позвонить" })).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Быстрые действия" }).querySelectorAll("a")).toHaveLength(1);
   });
 });

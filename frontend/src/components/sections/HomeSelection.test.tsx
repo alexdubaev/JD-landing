@@ -23,6 +23,7 @@ describe("HomeSelection", () => {
   it("uses the four concise plan fallback steps when CMS items are absent", () => {
     render(<HomeSelection section={section} />);
 
+    expect(screen.getByRole("list", { name: "Этапы подбора" })).toHaveClass("home-selection__rail");
     expect(screen.getByText("01")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Отправьте номера деталей" })).toBeInTheDocument();
     expect(screen.getByText("Вставьте артикулы, загрузите Excel или прикрепите фото")).toBeInTheDocument();

@@ -6,18 +6,20 @@ import { Container } from "@/components/ui/Container";
 import { directusAssetUrl } from "@/lib/directus/assets";
 import type { PageSection, SiteSettings } from "@/types/content";
 
-const hasValue = (value: string | null) => Boolean(value?.trim());
+const hasValue = (value: string | null): value is string => Boolean(value?.trim());
 
 export function HomeCompanyTrust({ section, settings }: { section: PageSection; settings: SiteSettings }) {
-  const details = [
-    settings.legalName,
-    settings.inn ? `ИНН ${settings.inn}` : null,
-    settings.kpp ? `КПП ${settings.kpp}` : null,
-    settings.ogrn ? `ОГРН ${settings.ogrn}` : null,
-    settings.legalAddress,
-    settings.city,
-    settings.vatInfo,
-  ].filter(hasValue);
+  const facts = [
+    hasValue(settings.legalName)
+      ? { id: "legal-name", label: "Юридическое лицо", value: settings.legalName }
+      : null,
+    hasValue(settings.inn)
+      ? { id: "inn", label: "ИНН", value: `ИНН ${settings.inn}` }
+      : null,
+    hasValue(settings.vatInfo)
+      ? { id: "vat", label: "НДС", value: settings.vatInfo }
+      : null,
+  ].filter((fact): fact is { id: string; label: string; value: string } => fact !== null);
 
   const hasCompanyProof = Boolean(
     settings.legalName ||
@@ -42,21 +44,26 @@ export function HomeCompanyTrust({ section, settings }: { section: PageSection; 
           {section.subtitle ? <p>{section.subtitle}</p> : null}
           {section.title ? <h2>{section.title}</h2> : null}
           {section.text ? <p>{section.text}</p> : null}
-          {details.length ? (
-            <dl>
-              {details.map((detail) => (
-                <div key={detail}>
-                  <dd>{detail}</dd>
+          {facts.length || settings.phone || settings.workingHours ? (
+            <dl className="home-company-trust__facts">
+              {facts.map((fact) => (
+                <div key={fact.id}>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
                 </div>
               ))}
+              {hasValue(settings.phone) || hasValue(settings.workingHours) ? (
+                <div>
+                  <dt>Связь</dt>
+                  <dd>
+                    {hasValue(settings.phone) ? (
+                      <ContactChannelLink channel={{ id: "company-phone", type: "phone", label: "Телефон", value: settings.phone, url: null, icon: null }} />
+                    ) : null}
+                    {hasValue(settings.workingHours) ? <span>{settings.workingHours}</span> : null}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
-          ) : null}
-          {settings.phone || settings.email || settings.workingHours ? (
-            <div className="home-company-trust__contacts">
-              {settings.phone ? <ContactChannelLink channel={{ id: "company-phone", type: "phone", label: "Телефон", value: settings.phone, url: null, icon: null }} /> : null}
-              {settings.email ? <Link href="/parts-request">Написать нам</Link> : null}
-              {settings.workingHours ? <span>{settings.workingHours}</span> : null}
-            </div>
           ) : null}
           {settings.requisitesUrl || settings.documentsUrl ? (
             <div className="home-company-trust__links">
@@ -72,7 +79,7 @@ export function HomeCompanyTrust({ section, settings }: { section: PageSection; 
         {imageUrl ? (
           <div className="home-company-trust__media">
             <Image
-              alt="Компания DEERE-SHOP"
+              alt={section.imageAlt?.trim() || section.title?.trim() || settings.companyName}
               fill
               loading="lazy"
               sizes="(max-width: 768px) 100vw, 45vw"

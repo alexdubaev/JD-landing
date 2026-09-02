@@ -97,11 +97,11 @@ export function HomeSelection({
           {section.text ? <p>{section.text}</p> : null}
         </div>
         <ProcessMotion>
-          <div className="home-selection__steps">
+          <ol aria-label="Этапы подбора" className="home-selection__rail home-selection__steps">
             {visibleSteps.map(({ details, number, text, title }, index) => {
               const Icon = icons[index % icons.length];
               return (
-                <article className="home-step" key={`${title}:${index}`}>
+                <li className="home-step" key={`${title}:${index}`}>
                   <span>{number ?? String(index + 1).padStart(2, "0")}</span>
                   <Icon aria-hidden="true" />
                   <h3>{title}</h3>
@@ -113,10 +113,10 @@ export function HomeSelection({
                       ))}
                     </ul>
                   ) : null}
-                </article>
+                </li>
               );
             })}
-          </div>
+          </ol>
         </ProcessMotion>
         <div className="home-selection__bottom">
           <div className="home-selection__inputs">

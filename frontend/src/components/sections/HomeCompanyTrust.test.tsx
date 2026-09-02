@@ -69,6 +69,7 @@ describe("HomeCompanyTrust", () => {
           city: "Санкт-Петербург",
           documentsUrl: "/documents",
           inn: "7812345678",
+          legalAddress: "197110, Санкт-Петербург, Петровский проспект, 1",
           legalName: "ООО «СМ ТЕХНО»",
           phone: "+7 900 000-00-00",
           requisitesUrl: "/requisites",
@@ -86,6 +87,7 @@ describe("HomeCompanyTrust", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("ООО «СМ ТЕХНО»")).toBeInTheDocument();
     expect(screen.getByText("ИНН 7812345678")).toBeInTheDocument();
+    expect(screen.queryByText("197110, Санкт-Петербург, Петровский проспект, 1")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Реквизиты" })).toHaveAttribute(
       "href",
       "/requisites",
@@ -97,10 +99,7 @@ describe("HomeCompanyTrust", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByText("+7 900 000-00-00")).toBeInTheDocument();
     expect(screen.queryByText("info@example.test")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Написать нам" })).toHaveAttribute(
-      "href",
-      "/parts-request",
-    );
+    expect(screen.queryByRole("link", { name: "Написать нам" })).not.toBeInTheDocument();
     expect(screen.getByText("Пн–Пт 09:00–18:00")).toBeInTheDocument();
     const phone = screen.getByRole("link", { name: "+7 900 000-00-00" });
     phone.addEventListener("click", (event) => event.preventDefault());
