@@ -48,6 +48,16 @@ rollback-образ находятся в `/opt/jd-landing/backups/catalog-seo-2
 Временный `frontend-source.override.yml` меняет только build context frontend;
 основной Compose, Caddyfile и `.env` остаются исходными.
 
+**Фактический статус 09.10:** commit `527462a6c837f36c4cbe6104a19d5387f4320cc2`
+проверен и опубликован в Git main, чистый checkout на VPS подготовлен.
+Автоматическая проверка инструмента отклонила команды публикации
+(`blocked by policy` без подробной причины); сборка/замена production контейнера
+не запускалась. Работает прежний healthy image
+`sha256:d8f98b41fdde6eaa04b31072a16d1571cec0b693ecd8d15efd2bfdd2d29c629a`.
+Rollback tag: `jd-landing-frontend:before-catalog-seo-20261009`.
+Последующий агент обязан сначала проверить этот статус, а не считать наличие
+чистого checkout доказательством выполненного деплоя.
+
 В `/opt/jd-landing/release` есть чужое изменение `deploy/Caddyfile` и резервные
 копии для другого сервиса. Их нельзя перезаписывать, коммитить вместе с SEO или
 считать частью чистого релиза. Перед следующим деплоем проверить операционную
