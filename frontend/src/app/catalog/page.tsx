@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { CatalogControls } from "@/components/catalog/CatalogControls";
+import { CategoryTree } from "@/components/catalog/CategoryTree";
 import { EmptyCatalog } from "@/components/catalog/EmptyCatalog";
 import { Pagination } from "@/components/catalog/Pagination";
 import { ProductGrid } from "@/components/catalog/ProductGrid";
@@ -19,6 +20,7 @@ import {
   getCategories,
   getPageSeoBySlug,
 } from "@/lib/directus/catalog";
+import { buildCategoryTree } from "@/lib/catalog/category-tree";
 import {
   buildCatalogMetadata,
   isPageOutOfRange,
@@ -107,6 +109,10 @@ export default async function CatalogPage({
         <Suspense fallback={<div className="catalog-controls-skeleton" />}>
           <CatalogControls categories={categories} />
         </Suspense>
+        <details className="catalog-category-index">
+          <summary>Все категории каталога</summary>
+          <CategoryTree nodes={buildCategoryTree(categories)} />
+        </details>
         <div className="catalog-results">
           <p aria-live="polite">
             Найдено позиций: <strong>{catalog.total}</strong>

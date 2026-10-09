@@ -60,6 +60,23 @@ export function Pagination({
           <ChevronRight aria-hidden="true" />
         </span>
       )}
+      <details className="catalog-pagination__index">
+        <summary>Все страницы</summary>
+        <div className="catalog-pagination__pages" aria-label="Номер страницы">
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+            (page) => (
+              <Link
+                aria-current={page === currentPage ? "page" : undefined}
+                href={pageHref(pathname, searchParams, page)}
+                key={page}
+                prefetch={false}
+              >
+                {page}
+              </Link>
+            ),
+          )}
+        </div>
+      </details>
     </nav>
   );
 }

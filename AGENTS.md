@@ -2,6 +2,14 @@
 
 ## Project
 
+### Production access
+
+Before asking the owner for server access, read the current SSH profile in
+[DEPLOY.md, section 1](DEPLOY.md). The working key is supplied by the owner
+and stored outside the repository. The profile was verified on 2026-10-09.
+Use the documented account and key path; never copy private-key contents,
+passwords or tokens into repository files, reports or tool output.
+
 ## Mandatory scope-lock and release rules
 
 Read [ADR-002](docs/decisions/ADR-002-scope-locked-changes-and-content-only-releases.md)

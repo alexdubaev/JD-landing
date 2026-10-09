@@ -3,16 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   output: "standalone",
-  async redirects() {
-    return [
-      {
-        source: "/catalog/:path*",
-        has: [{ type: "query", key: "page", value: "1" }],
-        destination: "/catalog/:path*",
-        permanent: true,
-      },
-    ];
-  },
   async headers() {
     const cspReportOnly = [
       "default-src 'self'",

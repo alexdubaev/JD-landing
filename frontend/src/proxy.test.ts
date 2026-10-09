@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { resetRateLimits } from "@/lib/security/rate-limit";
+import legacyCatalogRedirects from "@/lib/catalog/legacy-product-redirects.json";
 import { proxy, resolveRateLimitPolicy } from "./proxy";
 
 afterEach(() => resetRateLimits());
@@ -13,6 +14,90 @@ describe("SEO proxy", () => {
     expect(response?.status).toBe(404);
     expect(response?.headers.get("content-type")).toContain("text/html");
     expect(response?.headers.get("x-robots-tag")).toBe("noindex, follow");
+  });
+
+  it("removes all page parameters when the first value is 1 and preserves other duplicates", () => {
+    const response = proxy(
+      new NextRequest("https://deere-shop.ru/catalog?page=1&utm=x&utm=y&page=2"),
+    );
+
+    expect(response?.status).toBe(308);
+    const location = new URL(response?.headers.get("location") ?? "");
+    expect(location.pathname).toBe("/catalog");
+    expect(location.searchParams.has("page")).toBe(false);
+    expect(location.searchParams.getAll("utm")).toEqual(["x", "y"]);
+  });
+
+  it("redirects the AH140497 legacy path once and keeps its tracking query", () => {
+    const response = proxy(
+      new NextRequest("https://deere-shop.ru/catalog/sistema-ohlazhdeniya-i-vpusk/tsentralnyy-shkiv-john-deere-ah140497?page=1&utm=x&utm=y"),
+    );
+
+    expect(response?.status).toBe(301);
+    const location = new URL(response?.headers.get("location") ?? "");
+    expect(location.pathname).toBe("/catalog/remni-tsepi-i-shkivy/tsentralnyy-shkiv-john-deere-ah140497");
+    expect(location.searchParams.get("page")).toBeNull();
+    expect(location.searchParams.getAll("utm")).toEqual(["x", "y"]);
+  });
+
+  it("redirects every CMS-confirmed legacy product and category path directly", () => {
+    const entries = Object.entries(legacyCatalogRedirects);
+    const sourcePaths = new Set(entries.map(([source]) => source));
+
+    expect(entries).toHaveLength(63);
+    expect(sourcePaths.size).toBe(entries.length);
+    for (const [source, destination] of entries) {
+      expect(source).toMatch(/^\/catalog\//u);
+      expect(destination).toMatch(/^\/catalog\//u);
+      expect(destination).not.toBe(source);
+      expect(sourcePaths.has(destination)).toBe(false);
+
+      const response = proxy(
+        new NextRequest(`https://deere-shop.ru${source}?page=1&utm_source=old&utm_source=duplicate`),
+      );
+      expect(response?.status).toBe(301);
+      const location = new URL(response?.headers.get("location") ?? "");
+      expect(location.pathname).toBe(destination);
+      expect(location.searchParams.has("page")).toBe(false);
+      expect(location.searchParams.getAll("utm_source")).toEqual(["old", "duplicate"]);
+    }
+  });
+
+  it("leaves unknown product and category paths unchanged", () => {
+    for (const path of [
+      "/catalog/sistema-ohlazhdeniya-i-vpusk/another-product",
+      "/catalog/krepezh-i-krepleniya/another-product",
+      "/catalog/another-category",
+    ]) {
+      const response = proxy(new NextRequest(`https://deere-shop.ru${path}`));
+      expect(response?.status).not.toBe(301);
+    }
+  });
+
+  it.each([
+    ["/catalog?page=2", "GET"],
+    ["/catalog?page=2&page=1", "GET"],
+    ["/catalog?q=page=1", "GET"],
+    ["/catalog?page=1", "POST"],
+    ["/api/catalog?page=1", "GET"],
+    ["/about?page=1", "GET"],
+    ["/catalog/category/product?page=1", "GET"],
+  ])("does not redirect unrelated URL %s with method %s", (path, method) => {
+    const response = proxy(
+      new NextRequest(`https://deere-shop.ru${path}`, { method }),
+    );
+
+    expect(response?.status).not.toBe(301);
+    expect(response?.status).not.toBe(308);
+  });
+
+  it("normalizes catalogue URLs for HEAD requests", () => {
+    const response = proxy(
+      new NextRequest("https://deere-shop.ru/catalog?page=1", { method: "HEAD" }),
+    );
+
+    expect(response?.status).toBe(308);
+    expect(response?.headers.get("location")).toBe("https://deere-shop.ru/catalog");
   });
 });
 

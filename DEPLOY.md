@@ -24,9 +24,36 @@ Directus зафиксирован на `12.1.1`. Число кастомных �
 
 **Доступ:**
 - VPS: `91.227.68.176` (Ubuntu 22.04), пользователь `codex-deploy`
-- SSH: `ssh -i C:\Users\Elena\.ssh\jd_landing_deploy codex-deploy@91.227.68.176`
+- SSH-профиль проверен 09.10.2026 на рабочем компьютере владельца:
+  пользователь `codex-deploy`, сервер `91.227.68.176`.
+- Локальный приватный ключ находится **вне репозитория**:
+  `C:\Users\Alexandr\Downloads\Telegram Desktop\doc_2026-10-07_11-58-13.ssh\.ssh\jd_landing_deploy`.
+- Проверка доступа (PowerShell):
+  `ssh -o IdentitiesOnly=yes -o BatchMode=yes -i 'C:\Users\Alexandr\Downloads\Telegram Desktop\doc_2026-10-07_11-58-13.ssh\.ssh\jd_landing_deploy' codex-deploy@91.227.68.176 'id -un'`.
+- Не сохранять содержимое приватного ключа, пароли или токены в Git, отчётах
+  и выводе инструментов. Если файла нет на другом компьютере, уточнить путь
+  к переданному владельцем ключу. Ключ `deereshop_alexandr_20261007` не является
+  рабочим ключом этого SSH-профиля; повторять попытки с ним не нужно.
 - Production-папка: `/opt/jd-landing`, релиз: `/opt/jd-landing/release`
 - Реальный `.env`: `/opt/jd-landing/.env` (root-readable, **никогда не коммитить**)
+
+---
+
+### Изолированный SEO-релиз 09.10.2026
+
+Владелец разрешил разовую публикацию только frontend, без перезапуска общего
+Caddy и другого сервиса. Подготовленный чистый production checkout:
+`/home/codex-deploy/catalog-seo-release-20261009`. Операционная запись и
+rollback-образ находятся в `/opt/jd-landing/backups/catalog-seo-20261009/`.
+Временный `frontend-source.override.yml` меняет только build context frontend;
+основной Compose, Caddyfile и `.env` остаются исходными.
+
+В `/opt/jd-landing/release` есть чужое изменение `deploy/Caddyfile` и резервные
+копии для другого сервиса. Их нельзя перезаписывать, коммитить вместе с SEO или
+считать частью чистого релиза. Перед следующим деплоем проверить операционную
+запись, действующий source commit и безопасно согласовать актуальный checkout:
+слепой запуск штатного deploy.sh из старого checkout может откатить frontend.
+Статус этой публикации фиксируется в отчёте SEO/handoff после публичной проверки.
 
 ---
 
@@ -85,7 +112,7 @@ npm run build       # локальная сборка Next.js
 только им, не вручную по шагам.
 
 ```bash
-ssh -i C:\Users\Elena\.ssh\jd_landing_deploy codex-deploy@91.227.68.176
+ssh -o IdentitiesOnly=yes -i 'C:\Users\Alexandr\Downloads\Telegram Desktop\doc_2026-10-07_11-58-13.ssh\.ssh\jd_landing_deploy' codex-deploy@91.227.68.176
 cd /opt/jd-landing/release/deploy
 sudo bash deploy.sh
 ```

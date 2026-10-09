@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getTrustedClientIp } from "@/lib/security/request";
+import { normalizeCatalogUrl } from "@/lib/catalog/normalize-url";
 
 const knownTopLevelPaths = new Set([
   "about", "api", "articles", "cart", "catalog", "contacts", "delivery",
@@ -65,6 +66,11 @@ export function proxy(request: NextRequest) {
   }
 
   if (request.method !== "GET" && request.method !== "HEAD") return NextResponse.next();
+
+  const normalizedCatalogUrl = normalizeCatalogUrl(request.nextUrl);
+  if (normalizedCatalogUrl) {
+    return NextResponse.redirect(normalizedCatalogUrl.href, normalizedCatalogUrl.status);
+  }
 
   const { pathname } = request.nextUrl;
   const topLevelPath = pathname.split("/")[1];
