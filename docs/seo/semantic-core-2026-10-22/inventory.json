@@ -1,0 +1,513 @@
+{
+  "source": "https://deere-shop.ru/sitemap.xml",
+  "fetched_at": "2026-10-22T13:52:00Z",
+  "sitemap_url_count": 13005,
+  "category_count": 18,
+  "categories": [
+    {
+      "title": "Детали уборочной техники",
+      "url": "https://deere-shop.ru/catalog/detali-uborochnoy-tehniki",
+      "sitemap_product_children": 54
+    },
+    {
+      "title": "Двигатель",
+      "url": "https://deere-shop.ru/catalog/dvigatel",
+      "sitemap_product_children": 626
+    },
+    {
+      "title": "Электрика",
+      "url": "https://deere-shop.ru/catalog/elektrika",
+      "sitemap_product_children": 1638
+    },
+    {
+      "title": "Гидравлика",
+      "url": "https://deere-shop.ru/catalog/gidravlika",
+      "sitemap_product_children": 97
+    },
+    {
+      "title": "Крепёж",
+      "url": "https://deere-shop.ru/catalog/krepezh",
+      "sitemap_product_children": 3243
+    },
+    {
+      "title": "Насосы и компрессоры",
+      "url": "https://deere-shop.ru/catalog/nasosy-i-kompressory",
+      "sitemap_product_children": 26
+    },
+    {
+      "title": "Навеска и тяги",
+      "url": "https://deere-shop.ru/catalog/naveska-i-tyagi",
+      "sitemap_product_children": 40
+    },
+    {
+      "title": "Подшипники и втулки",
+      "url": "https://deere-shop.ru/catalog/podshipniki-i-vtulki",
+      "sitemap_product_children": 907
+    },
+    {
+      "title": "Подвеска и стабилизаторы",
+      "url": "https://deere-shop.ru/catalog/podveska-i-stabilizatory",
+      "sitemap_product_children": 27
+    },
+    {
+      "title": "Прочие детали John Deere",
+      "url": "https://deere-shop.ru/catalog/prochie-detali-john-deere",
+      "sitemap_product_children": 3378
+    },
+    {
+      "title": "Ремни, цепи и шкивы",
+      "url": "https://deere-shop.ru/catalog/remni-tsepi-i-shkivy",
+      "sitemap_product_children": 553
+    },
+    {
+      "title": "Режущий аппарат",
+      "url": "https://deere-shop.ru/catalog/rezhuschiy-apparat",
+      "sitemap_product_children": 1
+    },
+    {
+      "title": "Рулевое управление",
+      "url": "https://deere-shop.ru/catalog/rulevoe-upravlenie",
+      "sitemap_product_children": 20
+    },
+    {
+      "title": "Система охлаждения и впуск",
+      "url": "https://deere-shop.ru/catalog/sistema-ohlazhdeniya-i-vpusk",
+      "sitemap_product_children": 141
+    },
+    {
+      "title": "Тормозная система",
+      "url": "https://deere-shop.ru/catalog/tormoznaya-sistema",
+      "sitemap_product_children": 24
+    },
+    {
+      "title": "Трансмиссия и мосты",
+      "url": "https://deere-shop.ru/catalog/transmissiya-i-mosty",
+      "sitemap_product_children": 448
+    },
+    {
+      "title": "Уплотнения и прокладки",
+      "url": "https://deere-shop.ru/catalog/uplotneniya-i-prokladki",
+      "sitemap_product_children": 1748
+    },
+    {
+      "title": "Запчасти John Deere",
+      "url": "https://deere-shop.ru/catalog/zapchasti-john-deere",
+      "sitemap_product_children": 0
+    }
+  ],
+  "article_count": 9,
+  "articles": [
+    {
+      "title": "Что проверить перед заказом комплектующих",
+      "url": "https://deere-shop.ru/articles/chto-proverit-pered-zakazom-komplektuyuschih"
+    },
+    {
+      "title": "Где искать артикул и маркировку на детали",
+      "url": "https://deere-shop.ru/articles/gde-iskat-artikul-i-markirovku-na-detali"
+    },
+    {
+      "title": "Где искать артикул на детали John Deere и как не перепутать номер",
+      "url": "https://deere-shop.ru/articles/gde-iskat-artikul-john-deere"
+    },
+    {
+      "title": "Как подготовить данные для подбора запчасти John Deere",
+      "url": "https://deere-shop.ru/articles/kak-podgotovit-dannye-dlya-podbora-zapchasti-john-deere"
+    },
+    {
+      "title": "Каталог запчастей John Deere: как пользоваться Parts Catalog без ошибок",
+      "url": "https://deere-shop.ru/articles/parts-catalog-john-deere-kak-polzovatsya"
+    },
+    {
+      "title": "Как быстро подобрать запчасть John Deere по артикулу, модели и фото маркировки",
+      "url": "https://deere-shop.ru/articles/podobrat-zapchast-john-deere-po-artikulu"
+    },
+    {
+      "title": "Шум и люфт в опоре: что проверить перед заменой подшипника AL165777",
+      "url": "https://deere-shop.ru/articles/shum-i-lyuft-v-opore-proverka-podshipnika-al165777"
+    },
+    {
+      "title": "Что проверить перед срочным заказом запчастей John Deere в разгар уборки",
+      "url": "https://deere-shop.ru/articles/srochnyj-zakaz-zapchastej-john-deere"
+    },
+    {
+      "title": "Запчасти комбайна John Deere S660 и S670: какие узлы чаще всего ищут в сезон",
+      "url": "https://deere-shop.ru/articles/zapchasti-kombajna-john-deere-s660-s670"
+    }
+  ],
+  "product_sample_count": 47,
+  "product_samples": [
+    {
+      "name": "транспортер колосового элеватора AZ101791A",
+      "sku": "AZ101791A",
+      "url": "https://deere-shop.ru/catalog/detali-uborochnoy-tehniki/az63337a-transporter-kolosovogo-elevatora-analogi-az101791a-az101791a",
+      "category": "Детали уборочной техники"
+    },
+    {
+      "name": "Подборщик John Deere CC52034",
+      "sku": "CC52034",
+      "url": "https://deere-shop.ru/catalog/detali-uborochnoy-tehniki/podborschik-john-deere-cc52034-cc52034",
+      "category": "Детали уборочной техники"
+    },
+    {
+      "name": "8100142Sx фильтр масляный (re210857) RE210857A",
+      "sku": "RE210857A",
+      "url": "https://deere-shop.ru/catalog/dvigatel/8100142sx-filtr-maslyanyy-re210857-re210857a-re210857a",
+      "category": "Двигатель"
+    },
+    {
+      "name": "Комплект для капитального ремонта двигателя John Deere DZ10599",
+      "sku": "DZ10599",
+      "url": "https://deere-shop.ru/catalog/dvigatel/komplekt-dlya-kapitalnogo-john-deere-dz10599",
+      "category": "Двигатель"
+    },
+    {
+      "name": "/1 провод John Deere TY27406",
+      "sku": "TY27406",
+      "url": "https://deere-shop.ru/catalog/elektrika/1-provod-john-deere-ty27406-ty27406",
+      "category": "Электрика"
+    },
+    {
+      "name": "Лампа John Deere 57M7014",
+      "sku": "57M7014",
+      "url": "https://deere-shop.ru/catalog/elektrika/lampa-john-deere-57m7014-57m7014",
+      "category": "Электрика"
+    },
+    {
+      "name": "Электромагнитный клапан John Deere RE183407",
+      "sku": "RE183407",
+      "url": "https://deere-shop.ru/catalog/gidravlika/elektromagnitnyy-klapan-john-deere-re183407",
+      "category": "Гидравлика"
+    },
+    {
+      "name": "Гидравлический цилиндр John Deere RE208717",
+      "sku": "RE208717",
+      "url": "https://deere-shop.ru/catalog/gidravlika/gidravlicheskiy-tsilindr-john-deere-re208717-re208717",
+      "category": "Гидравлика"
+    },
+    {
+      "name": "Фланцевый винт 9,525 × 19,05 мм (3/8\" × 3/4\") John Deere R85169",
+      "sku": "R85169",
+      "url": "https://deere-shop.ru/catalog/krepezh/4-john-deere-r85169",
+      "category": "Крепёж"
+    },
+    {
+      "name": "Штифт John Deere R125436",
+      "sku": "R125436",
+      "url": "https://deere-shop.ru/catalog/krepezh/shtift-john-deere-r125436-r125436",
+      "category": "Крепёж"
+    },
+    {
+      "name": "Элект. насос-форс. восст. John Deere RM100251",
+      "sku": "RM100251",
+      "url": "https://deere-shop.ru/catalog/nasosy-i-kompressory/elekt-nasos-fors-vosst-john-deere-rm100251-rm100251",
+      "category": "Насосы и компрессоры"
+    },
+    {
+      "name": "Насос John Deere RE209732",
+      "sku": "RE209732",
+      "url": "https://deere-shop.ru/catalog/nasosy-i-kompressory/nasos-john-deere-re209732-re209732",
+      "category": "Насосы и компрессоры"
+    },
+    {
+      "name": "Буфер нижней тяги John Deere R207661",
+      "sku": "R207661",
+      "url": "https://deere-shop.ru/catalog/naveska-i-tyagi/bufer-nizhney-tyagi-john-deere-r207661",
+      "category": "Навеска и тяги"
+    },
+    {
+      "name": "Опорный вал нижней тяги навески John Deere R250447",
+      "sku": "R250447",
+      "url": "https://deere-shop.ru/catalog/naveska-i-tyagi/opornyy-val-nizhney-tyagi-naveski-john-deere-r250447",
+      "category": "Навеска и тяги"
+    },
+    {
+      "name": "A112544 втулка рычага (allbest/ a112544ab",
+      "sku": "a112544ab",
+      "url": "https://deere-shop.ru/catalog/podshipniki-i-vtulki/a112544-vtulka-rychaga-allbest-a112544ab-a112544ab",
+      "category": "Подшипники и втулки"
+    },
+    {
+      "name": "Шариковый подшипник John Deere AXE68968",
+      "sku": "AXE68968",
+      "url": "https://deere-shop.ru/catalog/podshipniki-i-vtulki/sharikovyy-podshipnik-john-deere-axe68968-axe68968",
+      "category": "Подшипники и втулки"
+    },
+    {
+      "name": "Амортизатор John Deere AL117265",
+      "sku": "AL117265",
+      "url": "https://deere-shop.ru/catalog/podveska-i-stabilizatory/amortizator-john-deere-al117265-al117265",
+      "category": "Подвеска и стабилизаторы"
+    },
+    {
+      "name": "Муфта подвески John Deere RE578864",
+      "sku": "RE578864",
+      "url": "https://deere-shop.ru/catalog/podveska-i-stabilizatory/mufta-podveski-john-deere-re578864-re578864",
+      "category": "Подвеска и стабилизаторы"
+    },
+    {
+      "name": "185742 жгут пров. передней фары (re591373) John Deere RE185742",
+      "sku": "RE185742",
+      "url": "https://deere-shop.ru/catalog/prochie-detali-john-deere/185742-zhgut-prov-peredney-fary-re591373-john-deere-re185742-re185742",
+      "category": "Прочие детали John Deere"
+    },
+    {
+      "name": "Наконечник John Deere RD10775",
+      "sku": "RD10775",
+      "url": "https://deere-shop.ru/catalog/prochie-detali-john-deere/nakonechnik-john-deere-rd10775-rd10775",
+      "category": "Прочие детали John Deere"
+    },
+    {
+      "name": "A26408 комплект приводов (вкл.a55343,aa42795(103 звена),aa36888(двойная звездочка 13/19 зуб.)) John Deere BA26408",
+      "sku": "BA26408",
+      "url": "https://deere-shop.ru/catalog/remni-tsepi-i-shkivy/a26408-komplekt-privodov-vkl-a55343-aa42795-103-zvena-aa36888-dvoynaya-zvezdochka-13-19-zub-john-deere-ba26408-ba26408",
+      "category": "Ремни, цепи и шкивы"
+    },
+    {
+      "name": "Ремень armacord v2 87509 (кевлар) (аналоги) H152180A",
+      "sku": "H152180A",
+      "url": "https://deere-shop.ru/catalog/remni-tsepi-i-shkivy/remen-armacord-v2-87509-kevlar-analogi-h152180a-h152180a",
+      "category": "Ремни, цепи и шкивы"
+    },
+    {
+      "name": "Правый комплект привода режущего аппарата John Deere AE71036",
+      "sku": "AE71036",
+      "url": "https://deere-shop.ru/catalog/rezhuschiy-apparat/pravyy-komplekt-privoda-john-deere-ae71036",
+      "category": "Режущий аппарат"
+    },
+    {
+      "name": "Конец попер. рулев. тяги John Deere AN209414",
+      "sku": "AN209414",
+      "url": "https://deere-shop.ru/catalog/rulevoe-upravlenie/konets-poper-rulev-tyagi-john-deere-an209414-an209414",
+      "category": "Рулевое управление"
+    },
+    {
+      "name": "Узел попер. рулевой тяги John Deere AH164153",
+      "sku": "AH164153",
+      "url": "https://deere-shop.ru/catalog/rulevoe-upravlenie/uzel-poper-rulevoy-tyagi-john-deere-ah164153-ah164153",
+      "category": "Рулевое управление"
+    },
+    {
+      "name": "Бак радиатора John Deere AL226266",
+      "sku": "AL226266",
+      "url": "https://deere-shop.ru/catalog/sistema-ohlazhdeniya-i-vpusk/bak-radiatora-john-deere-al226266-al226266",
+      "category": "Система охлаждения и впуск"
+    },
+    {
+      "name": "Воздушный фильтр John Deere AH115836",
+      "sku": "AH115836",
+      "url": "https://deere-shop.ru/catalog/sistema-ohlazhdeniya-i-vpusk/vozdushnyy-filtr-john-deere-ah115836-ah115836",
+      "category": "Система охлаждения и впуск"
+    },
+    {
+      "name": "Демпфер вибрации педали тормоза John Deere R554404",
+      "sku": "R554404",
+      "url": "https://deere-shop.ru/catalog/tormoznaya-sistema/dempfer-vibratsii-pedali-tormoza-john-deere-r554404-r554404",
+      "category": "Тормозная система"
+    },
+    {
+      "name": "Тормозная колодка John Deere AN278453",
+      "sku": "AN278453",
+      "url": "https://deere-shop.ru/catalog/tormoznaya-sistema/tormoznaya-kolodka-john-deere-an278453-an278453",
+      "category": "Тормозная система"
+    },
+    {
+      "name": "(aa97763) ступица John Deere AA97715",
+      "sku": "AA97715",
+      "url": "https://deere-shop.ru/catalog/transmissiya-i-mosty/aa97763-stupitsa-john-deere-aa97715-aa97715",
+      "category": "Трансмиссия и мосты"
+    },
+    {
+      "name": "Пр. быстрос. гидр. муфты John Deere AXE60985",
+      "sku": "AXE60985",
+      "url": "https://deere-shop.ru/catalog/transmissiya-i-mosty/pr-bystros-gidr-mufty-john-deere-axe60985-axe60985",
+      "category": "Трансмиссия и мосты"
+    },
+    {
+      "name": "Башмак (прокладка) John Deere R58257",
+      "sku": "R58257",
+      "url": "https://deere-shop.ru/catalog/uplotneniya-i-prokladki/bashmak-prokladka-john-deere-r58257-r58257",
+      "category": "Уплотнения и прокладки"
+    },
+    {
+      "name": "Сальник John Deere H203497",
+      "sku": "H203497",
+      "url": "https://deere-shop.ru/catalog/uplotneniya-i-prokladki/salnik-john-deere-h203497-h203497",
+      "category": "Уплотнения и прокладки"
+    },
+    {
+      "name": "Шестерня распределительного вала John Deere R528098",
+      "sku": "R528098",
+      "url": "https://deere-shop.ru/catalog/dvigatel/shesternya-raspredelitelnogo-john-deere-r528098",
+      "category": "Двигатель"
+    },
+    {
+      "name": "Воздухозаборный шланг John Deere L171302",
+      "sku": "L171302",
+      "url": "https://deere-shop.ru/catalog/sistema-ohlazhdeniya-i-vpusk/vozduhozabornyy-shlang-john-deere-l171302",
+      "category": "Система охлаждения и впуск"
+    },
+    {
+      "name": "Правый подъемный рычаг John Deere R560938",
+      "sku": "R560938",
+      "url": "https://deere-shop.ru/catalog/naveska-i-tyagi/pravyy-podemnyy-rychag-john-deere-r560938",
+      "category": "Навеска и тяги"
+    },
+    {
+      "name": "Центральный шкив John Deere AH140497",
+      "sku": "AH140497",
+      "url": "https://deere-shop.ru/catalog/remni-tsepi-i-shkivy/tsentralnyy-shkiv-john-deere-ah140497",
+      "category": "Ремни, цепи и шкивы"
+    },
+    {
+      "name": "Клиновой ремень John Deere H232997",
+      "sku": "H232997",
+      "url": "https://deere-shop.ru/catalog/remni-tsepi-i-shkivy/klinovoy-remen-john-deere-h232997-h232997",
+      "category": "Ремни, цепи и шкивы"
+    },
+    {
+      "name": "Фильтрующий элемент John Deere RE522878",
+      "sku": "RE522878",
+      "url": "https://deere-shop.ru/catalog/dvigatel/filtruyuschiy-element-john-deere-re522878-re522878",
+      "category": "Двигатель"
+    },
+    {
+      "name": "Фильтр масляный элемент ) A RE509672A",
+      "sku": "RE509672A",
+      "url": "https://deere-shop.ru/catalog/dvigatel/filtr-maslyanyy-element-p7233-analog-re509672-analogi-re509672a-re509672a",
+      "category": "Двигатель"
+    },
+    {
+      "name": "Масляный фильтр John Deere RE504836",
+      "sku": "RE504836",
+      "url": "https://deere-shop.ru/catalog/dvigatel/maslyanyy-filtr-john-deere-re504836-re504836",
+      "category": "Двигатель"
+    },
+    {
+      "name": "Fcp2455 pilenga фильтр топливный RE541922A",
+      "sku": "RE541922A",
+      "url": "https://deere-shop.ru/catalog/dvigatel/fcp2455-pilenga-filtr-toplivnyy-re541922a-re541922a",
+      "category": "Двигатель"
+    },
+    {
+      "name": "Фильтрующий элемент John Deere RE532952",
+      "sku": "RE532952",
+      "url": "https://deere-shop.ru/catalog/dvigatel/filtruyuschiy-element-john-deere-re532952-re532952",
+      "category": "Двигатель"
+    },
+    {
+      "name": "Воздушный фильтр John Deere RE196945",
+      "sku": "RE196945",
+      "url": "https://deere-shop.ru/catalog/sistema-ohlazhdeniya-i-vpusk/vozdushnyy-filtr-john-deere-re196945-re196945",
+      "category": "Система охлаждения и впуск"
+    },
+    {
+      "name": "Топливный насос John Deere RE539761",
+      "sku": "RE539761",
+      "url": "https://deere-shop.ru/catalog/dvigatel/toplivnyy-nasos-john-deere-re539761-re539761",
+      "category": "Двигатель"
+    },
+    {
+      "name": "Винт с головкой John Deere R85363",
+      "sku": "R85363",
+      "url": "https://deere-shop.ru/catalog/krepezh/vint-s-golovkoy-john-deere-r85363-r85363",
+      "category": "Крепёж"
+    },
+    {
+      "name": "Дисковый нож John Deere N242921",
+      "sku": "N242921",
+      "url": "https://deere-shop.ru/catalog/prochie-detali-john-deere/diskovyy-nozh-john-deere-n242921-n242921",
+      "category": "Прочие детали John Deere"
+    }
+  ],
+  "requested_sku_checks": {
+    "R528098": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/dvigatel/shesternya-raspredelitelnogo-john-deere-r528098",
+      "jsonld_sku": "R528098"
+    },
+    "L171302": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/sistema-ohlazhdeniya-i-vpusk/vozduhozabornyy-shlang-john-deere-l171302",
+      "jsonld_sku": "L171302"
+    },
+    "R560938": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/naveska-i-tyagi/pravyy-podemnyy-rychag-john-deere-r560938",
+      "jsonld_sku": "R560938"
+    },
+    "AH140497": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/remni-tsepi-i-shkivy/tsentralnyy-shkiv-john-deere-ah140497",
+      "jsonld_sku": "AH140497"
+    },
+    "H232997": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/remni-tsepi-i-shkivy/klinovoy-remen-john-deere-h232997-h232997",
+      "jsonld_sku": "H232997"
+    },
+    "RE522878": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/dvigatel/filtruyuschiy-element-john-deere-re522878-re522878",
+      "jsonld_sku": "RE522878"
+    },
+    "RE509672": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/dvigatel/filtr-maslyanyy-element-p7233-analog-re509672-analogi-re509672a-re509672a",
+      "jsonld_sku": "RE509672A"
+    },
+    "RE504836": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/dvigatel/maslyanyy-filtr-john-deere-re504836-re504836",
+      "jsonld_sku": "RE504836"
+    },
+    "RE541922": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/dvigatel/fcp2455-pilenga-filtr-toplivnyy-re541922a-re541922a",
+      "jsonld_sku": "RE541922A"
+    },
+    "RE532952": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/dvigatel/filtruyuschiy-element-john-deere-re532952-re532952",
+      "jsonld_sku": "RE532952"
+    },
+    "RE196945": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/sistema-ohlazhdeniya-i-vpusk/vozdushnyy-filtr-john-deere-re196945-re196945",
+      "jsonld_sku": "RE196945"
+    },
+    "F681170": {
+      "found_in_sitemap": false,
+      "url": null,
+      "jsonld_sku": null
+    },
+    "RE539761": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/dvigatel/toplivnyy-nasos-john-deere-re539761-re539761",
+      "jsonld_sku": "RE539761"
+    },
+    "AT387534": {
+      "found_in_sitemap": false,
+      "url": null,
+      "jsonld_sku": null
+    },
+    "R85363": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/krepezh/vint-s-golovkoy-john-deere-r85363-r85363",
+      "jsonld_sku": "R85363"
+    },
+    "N242921": {
+      "found_in_sitemap": true,
+      "url": "https://deere-shop.ru/catalog/prochie-detali-john-deere/diskovyy-nozh-john-deere-n242921-n242921",
+      "jsonld_sku": "N242921"
+    },
+    "F071312": {
+      "found_in_sitemap": false,
+      "url": null,
+      "jsonld_sku": null
+    }
+  },
+  "notes": [
+    "Product samples are selected from public sitemap URLs and checked against the visible H1 and Product JSON-LD when available.",
+    "A product URL slug is not treated as proof of SKU or compatibility. Missing H1 or JSON-LD SKU values remain null."
+  ]
+}
