@@ -1,0 +1,52 @@
+{
+  "source_capture_date": "2026-10-22",
+  "raw_sha256": "bbfff2adc59dea5d7854011246a162b577d2a276ccd0ca7d13448fc2af25e096",
+  "inventory_sha256": "ace41a4b18d9f72f505b38f60077e98ab4e57ad8d5e7411871e4087e55194e1a",
+  "source_reports": 88,
+  "source_rows": 707,
+  "quoted_reports": 14,
+  "unique_keywords": 606,
+  "core_rows": 298,
+  "excluded_rows": 308,
+  "cluster_rows": 34,
+  "needs_review_rows": 226,
+  "content_gap_rows": 6,
+  "conflict_rows": 0,
+  "period_window_count": 2,
+  "output_files": [
+    {
+      "file": "core.csv",
+      "sha256": "0627cd8f3dc901aa29f30cea92edfcd84a5ef3daca60327b2f61e93f3c5cdf7b"
+    },
+    {
+      "file": "core.json",
+      "sha256": "7e0ace713fb3f9fee4efbb372ff6434b7bfffa63041aac7d0eba97b22a02018e"
+    },
+    {
+      "file": "excluded.csv",
+      "sha256": "df9c31f487aa684b1969d7b0f92c5549336653278aada8d29bce7f833f79bdd8"
+    },
+    {
+      "file": "measurements.csv",
+      "sha256": "b13fb4fc72c8abe3963ed4bc25e5a758169d5d59028816d8d780ad1e7c5677d0"
+    },
+    {
+      "file": "clusters.csv",
+      "sha256": "85f47bb479a08b6514c0f1d5ecb5ce8aa3827b413f4948afddf5697d7ece784d"
+    },
+    {
+      "file": "cluster-map.html",
+      "sha256": "020b52bc3844f3cbd4a47f7b3bd767ee8fa4964dfb3f781d9fe7f9de120932e7"
+    }
+  ],
+  "guarantees": {
+    "no_header_total_used_as_listed_frequency": true,
+    "quoted_header_totals_separate": true,
+    "no_frequency_sums": true,
+    "listed_and_quoted_provenance_separate": true,
+    "canonical_mapping_requires_exact_jsonld_sku": true,
+    "category_targets_taken_from_inventory": true,
+    "all_cluster_methods": "intent_only_provisional",
+    "phrase_normalization": "lowercase + trim + whitespace collapse only"
+  }
+}
