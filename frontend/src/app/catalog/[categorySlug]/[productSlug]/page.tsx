@@ -38,10 +38,8 @@ export async function generateMetadata({
 }: ProductRouteProps): Promise<Metadata> {
   const { categorySlug, productSlug } = await params;
   const product = await getProductBySlugs(categorySlug, productSlug);
-  // Not found: keep the page out of the index rather than serving an empty {}.
-  if (!product) {
-    return { robots: { index: false, follow: false } };
-  }
+  // Resolve absence while metadata is still blocking crawler responses.
+  if (!product) notFound();
   const canonical = `/catalog/${categorySlug}/${productSlug}`;
   const image =
     directusAssetUrl(product.ogImageId || product.mainImageId, {

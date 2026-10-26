@@ -19,13 +19,18 @@ describe("Analytics consent", () => {
   });
 
   it("loads Yandex Metrica only after analytics consent", async () => {
-    render(<Analytics yandexMetricaId="111313911" />);
+    const view = render(<Analytics yandexMetricaId="111313911" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Принять аналитику" }));
 
     expect(window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY)).toBe("accepted");
     await waitFor(() =>
       expect(document.querySelector("#yandex-metrica")).toBeInTheDocument(),
+    );
+    view.rerender(<Analytics yandexMetricaId="111313911" />);
+    expect(document.querySelectorAll("#yandex-metrica")).toHaveLength(1);
+    expect(document.querySelector("#yandex-metrica")?.textContent).toContain(
+      "window.__jdMetricaInitialized",
     );
   });
 
@@ -62,4 +67,5 @@ describe("Analytics consent", () => {
     expect(document.querySelector("#yandex-metrica")).not.toBeInTheDocument();
     expect(document.querySelector("#gtm-base")).not.toBeInTheDocument();
   });
+
 });

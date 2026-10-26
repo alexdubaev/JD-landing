@@ -42,6 +42,7 @@ export function CheckoutForm() {
               quantity: line.quantity,
             })),
             website: payload.website ?? "",
+            turnstile_token: payload.turnstile_token ?? "",
           }),
         }),
       async (response) => {

@@ -9,7 +9,7 @@ import { getArticlesPage } from "@/lib/directus/articles";
 import { buildSocialMetadata } from "@/lib/seo/social-metadata";
 import { absoluteUrl } from "@/lib/seo/url";
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: "Статьи о подборе комплектующих John Deere",
   description:
     "Практические материалы о подготовке данных, поиске артикула и проверке комплектующих перед заказом.",
@@ -21,6 +21,22 @@ export const metadata: Metadata = {
     path: absoluteUrl("/articles"),
   }),
 };
+
+export async function generateMetadata({ searchParams }: {
+  searchParams: Promise<{ page?: string }>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const parsedPage = Number(params.page ?? "1");
+  const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  if (page === 1) return baseMetadata;
+  const result = await getArticlesPage(page);
+  if (page > result.totalPages) notFound();
+  return {
+    ...baseMetadata,
+    title: `${baseMetadata.title} — страница ${page}`,
+    alternates: { canonical: `/articles?page=${page}` },
+  };
+}
 
 export default async function ArticlesPage({
   searchParams,

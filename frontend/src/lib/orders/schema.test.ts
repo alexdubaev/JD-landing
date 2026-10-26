@@ -27,4 +27,20 @@ describe("orderSchema", () => {
   it("defaults marketing consent to false", () => {
     expect(orderSchema.parse(baseOrder).marketing_consent).toBe(false);
   });
+
+  it("requires a product ID for every cart line", () => {
+    const result = orderSchema.safeParse({
+      ...baseOrder,
+      items: [{ ...baseOrder.items[0], product: undefined }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects duplicate product IDs so a line cannot bypass the quantity limit", () => {
+    const result = orderSchema.safeParse({
+      ...baseOrder,
+      items: [baseOrder.items[0], { ...baseOrder.items[0], quantity: 1 }],
+    });
+    expect(result.success).toBe(false);
+  });
 });

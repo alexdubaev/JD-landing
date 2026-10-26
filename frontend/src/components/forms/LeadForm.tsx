@@ -9,9 +9,11 @@ import { MarketingConsent } from "./MarketingConsent";
 import { TurnstileField, type TurnstileFieldHandle } from "./TurnstileField";
 
 export function LeadForm({
+  initialMessage = "",
   categoryId,
   productId,
 }: {
+  initialMessage?: string;
   categoryId?: string;
   productId?: string;
 }) {
@@ -75,7 +77,7 @@ export function LeadForm({
       </label>
       <label className="lead-form__message">
         Что нужно подобрать
-        <textarea maxLength={3000} name="message" rows={4} />
+        <textarea defaultValue={initialMessage} maxLength={3000} name="message" rows={4} />
       </label>
       <label className="lead-form__honeypot" aria-hidden="true">
         Сайт

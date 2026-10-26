@@ -11,10 +11,78 @@ type RawOrderItem = {
   id: string;
 };
 
+type RawOrderProduct = {
+  id: string;
+  status: string;
+  title: string;
+  sku: string;
+  price: string | number | null;
+  currency: string;
+  price_status: string;
+};
+
+type OrderLineSnapshot = {
+  product: string;
+  sku: string;
+  title: string;
+  unitPriceCents: number;
+  quantity: number;
+};
+
+export class UnavailableOrderItemsError extends Error {
+  constructor() {
+    super("One or more products are unavailable for cart checkout");
+    this.name = "UnavailableOrderItemsError";
+  }
+}
+
+async function getOrderLineSnapshots(
+  input: OrderInput,
+): Promise<OrderLineSnapshot[]> {
+  const ids = input.items.map((item) => item.product);
+  const query = new URLSearchParams({
+    "filter[status][_eq]": "published",
+    "filter[id][_in]": ids.join(","),
+    fields: "id,status,title,sku,price,currency,price_status",
+    limit: String(ids.length),
+  });
+  const products = await directusRequest<RawOrderProduct[]>(
+    `/items/products?${query.toString()}`,
+    { cache: "no-store" },
+  );
+  const byId = new Map(products.map((product) => [product.id, product]));
+
+  return input.items.map((item) => {
+    const product = byId.get(item.product);
+    const price = typeof product?.price === "number"
+      ? product.price
+      : typeof product?.price === "string" && product.price.trim() !== ""
+        ? Number(product.price)
+        : Number.NaN;
+    if (
+      !product ||
+      product.status !== "published" ||
+      product.price_status !== "fixed" ||
+      product.currency !== "RUB" ||
+      !Number.isFinite(price) ||
+      price < 0 ||
+      !product.title.trim() ||
+      !product.sku.trim()
+    ) {
+      throw new UnavailableOrderItemsError();
+    }
+    return {
+      product: product.id,
+      sku: product.sku,
+      title: product.title,
+      unitPriceCents: Math.round(price * 100),
+      quantity: item.quantity,
+    };
+  });
+}
+
 /**
- * Create an order together with its line items. Items are snapshotted from the
- * cart so the historical record stays accurate even if a product later changes
- * its price/SKU or is deleted.
+ * Create an order with fresh snapshots from published Directus products.
  *
  * If the line-item write fails after the order row exists, the order is
  * deleted right here (compensating delete) and the error is rethrown, so no
@@ -23,8 +91,10 @@ type RawOrderItem = {
 export async function createOrder(
   input: OrderInput,
 ): Promise<{ id: string }> {
-  const total = input.items.reduce(
-    (sum, item) => sum + item.unit_price * item.quantity,
+  // Read the complete product batch uncached and validate it before any write.
+  const items = await getOrderLineSnapshots(input);
+  const totalCents = items.reduce(
+    (sum, item) => sum + item.unitPriceCents * item.quantity,
     0,
   );
   const marketingConsentAt = input.marketing_consent
@@ -38,7 +108,7 @@ export async function createOrder(
       phone: input.phone,
       email: input.email ?? null,
       comment: input.comment ?? null,
-      total: Number(total.toFixed(2)),
+      total: totalCents / 100,
       currency: "RUB",
       page_url: input.page_url ?? null,
       utm_source: input.utm_source ?? null,
@@ -64,12 +134,12 @@ export async function createOrder(
     await directusRequest<RawOrderItem[]>("/items/order_items", {
       method: "POST",
       body: JSON.stringify(
-        input.items.map((item) => ({
+        items.map((item) => ({
           order: order.id,
-          product: item.product ?? null,
+          product: item.product,
           sku_snapshot: item.sku,
           title_snapshot: item.title,
-          unit_price: Number(item.unit_price.toFixed(2)),
+          unit_price: item.unitPriceCents / 100,
           quantity: item.quantity,
           currency: "RUB",
         })),

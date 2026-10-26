@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { DirectusRequestError } from "@/lib/directus/client";
-import { createOrder, deleteOrder } from "@/lib/directus/orders";
+import {
+  createOrder,
+  deleteOrder,
+  UnavailableOrderItemsError,
+} from "@/lib/directus/orders";
 import { orderSchema } from "@/lib/orders/schema";
 import {
   RequestTooLargeError,
@@ -75,6 +79,12 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         { error: "Проверьте заполнение формы" },
+        { status: 400 },
+      );
+    }
+    if (error instanceof UnavailableOrderItemsError) {
+      return NextResponse.json(
+        { error: "Один или несколько товаров больше недоступны для заказа. Обновите корзину и попробуйте снова." },
         { status: 400 },
       );
     }

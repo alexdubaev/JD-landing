@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import {
   COOKIE_CONSENT_STORAGE_KEY,
+  configureAnalyticsProviders,
   persistUtmOnce,
 } from "@/lib/analytics";
 
@@ -42,8 +43,10 @@ function writeConsent(choice: CookieConsentChoice): void {
  */
 export function Analytics({ yandexMetricaId, gtmId }: AnalyticsProps) {
   const [consent, setConsent] = useState<ConsentState>("unknown");
-  const metrica = yandexMetricaId?.trim();
-  const gtm = gtmId?.trim();
+  const rawMetrica = yandexMetricaId?.trim();
+  const rawGtm = gtmId?.trim();
+  const metrica = rawMetrica && /^\d{1,20}$/.test(rawMetrica) ? rawMetrica : null;
+  const gtm = rawGtm && /^GTM-[A-Z0-9]+$/.test(rawGtm) ? rawGtm : null;
 
   useEffect(() => {
     // Lead attribution from the landing URL — runs before and independently
@@ -53,13 +56,21 @@ export function Analytics({ yandexMetricaId, gtmId }: AnalyticsProps) {
 
     const storedConsent = readConsent();
     if (!storedConsent) return;
+    configureAnalyticsProviders({
+      metricaId: storedConsent === "accepted" ? metrica : null,
+      gtmId: storedConsent === "accepted" ? gtm : null,
+    });
 
     const timer = window.setTimeout(() => setConsent(storedConsent), 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [gtm, metrica]);
 
   function chooseConsent(choice: CookieConsentChoice) {
     writeConsent(choice);
+    configureAnalyticsProviders({
+      metricaId: choice === "accepted" ? metrica : null,
+      gtmId: choice === "accepted" ? gtm : null,
+    });
     setConsent(choice);
   }
 
@@ -118,12 +129,17 @@ for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src =
 k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
 (window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");
 
-ym(${metrica}, "init", {
-clickmap:true,
-trackLinks:true,
-accurateTrackBounce:true,
-webvisor:true
-});`}
+if (!window.__jdMetricaInitialized) window.__jdMetricaInitialized = {};
+if (!window.__jdMetricaInitialized[${metrica}]) {
+  ym(${metrica}, "init", {
+    clickmap:true,
+    trackLinks:true,
+    accurateTrackBounce:true,
+    webvisor:true
+  });
+  window.__jdMetricaInitialized[${metrica}] = true;
+  window.__jdFlushMetricaGoals && window.__jdFlushMetricaGoals();
+}`}
         </Script>
       ) : null}
     </>

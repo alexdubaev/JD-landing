@@ -103,7 +103,11 @@ export function BulkPartsRequest({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const hasAttachment = Boolean(spreadsheet || photo);
-    if (parsed.error && !hasAttachment) {
+    if (draft.trim() && parsed.error) {
+      setError(parsed.error);
+      return;
+    }
+    if (!draft.trim() && !hasAttachment) {
       setError(parsed.error);
       return;
     }
@@ -164,6 +168,14 @@ export function BulkPartsRequest({
           ? `Позиций в списке: ${parsed.items.length}`
           : "Добавьте от 1 до 100 позиций"}
       </div>
+      {parsed.items.length > 0 ? (
+        <table aria-label="Распознанные позиции" className="parts-request__preview">
+          <thead><tr><th scope="col">Артикул</th><th scope="col">Количество</th></tr></thead>
+          <tbody>{parsed.items.map((item) => (
+            <tr key={item.article}><td>{item.article}</td><td>{item.quantity}</td></tr>
+          ))}</tbody>
+        </table>
+      ) : null}
       <div className="parts-request__attachments" id="attachments">
         <button
           autoFocus={initialMode === "excel"}
@@ -207,6 +219,9 @@ export function BulkPartsRequest({
         </button>
       </div>
       <p className="parts-request__hint">
+        Формат: артикул — количество. Для вставки из Excel используйте два столбца:
+        артикул и количество.
+        {" "}
         Excel: XLS, XLSX или CSV до {readableSize(MAX_SPREADSHEET_BYTES)}. Фото: JPG,
         PNG или WebP до {readableSize(MAX_PHOTO_BYTES)}.
       </p>

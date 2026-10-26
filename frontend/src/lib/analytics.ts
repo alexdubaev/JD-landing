@@ -25,9 +25,55 @@ export type AnalyticsEvent = { event: AnalyticsEventName } & Record<
 
 export const COOKIE_CONSENT_STORAGE_KEY = "deere-shop:cookie-consent";
 
+type AnalyticsProviders = { metricaId: string | null; gtmId: string | null };
+type Goal = { event: AnalyticsEventName; properties: Omit<AnalyticsEvent, "event"> };
+
 declare global {
   interface Window {
     dataLayer?: AnalyticsEvent[];
+    ym?: (...args: unknown[]) => void;
+    __jdMetricaInitialized?: Record<string, boolean>;
+    __jdFlushMetricaGoals?: () => void;
+  }
+}
+
+let providers: AnalyticsProviders = { metricaId: null, gtmId: null };
+let pendingMetricaGoals: Goal[] = [];
+
+function validMetricaId(value: string | null): string | null {
+  return value && /^\d{1,20}$/.test(value) ? value : null;
+}
+
+function validGtmId(value: string | null): string | null {
+  return value && /^GTM-[A-Z0-9]+$/.test(value) ? value : null;
+}
+
+/** Configure allowed destinations after a consent choice. Invalid CMS IDs are ignored. */
+export function configureAnalyticsProviders(input: AnalyticsProviders): void {
+  providers = {
+    metricaId: validMetricaId(input.metricaId),
+    gtmId: validGtmId(input.gtmId),
+  };
+  if (!providers.metricaId) pendingMetricaGoals = [];
+  if (providers.gtmId && typeof window !== "undefined") {
+    window.dataLayer = window.dataLayer ?? [];
+  }
+  if (typeof window !== "undefined") window.__jdFlushMetricaGoals = flushMetricaEvents;
+}
+
+/** Flush once Metrica's queueing stub is available; init is queued before this call. */
+export function flushMetricaEvents(): void {
+  if (
+    !providers.metricaId ||
+    !hasAnalyticsConsent() ||
+    typeof window === "undefined" ||
+    typeof window.ym !== "function" ||
+    !window.__jdMetricaInitialized?.[providers.metricaId]
+  ) return;
+  const queued = pendingMetricaGoals;
+  pendingMetricaGoals = [];
+  for (const goal of queued) {
+    window.ym(providers.metricaId, "reachGoal", goal.event, goal.properties);
   }
 }
 
@@ -45,14 +91,21 @@ export function trackEvent(
   event: AnalyticsEventName,
   properties: Omit<AnalyticsEvent, "event"> = {},
 ) {
-  if (
-    !hasAnalyticsConsent() ||
-    typeof window === "undefined" ||
-    !Array.isArray(window.dataLayer)
-  ) {
-    return;
+  if (!hasAnalyticsConsent() || typeof window === "undefined") return;
+  if (providers.gtmId || Array.isArray(window.dataLayer)) {
+    if (providers.gtmId) window.dataLayer = window.dataLayer ?? [];
+    if (!Array.isArray(window.dataLayer)) return;
+    window.dataLayer.push({ event, ...properties });
   }
-  window.dataLayer.push({ event, ...properties });
+  if (!providers.metricaId) return;
+  if (
+    typeof window.ym === "function" &&
+    window.__jdMetricaInitialized?.[providers.metricaId]
+  ) {
+    window.ym(providers.metricaId, "reachGoal", event, properties);
+  } else {
+    if (pendingMetricaGoals.length < 100) pendingMetricaGoals.push({ event, properties });
+  }
 }
 
 const UTM_KEYS = [

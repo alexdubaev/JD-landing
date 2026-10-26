@@ -324,3 +324,8 @@ describe("product page", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+it("rejects missing products before streaming metadata", async () => {
+  getProductBySlugsMock.mockResolvedValue(null);
+  await expect(generateMetadata({ params: Promise.resolve({ categorySlug: "missing", productSlug: "missing" }) })).rejects.toThrow();
+});

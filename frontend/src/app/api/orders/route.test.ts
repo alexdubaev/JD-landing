@@ -2,6 +2,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { POST } from "./route";
 
+const productId = "11111111-1111-4111-8111-111111111111";
+const publishedProduct = {
+  id: productId,
+  status: "published",
+  title: "Муфта компрессора",
+  sku: "RE504836",
+  price: "100.25",
+  currency: "RUB",
+  price_status: "fixed",
+};
+
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -43,6 +54,9 @@ describe("POST /api/orders", () => {
         new Response(JSON.stringify({ success: true }), { status: 200 }),
       )
       .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: [publishedProduct] }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { id: "order-1" } }), { status: 200 }),
       )
       .mockResolvedValueOnce(
@@ -56,6 +70,7 @@ describe("POST /api/orders", () => {
       turnstile_token: "visitor-token",
       items: [
         {
+          product: productId,
           sku: "RE504836",
           title: "Тестовая деталь",
           unit_price: 100,
@@ -91,7 +106,7 @@ describe("POST /api/orders", () => {
           name: "Иван",
           phone: "123",
           email: "",
-          items: [{ sku: "RE504836", title: "Деталь", unit_price: 1, quantity: 1 }],
+          items: [{ product: productId, sku: "RE504836", title: "Деталь", unit_price: 1, quantity: 1 }],
         }),
       }),
     );
@@ -143,7 +158,7 @@ describe("POST /api/orders", () => {
           phone: "+7 900 000-00-00",
           email: "",
           turnstile_token: "visitor-token",
-          items: [{ sku: "RE504836", title: "Деталь", unit_price: 1, quantity: 1 }],
+          items: [{ product: productId, sku: "RE504836", title: "Деталь", unit_price: 1, quantity: 1 }],
         }),
       }),
     );
@@ -170,6 +185,9 @@ describe("POST /api/orders", () => {
         new Response(JSON.stringify({ success: true }), { status: 200 }),
       )
       .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: [publishedProduct, { ...publishedProduct, id: "11111111-1111-4111-8111-222222222222", sku: "RE504842", title: "Муфта 2" }] }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { id: "order-1" } }), { status: 200 }),
       )
       .mockResolvedValueOnce(
@@ -189,8 +207,8 @@ describe("POST /api/orders", () => {
           email: "",
           turnstile_token: "visitor-token",
           items: [
-            { sku: "RE504836", title: "Деталь 1", unit_price: 100, quantity: 2 },
-            { sku: "RE504842", title: "Деталь 2", unit_price: 50, quantity: 1 },
+            { product: productId, sku: "RE504836", title: "Деталь 1", unit_price: 100, quantity: 2 },
+            { product: "11111111-1111-4111-8111-222222222222", sku: "RE504842", title: "Деталь 2", unit_price: 50, quantity: 1 },
           ],
         }),
       }),
@@ -207,7 +225,7 @@ describe("POST /api/orders", () => {
       .filter((url) => url.endsWith("/items/order_items"));
     expect(itemWrites).toHaveLength(1);
     const batchBody = JSON.parse(
-      fetchMock.mock.calls[2][1]?.body as string,
+      fetchMock.mock.calls[3][1]?.body as string,
     ) as unknown[];
     expect(batchBody).toHaveLength(2);
   });
@@ -227,6 +245,9 @@ describe("POST /api/orders", () => {
         new Response(JSON.stringify({ success: true }), { status: 200 }),
       )
       .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: [publishedProduct] }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { id: "order-1" } }), { status: 200 }),
       )
       .mockResolvedValueOnce(
@@ -243,7 +264,7 @@ describe("POST /api/orders", () => {
           phone: "+7 900 000-00-00",
           email: "",
           turnstile_token: "visitor-token",
-          items: [{ sku: "RE504836", title: "Деталь", unit_price: 1, quantity: 1 }],
+          items: [{ product: productId, sku: "RE504836", title: "Деталь", unit_price: 1, quantity: 1 }],
         }),
       }),
     );
@@ -254,5 +275,52 @@ describe("POST /api/orders", () => {
         String(url).endsWith("/items/orders/order-1") && init?.method === "DELETE",
     );
     expect(deleteCall).toBeDefined();
+  });
+
+  it("returns a clear 400 when a product is no longer published", async () => {
+    vi.stubEnv("DIRECTUS_URL", "https://cms.example.test");
+    vi.stubEnv("DIRECTUS_TOKEN", "server-token-for-tests-only");
+    vi.stubEnv("DIRECTUS_PUBLIC_FOLDER_ID", "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a");
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.test");
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "s".repeat(32));
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+
+    const response = await POST(new Request("https://example.test/api/orders", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "Иван", phone: "+7 900 000-00-00", email: "", turnstile_token: "visitor-token",
+        items: [{ product: productId, sku: "RE504836", title: "Муфта", unit_price: 100, quantity: 1 }],
+      }),
+    }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: expect.stringContaining("недоступны") });
+    expect(fetchMock.mock.calls.some(([url], index) => index > 1 && String(url).endsWith("/items/orders"))).toBe(false);
+  });
+
+  it("returns 503 when the fresh product read fails", async () => {
+    vi.stubEnv("DIRECTUS_URL", "https://cms.example.test");
+    vi.stubEnv("DIRECTUS_TOKEN", "server-token-for-tests-only");
+    vi.stubEnv("DIRECTUS_PUBLIC_FOLDER_ID", "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a");
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.test");
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "s".repeat(32));
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 }))
+      .mockResolvedValueOnce(new Response("CMS unavailable", { status: 500 }));
+
+    const response = await POST(new Request("https://example.test/api/orders", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "Иван", phone: "+7 900 000-00-00", email: "", turnstile_token: "visitor-token",
+        items: [{ product: productId, sku: "RE504836", title: "Муфта", unit_price: 100, quantity: 1 }],
+      }),
+    }));
+
+    expect(response.status).toBe(503);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
