@@ -8,6 +8,7 @@ import {
   COOKIE_CONSENT_STORAGE_KEY,
   configureAnalyticsProviders,
   persistUtmOnce,
+  setAnalyticsConsent,
 } from "@/lib/analytics";
 
 export { COOKIE_CONSENT_STORAGE_KEY } from "@/lib/analytics";
@@ -55,18 +56,22 @@ export function Analytics({ yandexMetricaId, gtmId }: AnalyticsProps) {
     persistUtmOnce();
 
     const storedConsent = readConsent();
-    if (!storedConsent) return;
+    const effectiveConsent = storedConsent ?? (consent === "unknown" ? null : consent);
+    if (!effectiveConsent) return;
+    setAnalyticsConsent(effectiveConsent === "accepted");
     configureAnalyticsProviders({
-      metricaId: storedConsent === "accepted" ? metrica : null,
-      gtmId: storedConsent === "accepted" ? gtm : null,
+      metricaId: effectiveConsent === "accepted" ? metrica : null,
+      gtmId: effectiveConsent === "accepted" ? gtm : null,
     });
 
+    if (!storedConsent) return;
     const timer = window.setTimeout(() => setConsent(storedConsent), 0);
     return () => window.clearTimeout(timer);
-  }, [gtm, metrica]);
+  }, [consent, gtm, metrica]);
 
   function chooseConsent(choice: CookieConsentChoice) {
     writeConsent(choice);
+    setAnalyticsConsent(choice === "accepted");
     configureAnalyticsProviders({
       metricaId: choice === "accepted" ? metrica : null,
       gtmId: choice === "accepted" ? gtm : null,
@@ -112,7 +117,11 @@ export function Analytics({ yandexMetricaId, gtmId }: AnalyticsProps) {
       ) : null}
 
       {analyticsAllowed && gtm ? (
-        <Script id="gtm-base" strategy="afterInteractive">
+        <Script
+          key={`gtm-base-${gtm}`}
+          id={`gtm-base-${gtm}`}
+          strategy="afterInteractive"
+        >
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -122,7 +131,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       ) : null}
 
       {analyticsAllowed && metrica ? (
-        <Script id="yandex-metrica" strategy="afterInteractive">
+        <Script
+          key={`yandex-metrica-${metrica}`}
+          id={`yandex-metrica-${metrica}`}
+          strategy="afterInteractive"
+        >
           {`(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
 m[i].l=1*new Date();
 for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}

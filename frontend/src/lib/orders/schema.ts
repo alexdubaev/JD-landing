@@ -25,7 +25,7 @@ export const orderSchema = z
   .object({
     name: z.string().trim().min(2).max(100),
     phone: z.string().trim().min(7).max(40),
-    email: z.union([z.email(), z.literal(""), z.undefined()]).transform(
+    email: z.union([z.email(), z.literal("")]).optional().transform(
       (value) => value || undefined,
     ),
     comment: optionalText(2000),

@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MARKETING_CONSENT_VERSION } from "@/lib/marketing/consent";
 
 import { directusRequest } from "./client";
-import { createOrder, deleteOrder, UnavailableOrderItemsError } from "./orders";
+import {
+  createOrder,
+  deleteOrder,
+  OrderAmountOutOfRangeError,
+  UnavailableOrderItemsError,
+} from "./orders";
 
 vi.mock("./client", () => ({ directusRequest: vi.fn() }));
 
@@ -68,6 +73,36 @@ describe("createOrder", () => {
     ]);
   });
 
+  it.each([
+    "10000000.29",
+    "10000000.57",
+    "10000000.99",
+    "100000000.29",
+    "100000000.57",
+    "100000000.99",
+    "1000000000.29",
+    "1000000000.57",
+    "1000000000.99",
+  ])("accepts high valid decimal(12,2) price %s", async (price) => {
+    requestMock.mockResolvedValueOnce([
+      { ...products[0], price },
+      products[1],
+    ]);
+    await createOrder(orderInput());
+
+    expect(bodyOf(requestMock.mock.calls[2][1])[0].unit_price).toBe(Number(price));
+  });
+
+  it("accepts the maximum valid Directus decimal(12,2) price", async () => {
+    requestMock.mockResolvedValueOnce([{ ...products[0], price: "9999999999.99" }]);
+    await createOrder({
+      ...orderInput(),
+      items: [{ ...orderInput().items[0], quantity: 1 }],
+    });
+
+    expect(bodyOf(requestMock.mock.calls[1][1]).total).toBe(9_999_999_999.99);
+  });
+
   it("rejects a missing product before creating any order", async () => {
     requestMock.mockResolvedValueOnce([products[0]]);
     await expect(createOrder(orderInput())).rejects.toBeInstanceOf(UnavailableOrderItemsError);
@@ -92,6 +127,30 @@ describe("createOrder", () => {
     requestMock.mockRejectedValueOnce(new Error("Directus unavailable"));
     await expect(createOrder(orderInput())).rejects.toThrow("Directus unavailable");
     expect(callsTo("/items/orders")).toHaveLength(0);
+  });
+
+  it("rejects a unit price that cannot be represented by Directus decimal(12,2) before writes", async () => {
+    requestMock.mockResolvedValueOnce([
+      { ...products[0], price: "10000000000.00" },
+      products[1],
+    ]);
+    await expect(createOrder(orderInput())).rejects.toBeInstanceOf(OrderAmountOutOfRangeError);
+    expect(callsTo("/items/orders")).toHaveLength(0);
+    expect(callsTo("/items/order_items")).toHaveLength(0);
+  });
+
+  it("rejects an order total above Directus decimal(12,2) before writes", async () => {
+    requestMock.mockResolvedValueOnce([
+      { ...products[0], price: "1000000.00" },
+    ]);
+    await expect(createOrder({
+      ...orderInput(),
+      items: [
+        { ...orderInput().items[0], quantity: 10_000 },
+      ],
+    })).rejects.toBeInstanceOf(OrderAmountOutOfRangeError);
+    expect(callsTo("/items/orders")).toHaveLength(0);
+    expect(callsTo("/items/order_items")).toHaveLength(0);
   });
 
   it("compensates when the line item batch fails, then rethrows", async () => {

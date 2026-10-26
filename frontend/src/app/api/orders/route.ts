@@ -4,6 +4,7 @@ import { DirectusRequestError } from "@/lib/directus/client";
 import {
   createOrder,
   deleteOrder,
+  OrderAmountOutOfRangeError,
   UnavailableOrderItemsError,
 } from "@/lib/directus/orders";
 import { orderSchema } from "@/lib/orders/schema";
@@ -85,6 +86,12 @@ export async function POST(request: Request) {
     if (error instanceof UnavailableOrderItemsError) {
       return NextResponse.json(
         { error: "Один или несколько товаров больше недоступны для заказа. Обновите корзину и попробуйте снова." },
+        { status: 400 },
+      );
+    }
+    if (error instanceof OrderAmountOutOfRangeError) {
+      return NextResponse.json(
+        { error: "Сумма заказа превышает допустимый предел. Разделите список на несколько заказов." },
         { status: 400 },
       );
     }

@@ -26,6 +26,10 @@ describe("parsePartsRequest", () => {
     expect(parsePartsRequest("RE 50483").items).toEqual([
       { article: "RE50483", quantity: 1 },
     ]);
+    expect(parsePartsRequest("AB 123 C")).toEqual({
+      items: [{ article: "AB123C", quantity: 1 }],
+      error: null,
+    });
   });
 
   it("parses tab-separated spreadsheet rows and preserves spaced SKUs", () => {
@@ -67,6 +71,13 @@ describe("parsePartsRequest", () => {
     "rejects malformed quantities and reports the source line for %s",
     (line) => {
       expect(parsePartsRequest(`RE123456\n${line}`).error).toContain("2");
+    },
+  );
+
+  it.each(["RE504836 -2", "RE504836 2.5", "RE504836\t-2", "RE504836\t2.5", "RE504836 - 2.5"])(
+    "rejects negative or fractional quantities in %s",
+    (line) => {
+      expect(parsePartsRequest(line).error).not.toBeNull();
     },
   );
 

@@ -29,6 +29,15 @@ type OrderLineSnapshot = {
   quantity: number;
 };
 
+const MAX_DIRECTUS_DECIMAL_CENTS = 999_999_999_999;
+
+export class OrderAmountOutOfRangeError extends Error {
+  constructor() {
+    super("Order amount cannot be represented by Directus decimal(12,2)");
+    this.name = "OrderAmountOutOfRangeError";
+  }
+}
+
 export class UnavailableOrderItemsError extends Error {
   constructor() {
     super("One or more products are unavailable for cart checkout");
@@ -71,11 +80,28 @@ async function getOrderLineSnapshots(
     ) {
       throw new UnavailableOrderItemsError();
     }
+    const priceParts = String(product.price).trim().match(/^(\d+)(?:\.(\d+))?$/u);
+    const fractionalDigits = priceParts?.[2] ?? "";
+    if (
+      !priceParts ||
+      /[1-9]/u.test(fractionalDigits.slice(2))
+    ) {
+      throw new OrderAmountOutOfRangeError();
+    }
+    const wholeCents = Number(priceParts[1]) * 100;
+    const fractionalCents = Number(fractionalDigits.slice(0, 2).padEnd(2, "0"));
+    const unitPriceCents = wholeCents + fractionalCents;
+    if (
+      !Number.isSafeInteger(unitPriceCents) ||
+      unitPriceCents > MAX_DIRECTUS_DECIMAL_CENTS
+    ) {
+      throw new OrderAmountOutOfRangeError();
+    }
     return {
       product: product.id,
       sku: product.sku,
       title: product.title,
-      unitPriceCents: Math.round(price * 100),
+      unitPriceCents,
       quantity: item.quantity,
     };
   });
@@ -93,10 +119,17 @@ export async function createOrder(
 ): Promise<{ id: string }> {
   // Read the complete product batch uncached and validate it before any write.
   const items = await getOrderLineSnapshots(input);
-  const totalCents = items.reduce(
-    (sum, item) => sum + item.unitPriceCents * item.quantity,
-    0,
-  );
+  let totalCents = 0;
+  for (const item of items) {
+    if (item.unitPriceCents > MAX_DIRECTUS_DECIMAL_CENTS / item.quantity) {
+      throw new OrderAmountOutOfRangeError();
+    }
+    const lineTotalCents = item.unitPriceCents * item.quantity;
+    if (totalCents > MAX_DIRECTUS_DECIMAL_CENTS - lineTotalCents) {
+      throw new OrderAmountOutOfRangeError();
+    }
+    totalCents += lineTotalCents;
+  }
   const marketingConsentAt = input.marketing_consent
     ? new Date().toISOString()
     : null;

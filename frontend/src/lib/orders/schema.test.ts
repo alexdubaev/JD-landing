@@ -20,6 +20,12 @@ const baseOrder = {
 };
 
 describe("orderSchema", () => {
+  it("accepts checkout without the optional email field", () => {
+    const withoutEmail = { ...baseOrder };
+    Reflect.deleteProperty(withoutEmail, "email");
+    expect(orderSchema.parse(withoutEmail).email).toBeUndefined();
+  });
+
   it("accepts an explicit marketing consent value", () => {
     expect(orderSchema.parse({ ...baseOrder, marketing_consent: true }).marketing_consent).toBe(true);
   });

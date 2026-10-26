@@ -7,6 +7,7 @@ import {
   flushMetricaEvents,
   hasAnalyticsConsent,
   persistUtmOnce,
+  setAnalyticsConsent,
   trackEvent,
 } from "./analytics";
 
@@ -141,6 +142,7 @@ describe("provider-aware analytics dispatch", () => {
     delete window.ym;
     delete window.__jdMetricaInitialized;
     configureAnalyticsProviders({ metricaId: null, gtmId: null });
+    setAnalyticsConsent(null);
   });
 
   it("sends goals directly to Metrica in Metrica-only mode", () => {
@@ -168,6 +170,20 @@ describe("provider-aware analytics dispatch", () => {
     flushMetricaEvents();
 
     expect(calls).toEqual([["12345678", "reachGoal", "phone_click", { label: "header" }]]);
+  });
+
+  it("discards queued goals when the configured Metrica counter changes", () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+    configureAnalyticsProviders({ metricaId: "11111111", gtmId: null });
+    trackEvent("lead_submit", { source: "counter-a" });
+    configureAnalyticsProviders({ metricaId: "22222222", gtmId: null });
+    const calls: unknown[][] = [];
+    window.ym = (...args: unknown[]) => calls.push(args);
+    window.__jdMetricaInitialized = { "22222222": true };
+
+    flushMetricaEvents();
+
+    expect(calls).toEqual([]);
   });
 
   it("keeps GTM dataLayer events and also sends Metrica goals when both are configured", () => {

@@ -19,6 +19,43 @@ afterEach(() => {
 });
 
 describe("POST /api/orders", () => {
+  it("returns 400 for an order total beyond decimal(12,2) before creating an order", async () => {
+    vi.stubEnv("DIRECTUS_URL", "https://cms.example.test");
+    vi.stubEnv("DIRECTUS_TOKEN", "server-token-for-tests-only");
+    vi.stubEnv(
+      "DIRECTUS_PUBLIC_FOLDER_ID",
+      "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a",
+    );
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.test");
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "s".repeat(32));
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: [{ ...publishedProduct, price: "1000000.00" }] }), { status: 200 }),
+      );
+
+    const response = await POST(
+      new Request("https://example.test/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "Иван",
+          phone: "+7 900 000-00-00",
+          email: "",
+          turnstile_token: "visitor-token",
+          items: [{ product: productId, sku: "RE504836", title: "Деталь", unit_price: 1, quantity: 10_000 }],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: expect.stringContaining("Сумма заказа") });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("rejects a chunked JSON body after the order byte limit", async () => {
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {

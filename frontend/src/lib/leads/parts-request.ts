@@ -32,7 +32,9 @@ const parseLine = (line: string): PartsRequestItem | null => {
       articleText = compact.slice(0, quantityMatch.index).trim();
       quantityText = quantityMatch[1].trim().replace(/\s*(?:шт\.?|pcs?)$/iu, "");
     } else {
-      const singleSpaceQuantity = compact.match(/^(.+\d.*)\s+(.+)$/u);
+      const singleSpaceQuantity = compact.match(
+        /^(.+\d.*)\s+([+-]?\d+(?:\.\d+)?(?:\s*(?:шт\.?|pcs?))?)$/iu,
+      );
       if (singleSpaceQuantity) {
         articleText = singleSpaceQuantity[1];
         quantityText = singleSpaceQuantity[2].replace(/\s*(?:шт\.?|pcs?)$/iu, "");

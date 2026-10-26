@@ -39,6 +39,12 @@ declare global {
 
 let providers: AnalyticsProviders = { metricaId: null, gtmId: null };
 let pendingMetricaGoals: Goal[] = [];
+let inMemoryAnalyticsConsent: boolean | null = null;
+
+/** Keep the visitor's current-page choice effective when browser storage is blocked. */
+export function setAnalyticsConsent(allowed: boolean | null): void {
+  inMemoryAnalyticsConsent = allowed;
+}
 
 function validMetricaId(value: string | null): string | null {
   return value && /^\d{1,20}$/.test(value) ? value : null;
@@ -50,10 +56,14 @@ function validGtmId(value: string | null): string | null {
 
 /** Configure allowed destinations after a consent choice. Invalid CMS IDs are ignored. */
 export function configureAnalyticsProviders(input: AnalyticsProviders): void {
-  providers = {
+  const nextProviders = {
     metricaId: validMetricaId(input.metricaId),
     gtmId: validGtmId(input.gtmId),
   };
+  // Pending goals belong to the counter active when they were recorded. Drop
+  // them on counter changes so they can never be attributed to a new counter.
+  if (providers.metricaId !== nextProviders.metricaId) pendingMetricaGoals = [];
+  providers = nextProviders;
   if (!providers.metricaId) pendingMetricaGoals = [];
   if (providers.gtmId && typeof window !== "undefined") {
     window.dataLayer = window.dataLayer ?? [];
@@ -81,9 +91,12 @@ export function hasAnalyticsConsent(): boolean {
   if (typeof window === "undefined") return false;
 
   try {
-    return window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY) === "accepted";
+    const storedConsent = window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
+    if (storedConsent === "accepted") return true;
+    if (storedConsent === "declined") return false;
+    return inMemoryAnalyticsConsent === true;
   } catch {
-    return false;
+    return inMemoryAnalyticsConsent === true;
   }
 }
 
