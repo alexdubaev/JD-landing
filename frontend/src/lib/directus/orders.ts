@@ -29,6 +29,19 @@ type OrderLineSnapshot = {
   quantity: number;
 };
 
+export type OrderNotificationSnapshot = {
+  id: string;
+  items: Array<OrderLineSnapshot & { lineTotalCents: number }>;
+  totalCents: number;
+  currency: "RUB";
+  name: string;
+  phone: string;
+  email?: string;
+  comment?: string;
+  pageUrl?: string;
+  utm?: { source?: string; medium?: string; campaign?: string; content?: string; term?: string };
+};
+
 const MAX_DIRECTUS_DECIMAL_CENTS = 999_999_999_999;
 
 export class OrderAmountOutOfRangeError extends Error {
@@ -116,7 +129,7 @@ async function getOrderLineSnapshots(
  */
 export async function createOrder(
   input: OrderInput,
-): Promise<{ id: string }> {
+): Promise<{ id: string; notification: OrderNotificationSnapshot }> {
   // Read the complete product batch uncached and validate it before any write.
   const items = await getOrderLineSnapshots(input);
   let totalCents = 0;
@@ -185,7 +198,14 @@ export async function createOrder(
     throw error;
   }
 
-  return { id: order.id };
+  return { id: order.id, notification: {
+    id: order.id,
+    items: items.map((item) => ({ ...item, lineTotalCents: item.unitPriceCents * item.quantity })),
+    totalCents, currency: "RUB", name: input.name, phone: input.phone,
+    email: input.email || undefined, comment: input.comment || undefined,
+    pageUrl: input.page_url || undefined,
+    utm: { source: input.utm_source, medium: input.utm_medium, campaign: input.utm_campaign, content: input.utm_content, term: input.utm_term },
+  } };
 }
 
 export async function deleteOrder(id: string): Promise<void> {

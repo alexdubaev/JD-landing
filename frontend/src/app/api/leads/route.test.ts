@@ -1,4 +1,6 @@
+// @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { File as NodeFile } from "node:buffer";
 
 // Hoisted once for the whole file. `notifyNewLead` is a no-op by default so
 // the core validation/storage tests run exactly as before; notification tests
@@ -8,6 +10,12 @@ vi.mock("@/lib/notifications/notify", () => ({ notifyNewLead }));
 
 import { POST } from "./route";
 
+const makeFile = (parts: Array<string | Uint8Array>, name: string, options: { type?: string } = {}) => {
+  return new NodeFile(parts as import("node:buffer").BlobPart[], name, options) as unknown as File;
+};
+const setFile = (form: FormData, field: string, file: File, filename: string) => {
+  form.set(field, file as unknown as Blob, filename);
+};
 const multipartRequest = (form: FormData, headers: HeadersInit = {}) => {
   const mergedHeaders = new Headers({ "content-length": "1024", "content-type": "multipart/form-data" });
   new Headers(headers).forEach((value, key) => mergedHeaders.set(key, value));
@@ -62,6 +70,7 @@ describe("POST /api/leads", () => {
         phone: undefined,
         message: "Подскажите условия поставки",
         storedInDirectus: false,
+        notificationKind: "contact",
       }),
     );
   });
@@ -149,15 +158,15 @@ describe("POST /api/leads", () => {
       "request_items",
       JSON.stringify([{ article: "RE504836", quantity: 2 }]),
     );
-    form.set(
+    setFile(form,
       "spreadsheet",
-      new File(["article,quantity\nRE504836,2"], "request.csv", {
+      makeFile(["article,quantity\nRE504836,2"], "request.csv", {
         type: "text/csv",
-      }),
+      }), "request.csv",
     );
-    form.set(
+    setFile(form,
       "photo",
-      new File(["image"], "marking.webp", { type: "image/webp" }),
+      makeFile(["image"], "marking.webp", { type: "image/webp" }), "marking.webp",
     );
 
     const response = await POST(multipartRequest(form));
@@ -186,9 +195,9 @@ describe("POST /api/leads", () => {
       "request_items",
       JSON.stringify([{ article: "RE504836", quantity: 2 }]),
     );
-    form.set(
+    setFile(form,
       "spreadsheet",
-      new File(["nope"], "request.pdf", { type: "application/pdf" }),
+      makeFile(["nope"], "request.pdf", { type: "application/pdf" }), "request.pdf",
     );
 
     const response = await POST(multipartRequest(form));
@@ -205,7 +214,7 @@ describe("POST /api/leads", () => {
     form.set("page_url", "https://example.test/");
     form.set("website", "");
     form.set("request_items", JSON.stringify([{ article: "RE504836", quantity: 2 }]));
-    form.set("photo", new File(["image"], "marking.webp"));
+    setFile(form, "photo", makeFile(["image"], "marking.webp"), "marking.webp");
 
     const response = await POST(multipartRequest(form));
 
@@ -224,11 +233,11 @@ describe("POST /api/leads", () => {
       "request_items",
       JSON.stringify([{ article: "RE504836", quantity: 2 }]),
     );
-    form.set(
+    setFile(form,
       "photo",
-      new File([new Uint8Array(8 * 1024 * 1024 + 1)], "marking.webp", {
+      makeFile([new Uint8Array(8 * 1024 * 1024 + 1)], "marking.webp", {
         type: "image/webp",
-      }),
+      }), "marking.webp",
     );
 
     const response = await POST(multipartRequest(form));
@@ -328,8 +337,8 @@ describe("POST /api/leads", () => {
     form.set("page_url", "https://example.test/");
     form.set("website", "");
     form.set("request_items", JSON.stringify([{ article: "RE504836", quantity: 1 }]));
-    form.set("spreadsheet", new File(["a"], "parts.csv", { type: "text/csv" }));
-    form.set("photo", new File(["a"], "marking.webp", { type: "image/webp" }));
+    setFile(form, "spreadsheet", makeFile(["a"], "parts.csv", { type: "text/csv" }), "parts.csv");
+    setFile(form, "photo", makeFile(["a"], "marking.webp", { type: "image/webp" }), "marking.webp");
 
     const response = await POST(multipartRequest(form));
 
@@ -354,8 +363,8 @@ describe("POST /api/leads", () => {
     form.set("page_url", "https://example.test/");
     form.set("website", "");
     form.set("request_items", JSON.stringify([{ article: "RE504836", quantity: 1 }]));
-    form.set("spreadsheet", new File(["a"], "parts.csv", { type: "text/csv" }));
-    form.set("photo", new File(["a"], "marking.webp", { type: "image/webp" }));
+    setFile(form, "spreadsheet", makeFile(["a"], "parts.csv", { type: "text/csv" }), "parts.csv");
+    setFile(form, "photo", makeFile(["a"], "marking.webp", { type: "image/webp" }), "marking.webp");
 
     const response = await POST(multipartRequest(form));
 
@@ -488,5 +497,52 @@ describe("POST /api/leads manager notifications", () => {
 
     expect(response.status).toBe(201);
     expect(notifyNewLead).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a saved lead and its uploaded file when notification rejects", async () => {
+    notifyNewLead.mockRejectedValue(new Error("invalid SMTP configuration"));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: "file-sheet" } }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: "file-sheet" } }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: "lead-1" } }), { status: 200 }));
+    const form = new FormData(); form.set("name", "Иван"); form.set("phone", "+7 900 000-00-00"); form.set("website", "");
+    form.set("request_items", JSON.stringify([{ article: "RE504836", quantity: 1 }]));
+    setFile(form, "spreadsheet", makeFile(["article,quantity\nRE504836,1"], "parts.csv", { type: "text/csv" }), "parts.csv");
+    const response = await POST(multipartRequest(form));
+    expect(response.status).toBe(201);
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "DELETE")).toBe(false);
+  });
+
+  it("emails a valid lead despite CMS denial and returns success when email accepts", async () => {
+    notifyNewLead.mockResolvedValue("manager@example.test");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("denied", { status: 403 }));
+    const response = await POST(new Request("https://example.test/api/leads", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Иван", phone: "+7 900 000-00-00", website: "" }) }));
+    expect(response.status).toBe(201);
+    expect(notifyNewLead).toHaveBeenCalledWith(expect.objectContaining({ storedInDirectus: false }));
+  });
+
+  it("returns retryable 503 when both lead persistence and email fail", async () => {
+    notifyNewLead.mockResolvedValue(null);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("denied", { status: 403 }));
+    const response = await POST(new Request("https://example.test/api/leads", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Иван", phone: "+7 900 000-00-00", website: "" }) }));
+    expect(response.status).toBe(503);
+  });
+
+  it("emails a validated lead when the CMS returns malformed JSON", async () => {
+    notifyNewLead.mockResolvedValue("manager@example.test");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("not-json", { status: 200 }));
+    const response = await POST(new Request("https://example.test/api/leads", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Иван", phone: "+7 900 000-00-00", website: "" }),
+    }));
+    expect(response.status).toBe(201);
+    expect(notifyNewLead).toHaveBeenCalledWith(expect.objectContaining({ storedInDirectus: false }));
+  });
+
+  it("attaches validated uploaded file bytes when CMS denies the bulk request", async () => {
+    notifyNewLead.mockResolvedValue("manager@example.test");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("denied", { status: 403 }));
+    const form = new FormData(); form.set("name", "Иван"); form.set("phone", "+7 900 000-00-00"); form.set("website", "");
+    setFile(form, "spreadsheet", makeFile(["article,quantity\nRE1,2"], "../parts.csv", { type: "text/csv" }), "../parts.csv");
+    const response = await POST(multipartRequest(form));
+    expect(response.status).toBe(201);
+    expect(notifyNewLead).toHaveBeenCalledWith(expect.objectContaining({ storedInDirectus: false, emailAttachments: [expect.objectContaining({ filename: "file_parts.csv", content: expect.any(Buffer) })] }));
   });
 });
