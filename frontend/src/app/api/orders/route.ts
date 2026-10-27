@@ -8,6 +8,7 @@ import {
   UnavailableOrderItemsError,
 } from "@/lib/directus/orders";
 import { orderSchema } from "@/lib/orders/schema";
+import { notifyOrder } from "@/lib/notifications/notify";
 import {
   RequestTooLargeError,
   getTrustedClientIp,
@@ -60,6 +61,12 @@ export async function POST(request: Request) {
 
     const order = await createOrder(parsed.data);
     createdOrderId = order.id;
+    // SMTP is best-effort after durable persistence: never turn a saved order
+    // into a retryable checkout failure (and a duplicate order).
+    await notifyOrder(order.notification).catch((error) => {
+      console.error("[orders] notification failed", error);
+      return null;
+    });
 
     return NextResponse.json({ ok: true, order_id: order.id }, { status: 201 });
   } catch (error) {

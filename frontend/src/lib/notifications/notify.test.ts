@@ -51,6 +51,12 @@ describe("notifyNewLead", () => {
     expect(sendMail).not.toHaveBeenCalled();
   });
 
+  it("treats empty injected SMTP environment values as a bounded mail failure", async () => {
+    vi.stubEnv("SMTP_HOST", ""); vi.stubEnv("SMTP_PORT", ""); vi.stubEnv("SMTP_USER", "");
+    vi.stubEnv("SMTP_PASSWORD", ""); vi.stubEnv("NOTIFY_EMAIL_TO", "");
+    await expect(notifyNewLead(baseLead)).resolves.toBeNull();
+  });
+
   it("sends an email with lead details when fully configured", async () => {
     enableSmtp();
     vi.stubEnv("SMTP_FROM", "no-reply@example.test");
@@ -76,6 +82,18 @@ describe("notifyNewLead", () => {
     expect(args.subject).toContain("Иван");
     expect(args.text).toContain("RE504836");
     expect(args.html).toContain("RE504836 — 2 шт.");
+  });
+
+  it("keeps contact requests distinct from lead storage fallback copy", async () => {
+    enableSmtp();
+    const sendMail = vi.fn().mockResolvedValue({ messageId: "ok" });
+    vi.doMock("nodemailer", () => ({ createTransport: () => ({ sendMail }) }));
+    await notifyNewLead({ name: "Иван", email: "ivan@example.test", message: "Вопрос", storedInDirectus: false, notificationKind: "contact" });
+    const message = sendMail.mock.calls[0][0];
+    expect(message.subject).toContain("Новое сообщение");
+    expect(message.subject).not.toContain("Directus");
+    expect(message.html).toContain("Поступило новое сообщение");
+    expect(message.html).not.toContain("Сохранение заявки в Directus не подтверждено");
   });
 
   it("swallows transport errors and returns null", async () => {

@@ -1,4 +1,6 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+const notifyOrder = vi.hoisted(() => vi.fn().mockResolvedValue(null));
+vi.mock("@/lib/notifications/notify", () => ({ notifyOrder }));
 
 import { POST } from "./route";
 
@@ -13,9 +15,16 @@ const publishedProduct = {
   price_status: "fixed",
 };
 
+beforeEach(() => {
+  notifyOrder.mockReset();
+  notifyOrder.mockResolvedValue(null);
+});
+
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
+  notifyOrder.mockReset();
+  notifyOrder.mockResolvedValue(null);
 });
 
 describe("POST /api/orders", () => {
@@ -359,5 +368,35 @@ describe("POST /api/orders", () => {
 
     expect(response.status).toBe(503);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("emails the persisted order from authoritative server snapshots", async () => {
+    vi.stubEnv("DIRECTUS_URL", "https://cms.example.test");
+    vi.stubEnv("DIRECTUS_TOKEN", "server-token-for-tests-only");
+    vi.stubEnv("DIRECTUS_PUBLIC_FOLDER_ID", "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a");
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.test");
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "s".repeat(32));
+    notifyOrder.mockResolvedValue("manager@example.test");
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [publishedProduct] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: "order-1" } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [{ id: "item-1" }] }), { status: 200 }));
+    const response = await POST(new Request("https://example.test/api/orders", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Иван", phone: "+7 900 000-00-00", email: "ivan@example.test", comment: "Позвонить", page_url: "https://example.test/cart", utm_source: "yandex", turnstile_token: "visitor-token", items: [{ product: productId, sku: "FAKE", title: "FAKE", unit_price: 0.01, quantity: 2 }] }),
+    }));
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ ok: true, order_id: "order-1" });
+    expect(notifyOrder).toHaveBeenCalledWith(expect.objectContaining({ id: "order-1", totalCents: 20050, items: [expect.objectContaining({ sku: "RE504836", title: "Муфта компрессора", unitPriceCents: 10025, quantity: 2 })] }));
+  });
+
+  it("preserves checkout success when SMTP fails after persistence", async () => {
+    vi.stubEnv("DIRECTUS_URL", "https://cms.example.test"); vi.stubEnv("DIRECTUS_TOKEN", "server-token-for-tests-only");
+    vi.stubEnv("DIRECTUS_PUBLIC_FOLDER_ID", "1ecf70c5-0ad4-4e5e-8d73-78ee549f064a"); vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://example.test"); vi.stubEnv("TURNSTILE_SECRET_KEY", "s".repeat(32));
+    notifyOrder.mockResolvedValue(null);
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ data: [publishedProduct] }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ data: { id: "order-1" } }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ data: [{ id: "item-1" }] }), { status: 200 }));
+    const response = await POST(new Request("https://example.test/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Иван", phone: "+7 900 000-00-00", turnstile_token: "visitor-token", items: [{ product: productId, sku: "fake", title: "fake", unit_price: 1, quantity: 1 }] }) }));
+    expect(response.status).toBe(201);
   });
 });
