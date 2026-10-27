@@ -229,3 +229,8 @@ describe("GET rate limiting for Directus-fanout routes", () => {
     }
   });
 });
+
+it("allows the SVG favicon declared in page metadata", () => {
+  const response = proxy(new NextRequest("https://deere-shop.ru/favicon.svg"));
+  expect(response.headers.get("x-middleware-next")).toBe("1");
+});

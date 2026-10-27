@@ -30,11 +30,6 @@ export function ProductDetail({
   const documentTitles = new Map(
     (product.documentItems ?? []).map((item) => [item.fileId, item.title]),
   );
-  const consultationUrl = new URLSearchParams({
-    product: product.id,
-    ...(product.category ? { category: product.category.id } : {}),
-  });
-
   return (
     <>
       <div className="product-detail">
@@ -65,7 +60,7 @@ export function ProductDetail({
           <AddToCartButton product={product} />
           <Link
             className="button button--secondary product-detail__cta"
-            href={`/contacts?${consultationUrl.toString()}#consultation`}
+            href="#consultation"
           >
             {product.ctaText || "Запросить консультацию"}
           </Link>

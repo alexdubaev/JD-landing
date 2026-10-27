@@ -160,6 +160,34 @@ describe("BulkPartsRequest", () => {
     );
   });
 
+  it("shows an accessible parsed preview", async () => {
+    const { BulkPartsRequest } = await loadForm();
+    render(<BulkPartsRequest />);
+    fireEvent.change(screen.getByLabelText("Список артикулов"), {
+      target: { value: "RE504836\t2" },
+    });
+    expect(screen.getByRole("table", { name: "Распознанные позиции" })).toBeInTheDocument();
+    expect(screen.getByRole("row", { name: /RE504836 2/ })).toBeInTheDocument();
+  });
+
+  it("blocks partial submission when any line is invalid, even with an attachment", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    const { BulkPartsRequest } = await loadForm();
+    render(<BulkPartsRequest />);
+    fireEvent.change(screen.getByLabelText("Список артикулов"), {
+      target: { value: "RE504836\t2\nRE123456\t0" },
+    });
+    fireEvent.change(screen.getByLabelText("Прикрепить фото"), {
+      target: { files: [new File(["image"], "marking.webp", { type: "image/webp" })] },
+    });
+    fireEvent.change(screen.getByLabelText("Имя"), { target: { value: "Иван" } });
+    fireEvent.change(screen.getByLabelText("Телефон"), { target: { value: "+7 900 000-00-00" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /политикой конфиденциальности/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Отправить список на расчёт" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("2");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("submits a spreadsheet-only request without an empty item payload", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), { status: 201 }),

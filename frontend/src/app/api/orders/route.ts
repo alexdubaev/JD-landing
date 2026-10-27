@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { DirectusRequestError } from "@/lib/directus/client";
-import { createOrder, deleteOrder } from "@/lib/directus/orders";
+import {
+  createOrder,
+  deleteOrder,
+  OrderAmountOutOfRangeError,
+  UnavailableOrderItemsError,
+} from "@/lib/directus/orders";
 import { orderSchema } from "@/lib/orders/schema";
+import { notifyOrder } from "@/lib/notifications/notify";
 import {
   RequestTooLargeError,
   getTrustedClientIp,
@@ -55,6 +61,12 @@ export async function POST(request: Request) {
 
     const order = await createOrder(parsed.data);
     createdOrderId = order.id;
+    // SMTP is best-effort after durable persistence: never turn a saved order
+    // into a retryable checkout failure (and a duplicate order).
+    await notifyOrder(order.notification).catch((error) => {
+      console.error("[orders] notification failed", error);
+      return null;
+    });
 
     return NextResponse.json({ ok: true, order_id: order.id }, { status: 201 });
   } catch (error) {
@@ -75,6 +87,18 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         { error: "Проверьте заполнение формы" },
+        { status: 400 },
+      );
+    }
+    if (error instanceof UnavailableOrderItemsError) {
+      return NextResponse.json(
+        { error: "Один или несколько товаров больше недоступны для заказа. Обновите корзину и попробуйте снова." },
+        { status: 400 },
+      );
+    }
+    if (error instanceof OrderAmountOutOfRangeError) {
+      return NextResponse.json(
+        { error: "Сумма заказа превышает допустимый предел. Разделите список на несколько заказов." },
         { status: 400 },
       );
     }

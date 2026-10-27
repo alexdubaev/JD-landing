@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 
 import { Container } from "@/components/ui/Container";
 
@@ -24,6 +25,9 @@ export default function ErrorPage({
         <button className="button button--primary" onClick={reset} type="button">
           Повторить
         </button>
+        <Link className="button button--secondary" href="/contacts#consultation">
+          Связаться с нами
+        </Link>
       </Container>
     </main>
   );

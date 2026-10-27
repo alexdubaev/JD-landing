@@ -6,7 +6,7 @@ import { normalizeCatalogUrl } from "@/lib/catalog/normalize-url";
 
 const knownTopLevelPaths = new Set([
   "about", "api", "articles", "cart", "catalog", "contacts", "delivery",
-  "0f81321649a7e9ba734d09aeb5a47c5a.txt", "favicon.ico", "icon-16.png", "icon-32.png",
+  "0f81321649a7e9ba734d09aeb5a47c5a.txt", "favicon.ico", "favicon.svg", "icon-16.png", "icon-32.png",
   "apple-icon.png", "brand", "images",
   "llms.txt", "media", "parts-request", "privacy-policy", "robots.txt",
   "sitemap.xml", "thank-you", "_next",

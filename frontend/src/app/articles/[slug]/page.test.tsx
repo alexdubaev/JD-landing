@@ -216,3 +216,8 @@ describe("article page", () => {
     expect(getRelatedArticlesMock).not.toHaveBeenCalled();
   });
 });
+
+it("rejects a missing article before streaming metadata", async () => {
+  getArticleBySlugMock.mockResolvedValue(null);
+  await expect(generateMetadata({ params: Promise.resolve({ slug: "missing" }) })).rejects.toThrow();
+});

@@ -3,8 +3,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   COOKIE_CONSENT_STORAGE_KEY,
   collectUtmAttribution,
+  configureAnalyticsProviders,
+  flushMetricaEvents,
   hasAnalyticsConsent,
   persistUtmOnce,
+  setAnalyticsConsent,
   trackEvent,
 } from "./analytics";
 
@@ -24,7 +27,7 @@ describe("trackEvent", () => {
 
   it("pushes provider-neutral events after analytics consent", () => {
     window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
-    window.dataLayer = [];
+    configureAnalyticsProviders({ metricaId: null, gtmId: "GTM-ABC123" });
 
     trackEvent("faq_open", { question: "Как отправить список артикулов?" });
 
@@ -129,5 +132,111 @@ describe("persistUtmOnce", () => {
 
     expect(hasAnalyticsConsent()).toBe(false);
     expect(collectUtmAttribution()).toEqual({ utm_source: "yandex" });
+  });
+});
+
+describe("provider-aware analytics dispatch", () => {
+  afterEach(() => {
+    delete window.dataLayer;
+    window.localStorage.clear();
+    delete window.ym;
+    delete window.__jdMetricaInitialized;
+    configureAnalyticsProviders({ metricaId: null, gtmId: null });
+    setAnalyticsConsent(null);
+  });
+
+  it("sends goals directly to Metrica in Metrica-only mode", () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+    const calls: unknown[][] = [];
+    window.ym = (...args: unknown[]) => calls.push(args);
+    window.__jdMetricaInitialized = { "12345678": true };
+    configureAnalyticsProviders({ metricaId: "12345678", gtmId: null });
+
+    trackEvent("lead_submit", { source: "lead_form" });
+
+    expect(calls).toEqual([["12345678", "reachGoal", "lead_submit", { source: "lead_form" }]]);
+    expect(window.dataLayer).toBeUndefined();
+  });
+
+  it("queues consented goals until Metrica is initialized and flushes them once", () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+    configureAnalyticsProviders({ metricaId: "12345678", gtmId: null });
+    trackEvent("phone_click", { label: "header" });
+    const calls: unknown[][] = [];
+    window.ym = (...args: unknown[]) => calls.push(args);
+    window.__jdMetricaInitialized = { "12345678": true };
+
+    flushMetricaEvents();
+    flushMetricaEvents();
+
+    expect(calls).toEqual([["12345678", "reachGoal", "phone_click", { label: "header" }]]);
+  });
+
+  it("discards queued goals when the configured Metrica counter changes", () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+    configureAnalyticsProviders({ metricaId: "11111111", gtmId: null });
+    trackEvent("lead_submit", { source: "counter-a" });
+    configureAnalyticsProviders({ metricaId: "22222222", gtmId: null });
+    const calls: unknown[][] = [];
+    window.ym = (...args: unknown[]) => calls.push(args);
+    window.__jdMetricaInitialized = { "22222222": true };
+
+    flushMetricaEvents();
+
+    expect(calls).toEqual([]);
+  });
+
+  it("keeps GTM dataLayer events and also sends Metrica goals when both are configured", () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+    const calls: unknown[][] = [];
+    window.ym = (...args: unknown[]) => calls.push(args);
+    window.__jdMetricaInitialized = { "12345678": true };
+    configureAnalyticsProviders({ metricaId: "12345678", gtmId: "GTM-ABC123" });
+
+    trackEvent("order_submit", { order_id: "order-1" });
+
+    expect(window.dataLayer).toEqual([{ event: "order_submit", order_id: "order-1" }]);
+    expect(calls).toEqual([["12345678", "reachGoal", "order_submit", { order_id: "order-1" }]]);
+  });
+
+  it("keeps GTM-only dataLayer events without Metrica calls", () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+    configureAnalyticsProviders({ metricaId: null, gtmId: "GTM-ABC123" });
+
+    trackEvent("faq_open");
+
+    expect(window.dataLayer).toEqual([{ event: "faq_open" }]);
+  });
+
+  it("preserves events for a dataLayer installed by an external GTM integration", () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+    window.dataLayer = [];
+
+    trackEvent("phone_click");
+
+    expect(window.dataLayer).toEqual([{ event: "phone_click" }]);
+  });
+
+  it("does not flush queued goals after analytics consent is withdrawn", () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+    configureAnalyticsProviders({ metricaId: "12345678", gtmId: null });
+    trackEvent("lead_submit");
+    const calls: unknown[][] = [];
+    window.ym = (...args: unknown[]) => calls.push(args);
+    window.__jdMetricaInitialized = { "12345678": true };
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "declined");
+
+    flushMetricaEvents();
+
+    expect(calls).toEqual([]);
+  });
+
+  it("ignores invalid provider identifiers", () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, "accepted");
+    configureAnalyticsProviders({ metricaId: "javascript:alert(1)", gtmId: "bad-id" });
+
+    trackEvent("lead_submit");
+
+    expect(window.dataLayer).toBeUndefined();
   });
 });

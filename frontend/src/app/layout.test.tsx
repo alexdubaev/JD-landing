@@ -42,6 +42,8 @@ describe("root metadata and discovery links", () => {
 
     const metadata = await generateMetadata();
 
+    expect(metadata.title).toEqual({ default: "Каталог John Deere", template: "%s" });
+
     expect(metadata.openGraph).toMatchObject({
       title: "Каталог John Deere",
       description: "Поставка комплектующих по России.",

@@ -11,10 +11,117 @@ type RawOrderItem = {
   id: string;
 };
 
+type RawOrderProduct = {
+  id: string;
+  status: string;
+  title: string;
+  sku: string;
+  price: string | number | null;
+  currency: string;
+  price_status: string;
+};
+
+type OrderLineSnapshot = {
+  product: string;
+  sku: string;
+  title: string;
+  unitPriceCents: number;
+  quantity: number;
+};
+
+export type OrderNotificationSnapshot = {
+  id: string;
+  items: Array<OrderLineSnapshot & { lineTotalCents: number }>;
+  totalCents: number;
+  currency: "RUB";
+  name: string;
+  phone: string;
+  email?: string;
+  comment?: string;
+  pageUrl?: string;
+  utm?: { source?: string; medium?: string; campaign?: string; content?: string; term?: string };
+};
+
+const MAX_DIRECTUS_DECIMAL_CENTS = 999_999_999_999;
+
+export class OrderAmountOutOfRangeError extends Error {
+  constructor() {
+    super("Order amount cannot be represented by Directus decimal(12,2)");
+    this.name = "OrderAmountOutOfRangeError";
+  }
+}
+
+export class UnavailableOrderItemsError extends Error {
+  constructor() {
+    super("One or more products are unavailable for cart checkout");
+    this.name = "UnavailableOrderItemsError";
+  }
+}
+
+async function getOrderLineSnapshots(
+  input: OrderInput,
+): Promise<OrderLineSnapshot[]> {
+  const ids = input.items.map((item) => item.product);
+  const query = new URLSearchParams({
+    "filter[status][_eq]": "published",
+    "filter[id][_in]": ids.join(","),
+    fields: "id,status,title,sku,price,currency,price_status",
+    limit: String(ids.length),
+  });
+  const products = await directusRequest<RawOrderProduct[]>(
+    `/items/products?${query.toString()}`,
+    { cache: "no-store" },
+  );
+  const byId = new Map(products.map((product) => [product.id, product]));
+
+  return input.items.map((item) => {
+    const product = byId.get(item.product);
+    const price = typeof product?.price === "number"
+      ? product.price
+      : typeof product?.price === "string" && product.price.trim() !== ""
+        ? Number(product.price)
+        : Number.NaN;
+    if (
+      !product ||
+      product.status !== "published" ||
+      product.price_status !== "fixed" ||
+      product.currency !== "RUB" ||
+      !Number.isFinite(price) ||
+      price < 0 ||
+      !product.title.trim() ||
+      !product.sku.trim()
+    ) {
+      throw new UnavailableOrderItemsError();
+    }
+    const priceParts = String(product.price).trim().match(/^(\d+)(?:\.(\d+))?$/u);
+    const fractionalDigits = priceParts?.[2] ?? "";
+    if (
+      !priceParts ||
+      /[1-9]/u.test(fractionalDigits.slice(2))
+    ) {
+      throw new OrderAmountOutOfRangeError();
+    }
+    const wholeCents = Number(priceParts[1]) * 100;
+    const fractionalCents = Number(fractionalDigits.slice(0, 2).padEnd(2, "0"));
+    const unitPriceCents = wholeCents + fractionalCents;
+    if (
+      !Number.isSafeInteger(unitPriceCents) ||
+      unitPriceCents > MAX_DIRECTUS_DECIMAL_CENTS
+    ) {
+      throw new OrderAmountOutOfRangeError();
+    }
+    return {
+      product: product.id,
+      sku: product.sku,
+      title: product.title,
+      unitPriceCents,
+      quantity: item.quantity,
+    };
+  });
+}
+
 /**
- * Create an order together with its line items. Items are snapshotted from the
- * cart so the historical record stays accurate even if a product later changes
- * its price/SKU or is deleted.
+ * Create an order with fresh snapshots from published Directus products.
  *
  * If the line-item write fails after the order row exists, the order is
  * deleted right here (compensating delete) and the error is rethrown, so no
@@ -22,11 +129,20 @@ type RawOrderItem = {
  */
 export async function createOrder(
   input: OrderInput,
-): Promise<{ id: string }> {
-  const total = input.items.reduce(
-    (sum, item) => sum + item.unit_price * item.quantity,
-    0,
-  );
+): Promise<{ id: string; notification: OrderNotificationSnapshot }> {
+  // Read the complete product batch uncached and validate it before any write.
+  const items = await getOrderLineSnapshots(input);
+  let totalCents = 0;
+  for (const item of items) {
+    if (item.unitPriceCents > MAX_DIRECTUS_DECIMAL_CENTS / item.quantity) {
+      throw new OrderAmountOutOfRangeError();
+    }
+    const lineTotalCents = item.unitPriceCents * item.quantity;
+    if (totalCents > MAX_DIRECTUS_DECIMAL_CENTS - lineTotalCents) {
+      throw new OrderAmountOutOfRangeError();
+    }
+    totalCents += lineTotalCents;
+  }
   const marketingConsentAt = input.marketing_consent
     ? new Date().toISOString()
     : null;
@@ -38,7 +154,7 @@ export async function createOrder(
       phone: input.phone,
       email: input.email ?? null,
       comment: input.comment ?? null,
-      total: Number(total.toFixed(2)),
+      total: totalCents / 100,
       currency: "RUB",
       page_url: input.page_url ?? null,
       utm_source: input.utm_source ?? null,
@@ -64,12 +180,12 @@ export async function createOrder(
     await directusRequest<RawOrderItem[]>("/items/order_items", {
       method: "POST",
       body: JSON.stringify(
-        input.items.map((item) => ({
+        items.map((item) => ({
           order: order.id,
-          product: item.product ?? null,
+          product: item.product,
           sku_snapshot: item.sku,
           title_snapshot: item.title,
-          unit_price: Number(item.unit_price.toFixed(2)),
+          unit_price: item.unitPriceCents / 100,
           quantity: item.quantity,
           currency: "RUB",
         })),
@@ -82,7 +198,14 @@ export async function createOrder(
     throw error;
   }
 
-  return { id: order.id };
+  return { id: order.id, notification: {
+    id: order.id,
+    items: items.map((item) => ({ ...item, lineTotalCents: item.unitPriceCents * item.quantity })),
+    totalCents, currency: "RUB", name: input.name, phone: input.phone,
+    email: input.email || undefined, comment: input.comment || undefined,
+    pageUrl: input.page_url || undefined,
+    utm: { source: input.utm_source, medium: input.utm_medium, campaign: input.utm_campaign, content: input.utm_content, term: input.utm_term },
+  } };
 }
 
 export async function deleteOrder(id: string): Promise<void> {

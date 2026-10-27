@@ -32,6 +32,13 @@ const assertRelativeApiPath = (path: string) => {
   }
 };
 
+// Bound reads without automatically retrying a possibly completed mutation.
+function requestSignal(init: DirectusRequestInit): AbortSignal | null | undefined {
+  if (!["GET", "HEAD"].includes((init.method ?? "GET").toUpperCase())) return init.signal;
+  const deadline = AbortSignal.timeout(10_000);
+  return init.signal ? AbortSignal.any([init.signal, deadline]) : deadline;
+}
+
 export async function directusRequest<T>(
   path: string,
   init: DirectusRequestInit = {},
@@ -55,6 +62,7 @@ export async function directusEnvelopeRequest<T>(
 
   const response = await fetch(`${environment.DIRECTUS_URL}${path}`, {
     ...init,
+    signal: requestSignal(init),
     headers,
   });
   if (!response.ok) {
@@ -224,6 +232,7 @@ async function previewEnvelopeRequest<T>(
   headers.set("Accept", "application/json");
   const response = await fetch(`${environment.DIRECTUS_URL}${path}`, {
     ...init,
+    signal: requestSignal(init),
     headers,
     // Draft previews must never be cached by the data cache.
     cache: init.cache ?? "no-store",

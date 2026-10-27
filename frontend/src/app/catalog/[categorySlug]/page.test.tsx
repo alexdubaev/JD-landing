@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Category, ProductCardData } from "@/types/catalog";
 
-import CategoryPage from "./page";
+import CategoryPage, { generateMetadata } from "./page";
 
 const {
   getCatalogPageMock,
@@ -180,4 +180,10 @@ describe("category page hierarchy", () => {
       expect.objectContaining({ headingLevel: 3 }),
     );
   });
+});
+
+it("rejects a missing category before streaming metadata", async () => {
+  getCategoryBySlugMock.mockResolvedValue(null);
+  getCategoryRedirectMock.mockResolvedValue(null);
+  await expect(generateMetadata({ params: Promise.resolve({ categorySlug: "missing" }), searchParams: Promise.resolve({}) })).rejects.toThrow();
 });
