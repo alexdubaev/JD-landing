@@ -61,6 +61,37 @@ http://91.227.68.176 {
 }
 
 deere-shop.ru {
+	# BEGIN DEERE SEO CRAWL LOG
+	# Keep only robot-like GET/HEAD requests to public SEO pages. User-Agent
+	# alone is not proof: verify reverse AND forward DNS before counting a bot.
+	@seo_not_bot not header_regexp User-Agent (?i)(YandexBot|Googlebot)
+	@seo_not_page not path / /catalog /catalog/* /articles /articles/* /about /delivery /contacts /robots.txt /sitemap.xml /sitemap-*.xml
+	@seo_not_read not method GET HEAD
+	log_skip @seo_not_bot
+	log_skip @seo_not_page
+	log_skip @seo_not_read
+	log deere_seo {
+		output file /data/deere-seo-access.log {
+			mode 0600
+			roll_size 4MiB
+			roll_interval 24h
+			roll_keep 3
+			roll_keep_for 72h
+		}
+		format filter {
+			wrap json
+			fields {
+				request>headers delete
+				request>tls delete
+				request>remote_port delete
+				request>client_ip delete
+				request>uri regexp "[?].*" ""
+				resp_headers delete
+				user_id delete
+			}
+		}
+	}
+	# END DEERE SEO CRAWL LOG
 	import security_headers_public
 	# Directus Live Preview is embedded only by the trusted CMS origin.
 	encode zstd gzip
