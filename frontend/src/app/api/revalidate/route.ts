@@ -27,9 +27,7 @@ const collectionTags = {
   sitemap: ["sitemap"],
 } as const;
 
-// IndexNow re-ping map: which top-level paths to notify when a collection
-// changes. Yandex re-crawls the pinged URLs and discovers the updated child
-// pages (product/article detail) via the changed listing.
+// Listing paths supplement the exact item URLs resolved below.
 const collectionIndexNowPaths = {
   articles: ["/articles"],
   categories: ["/catalog"],
@@ -107,15 +105,29 @@ type ItemLookup = {
 
 async function resolveItemPaths(
   collection: Collection,
-  id: string,
+  id: string | undefined,
+  newSlug: string | undefined,
 ): Promise<string[]> {
   if (collection === "home_page") return ["/"];
   const fields = itemLookupFields[collection];
   if (!fields) return [];
-  const item = await directusRequest<ItemLookup>(
-    `/items/${collection}/${id}?fields=${encodeURIComponent(fields)}`,
-    { cache: "no-store" },
-  );
+  let item: ItemLookup | undefined;
+  if (id) {
+    item = await directusRequest<ItemLookup>(
+      `/items/${collection}/${id}?fields=${encodeURIComponent(fields)}`,
+      { cache: "no-store", signal: AbortSignal.timeout(5000) },
+    );
+  } else if (collection === "products" && newSlug) {
+    // The existing Directus create event has `key`, not `keys[0]`.
+    // Resolve a unique product by slug without changing the deployed Flow.
+    const query = new URLSearchParams({
+      fields, "filter[slug][_eq]": newSlug, limit: "2",
+    });
+    const matches = await directusRequest<ItemLookup[]>(
+      `/items/products?${query}`, { cache: "no-store", signal: AbortSignal.timeout(5000) },
+    );
+    if (matches.length === 1) item = matches[0];
+  }
   const slug = optionalItemValue(item?.slug, (value) =>
     SAFE_SLUG.test(value),
   );
@@ -146,6 +158,8 @@ export async function POST(request: Request) {
     id?: unknown;
     oldSlug?: unknown;
     newSlug?: unknown;
+    oldCategorySlug?: unknown;
+    newCategorySlug?: unknown;
     tags?: unknown;
   };
   try {
@@ -202,12 +216,23 @@ export async function POST(request: Request) {
   for (const slug of [oldSlug, newSlug]) {
     if (slug && buildSlugPath) paths.add(buildSlugPath(slug));
   }
+  // Product URLs need both slugs. Callers that know a deleted/moved item's
+  // previous category can supply it; never guess a historical category.
+  if (collection === "products") {
+    for (const [slug, categoryValue] of [
+      [oldSlug, body.oldCategorySlug],
+      [newSlug, body.newCategorySlug],
+    ] as const) {
+      const categorySlug = optionalItemValue(categoryValue, (value) => SAFE_SLUG.test(value));
+      if (slug && categorySlug) paths.add(`/catalog/${categorySlug}/${slug}`);
+    }
+  }
   // The id-based lookup fills in the exact current path when the payload has
   // no usable slug (regular saves) or when only the id can build the path
   // (products need their category slug).
-  if (id && (paths.size === 0 || collection === "products")) {
+  if ((id || (collection === "products" && newSlug)) && (paths.size === 0 || collection === "products")) {
     try {
-      for (const path of await resolveItemPaths(collection, id)) {
+      for (const path of await resolveItemPaths(collection, id, newSlug)) {
         paths.add(path);
       }
     } catch {
@@ -216,11 +241,14 @@ export async function POST(request: Request) {
     }
   }
   paths.forEach((path) => revalidatePath(path));
+  if ((id || oldSlug || newSlug) && paths.size === 0 && itemLookupFields[collection]) {
+    console.warn("[indexnow] item path unavailable; using collection fallback", { collection });
+  }
 
-  // Notify Yandex/Bing via IndexNow. Fire-and-forget after revalidation; any
-  // error is swallowed inside notifyIndexNow so the webhook stays reliable.
-  const indexNowPaths = collectionIndexNowPaths[collection];
-  await notifyIndexNow([...indexNowPaths]);
+  // Await a bounded notification after revalidation; IndexNow failures must
+  // not undo the successful cache flush or cause CMS webhook retries.
+  const indexNowPaths = [...new Set([...collectionIndexNowPaths[collection], ...paths])];
+  await notifyIndexNow(indexNowPaths);
 
   return Response.json({
     ok: true,

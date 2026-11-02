@@ -39,10 +39,13 @@ describe("notifyIndexNow", () => {
     fetchMock.mockClear();
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     process.env = { ...ORIGINAL_ENV };
   });
 
@@ -97,6 +100,45 @@ describe("notifyIndexNow", () => {
     ]);
   });
 
+  it.each([200, 202])("records HTTP %i without exposing the payload or key", async (status) => {
+    fetchMock.mockResolvedValue(new Response(null, { status }));
+    await notifyIndexNow(["/catalog/item"]);
+    expect(console.info).toHaveBeenCalledWith("[indexnow] submission", {
+      status, count: 1,
+      outcome: status === 200 ? "submitted" : "key_verification_pending",
+    });
+    expect(JSON.stringify(vi.mocked(console.info).mock.calls)).not.toContain("test-key-123");
+  });
+
+  it("sends only normalized public paths and bounds the request", async () => {
+    await notifyIndexNow(["/catalog", "//evil.test/path", "/catalog?token=private", "/catalog#private", "/a/../private", "/a\\private", "//[invalid", "https://evil.test"]);
+    const init = fetchMock.mock.calls[0][1];
+    expect(JSON.parse(init.body).urlList).toEqual(["https://deere-shop.ru/catalog"]);
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("aborts a stalled request and reports a redacted timeout", async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    vi.spyOn(AbortSignal, "timeout").mockImplementation((delay) => {
+      setTimeout(() => controller.abort(new DOMException("sensitive transport detail", "TimeoutError")), delay);
+      return controller.signal;
+    });
+    fetchMock.mockImplementation((_url, init) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener("abort", () => reject(init.signal.reason));
+    }));
+    const onError = vi.fn();
+    try {
+      const pending = notifyIndexNow(["/catalog"], { onError });
+      await vi.advanceTimersByTimeAsync(5000);
+      await pending;
+      expect(controller.signal.aborted).toBe(true);
+      expect(onError).toHaveBeenCalledWith("IndexNow ping timed out");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("swallows HTTP errors without throwing (webhook must stay reliable)", async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 400 }));
     const onError = vi.fn();
@@ -105,9 +147,12 @@ describe("notifyIndexNow", () => {
   });
 
   it("swallows network errors without throwing", async () => {
-    fetchMock.mockRejectedValue(new Error("network down"));
+    fetchMock.mockRejectedValue(new Error("network down test-key-123 Authorization: private"));
+    const onError = vi.fn();
     await expect(
-      notifyIndexNow(["/catalog"]),
+      notifyIndexNow(["/catalog"], { onError }),
     ).resolves.toBeUndefined();
+    expect(onError).toHaveBeenCalledWith("IndexNow ping network error");
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/test-key-123|Authorization|private/u);
   });
 });

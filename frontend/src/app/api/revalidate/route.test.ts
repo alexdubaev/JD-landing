@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const revalidateTag = vi.fn();
 const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidateTag, revalidatePath }));
+const notifyIndexNow = vi.fn();
+vi.mock("@/lib/seo/indexnow", () => ({ notifyIndexNow }));
 
 const PRODUCT_ID = "1f0a7c92-33b1-4a1e-9c64-7089bb6c0000";
 const ARTICLE_ID = "6b1e8d64-9c2f-4a57-b1e3-2f0f68a1f000";
@@ -35,6 +37,7 @@ describe("POST /api/revalidate", () => {
     );
     expect(response.status).toBe(401);
     expect(revalidateTag).not.toHaveBeenCalled();
+    expect(notifyIndexNow).not.toHaveBeenCalled();
   });
 
   it("rejects a same-length wrong secret and a missing one", async () => {
@@ -252,6 +255,9 @@ describe("POST /api/revalidate item-aware payloads (Task 16)", () => {
     expect(revalidateTag).toHaveBeenCalledWith("articles", { expire: 0 });
     // Slugs were provided, so no item lookup is needed.
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(notifyIndexNow).toHaveBeenCalledWith([
+      "/articles", "/articles/old-slug", "/articles/new-slug",
+    ]);
   });
 
   it("resolves the exact path from the item id when no usable slug is sent", async () => {
@@ -290,6 +296,55 @@ describe("POST /api/revalidate item-aware payloads (Task 16)", () => {
     expect(revalidatePath.mock.calls).toEqual([
       ["/catalog/clutches/mufta-kompressora"],
     ]);
+    expect(notifyIndexNow).toHaveBeenCalledWith([
+      "/catalog", "/catalog/clutches/mufta-kompressora",
+    ]);
+  });
+
+  it("resolves a newly created product when the Flow supplies a slug without an id", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
+      data: [{ slug: "new-part", category: { slug: "parts" } }],
+    })));
+    const { POST } = await import("./route");
+    const response = await POST(new Request("https://site.test/api/revalidate", {
+      method: "POST", headers: { "x-revalidate-secret": "test-secret" },
+      body: JSON.stringify({ collection: "products", id: "undefined", newSlug: "new-part" }),
+    }));
+    expect(response.status).toBe(200);
+    const lookup = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(lookup.searchParams.get("filter[slug][_eq]")).toBe("new-part");
+    expect(lookup.searchParams.get("limit")).toBe("2");
+    expect(notifyIndexNow).toHaveBeenCalledWith(["/catalog", "/catalog/parts/new-part"]);
+  });
+
+  it("submits known old and new product paths even after the item is deleted", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("gone", { status: 404 }));
+    const { POST } = await import("./route");
+    const response = await POST(new Request("https://site.test/api/revalidate", {
+      method: "POST", headers: { "x-revalidate-secret": "test-secret" },
+      body: JSON.stringify({ collection: "products", id: PRODUCT_ID,
+        oldSlug: "old-part", oldCategorySlug: "old-parts",
+        newSlug: "new-part", newCategorySlug: "new-parts" }),
+    }));
+    expect(response.status).toBe(200);
+    expect(notifyIndexNow).toHaveBeenCalledWith([
+      "/catalog", "/catalog/old-parts/old-part", "/catalog/new-parts/new-part",
+    ]);
+  });
+
+  it("does not guess a product path from ambiguous slug matches", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
+      data: [{ slug: "part", category: { slug: "a" } }, { slug: "part", category: { slug: "b" } }],
+    })));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { POST } = await import("./route");
+    const response = await POST(new Request("https://site.test/api/revalidate", {
+      method: "POST", headers: { "x-revalidate-secret": "test-secret" },
+      body: JSON.stringify({ collection: "products", newSlug: "part" }),
+    }));
+    expect(response.status).toBe(200);
+    expect(notifyIndexNow).toHaveBeenCalledWith(["/catalog"]);
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   it("keeps the tag flush reliable when the item lookup fails after a delete", async () => {
@@ -309,6 +364,7 @@ describe("POST /api/revalidate item-aware payloads (Task 16)", () => {
     expect(response.status).toBe(200);
     expect(revalidatePath).not.toHaveBeenCalled();
     expect(revalidateTag).toHaveBeenCalledWith("articles", { expire: 0 });
+    expect(notifyIndexNow).toHaveBeenCalledWith(["/articles"]);
   });
 
   it("revalidates the homepage path when the singleton id is sent", async () => {
