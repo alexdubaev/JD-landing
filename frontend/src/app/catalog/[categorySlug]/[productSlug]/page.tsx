@@ -152,7 +152,7 @@ export default async function ProductPage({ params }: ProductRouteProps) {
           className="product-section product-consultation"
           id="consultation"
         >
-          <h2 id="product-consultation">Уточнить совместимость и условия</h2>
+          <h2 id="product-consultation">Связаться с нами</h2>
           <LeadForm
             categoryId={product.category?.id}
             productId={product.id}
