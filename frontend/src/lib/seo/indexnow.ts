@@ -5,17 +5,18 @@
  * search engines the moment content changes, instead of waiting for the
  * crawler. When Directus triggers the revalidate webhook, we revalidate the
  * Next.js cache and then ping IndexNow with the affected URLs so Yandex
- * re-crawls within minutes.
+ * can discover the changed URLs. Submission does not guarantee indexing.
  *
  * The key (`INDEXNOW_KEY`) must match a file served at
  * `/<INDEXNOW_KEY>.txt`. Next.js exposes it via the public folder.
  *
  * This helper is fault-tolerant: it must never break the revalidate webhook,
- * so any network/HTTP error is swallowed and logged via the callback.
+ * so network/HTTP failures are bounded and logged without request secrets.
  */
 
 const INDEXNOW_ENDPOINT = "https://api.indexnow.org/IndexNow";
 const INDEXNOW_BATCH_LIMIT = 10000;
+const INDEXNOW_TIMEOUT_MS = 5000;
 
 export type IndexNowOptions = {
   /** Called with a short human-readable message when something goes wrong. */
@@ -57,7 +58,17 @@ export async function notifyIndexNow(
     return;
   }
 
-  const unique = Array.from(new Set(paths)).slice(0, INDEXNOW_BATCH_LIMIT);
+  // Only public, same-site paths: never send query strings or fragments that
+  // could contain private data. Reject URL normalization tricks as well.
+  const unique = Array.from(new Set(paths)).filter((path) => {
+    if (!path.startsWith("/") || /[\\?#\s]/u.test(path)) return false;
+    try {
+      const url = new URL(path, `https://${host}`);
+      return url.host === host && url.pathname === path;
+    } catch {
+      return false;
+    }
+  }).slice(0, INDEXNOW_BATCH_LIMIT);
   if (unique.length === 0) return;
 
   const body = {
@@ -72,18 +83,28 @@ export async function notifyIndexNow(
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify(body),
-      // Fire-and-forget semantics: don't keep the webhook waiting.
       cache: "no-store",
+      signal: AbortSignal.timeout(INDEXNOW_TIMEOUT_MS),
     });
 
-    // 200 = submitted, 202 = accepted for processing. Both are success.
-    if (!response.ok && response.status !== 202) {
-      options.onError?.(
-        `IndexNow ping failed: HTTP ${response.status}`,
-      );
+    // 202 still requires key verification; neither status confirms indexing.
+    if (response.status === 200 || response.status === 202) {
+      console.info("[indexnow] submission", {
+        status: response.status,
+        count: unique.length,
+        outcome: response.status === 200 ? "submitted" : "key_verification_pending",
+      });
+    } else {
+      const message = `IndexNow ping failed: HTTP ${response.status}`;
+      console.warn("[indexnow] submission failed", { status: response.status, count: unique.length });
+      options.onError?.(message);
     }
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    options.onError?.(`IndexNow ping error: ${detail}`);
+    // Never log raw exceptions or response bodies: transports can embed keys.
+    const timedOut = typeof error === "object" && error !== null && "name" in error &&
+      (error.name === "TimeoutError" || error.name === "AbortError");
+    const message = timedOut ? "IndexNow ping timed out" : "IndexNow ping network error";
+    console.warn("[indexnow] submission failed", { reason: timedOut ? "timeout" : "network", count: unique.length });
+    options.onError?.(message);
   }
 }
