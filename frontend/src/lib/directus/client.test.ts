@@ -85,6 +85,31 @@ describe("directusRequest", () => {
     }
   });
 
+  it("bounds CMS reads and preserves caller cancellation", async () => {
+    const timeout = new AbortController();
+    const caller = new AbortController();
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout").mockReturnValue(timeout.signal);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+      if (!init?.signal) throw new Error("Missing read deadline");
+      return new Promise<Response>((_resolve, reject) => {
+        init.signal!.addEventListener("abort", () => reject(init.signal!.reason), { once: true });
+      });
+    });
+    const result = directusRequest("/items/products", { signal: caller.signal });
+    const failure = expect(result).rejects.toThrow("cancelled");
+    caller.abort(new Error("cancelled"));
+    await failure;
+    expect(timeoutSpy).toHaveBeenCalledWith(10_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not retry mutations or introduce an ambiguous write timeout", async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ data: { id: "lead" } })));
+    await directusRequest("/items/leads", { method: "POST", body: "{}" });
+    expect(timeoutSpy).not.toHaveBeenCalled();
+  });
+
   it("rejects absolute paths so a token cannot leak to another origin", async () => {
     await expect(
       directusRequest("https://attacker.example/items"),

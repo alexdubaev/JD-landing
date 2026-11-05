@@ -6105,7 +6105,7 @@ p {
 }
 
 .parts-request textarea,
-.parts-request input:not([type="file"]) {
+.parts-request input:not([type="file"]):not([type="checkbox"]) {
   width: 100%;
   border: 1px solid #c7d0c8;
   border-radius: var(--radius-sm);
@@ -6121,13 +6121,13 @@ p {
   line-height: 1.5;
 }
 
-.parts-request input:not([type="file"]) {
+.parts-request input:not([type="file"]):not([type="checkbox"]) {
   min-height: 2.75rem;
   padding: 0.625rem 0.75rem;
 }
 
 .parts-request textarea:focus,
-.parts-request input:not([type="file"]):focus {
+.parts-request input:not([type="file"]):not([type="checkbox"]):focus {
   border-color: var(--primary);
   outline: 3px solid rgb(76 143 43 / 16%);
 }
@@ -6423,6 +6423,10 @@ p {
 
 .parts-request-page__surface .breadcrumbs li:not(:last-child)::after {
   color: rgb(255 255 255 / 45%);
+}
+
+.parts-request-page__surface .breadcrumbs [aria-current="page"] {
+  color: rgb(255 255 255 / 82%);
 }
 
 .parts-request-page__surface .breadcrumbs a {
@@ -7469,4 +7473,26 @@ p {
   .page-state h1 {
     font-size: clamp(2.25rem, 10vw, 3.25rem);
   }
+}
+
+/* Keep consent controls compact and parsed SKU tables inside narrow screens. */
+.parts-request .lead-form__consent {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.parts-request__preview {
+  width: 100%;
+  table-layout: fixed;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.parts-request__preview th:last-child {
+  width: 40%;
+}
+
+.catalog-empty .lead-form {
+  text-align: left;
 }

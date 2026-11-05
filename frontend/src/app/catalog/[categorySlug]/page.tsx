@@ -54,7 +54,11 @@ export async function generateMetadata({
     searchParams,
   ]);
   const category = await getCategoryBySlug(categorySlug);
-  if (!category) return {};
+  if (!category) {
+    const target = await getCategoryRedirect(categorySlug);
+    if (target) permanentRedirect(`/catalog/${target}`);
+    notFound();
+  }
 
   const image = directusAssetUrl(category.ogImageId || category.imageId, {
     width: 1200,
@@ -159,7 +163,7 @@ export default async function CategoryPage({
         {catalog.items.length ? (
           <ProductGrid headingLevel={3} products={catalog.items} />
         ) : (
-          <EmptyCatalog />
+          <EmptyCatalog search={query.search} />
         )}
         <Pagination
           currentPage={catalog.page}

@@ -20,11 +20,33 @@ const baseOrder = {
 };
 
 describe("orderSchema", () => {
+  it("accepts checkout without the optional email field", () => {
+    const withoutEmail = { ...baseOrder };
+    Reflect.deleteProperty(withoutEmail, "email");
+    expect(orderSchema.parse(withoutEmail).email).toBeUndefined();
+  });
+
   it("accepts an explicit marketing consent value", () => {
     expect(orderSchema.parse({ ...baseOrder, marketing_consent: true }).marketing_consent).toBe(true);
   });
 
   it("defaults marketing consent to false", () => {
     expect(orderSchema.parse(baseOrder).marketing_consent).toBe(false);
+  });
+
+  it("requires a product ID for every cart line", () => {
+    const result = orderSchema.safeParse({
+      ...baseOrder,
+      items: [{ ...baseOrder.items[0], product: undefined }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects duplicate product IDs so a line cannot bypass the quantity limit", () => {
+    const result = orderSchema.safeParse({
+      ...baseOrder,
+      items: [baseOrder.items[0], { ...baseOrder.items[0], quantity: 1 }],
+    });
+    expect(result.success).toBe(false);
   });
 });

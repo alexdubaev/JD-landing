@@ -15,7 +15,7 @@ import {
   type AttachmentKind,
 } from "@/lib/leads/attachments";
 import { contactRequestSchema, leadSchema } from "@/lib/leads/schema";
-import { notifyNewLead } from "@/lib/notifications/notify";
+import { notifyNewLead, type NewLeadPayload } from "@/lib/notifications/notify";
 import {
   RequestTooLargeError,
   getTrustedClientIp,
@@ -59,6 +59,8 @@ function attachmentError(files: Array<[AttachmentKind, File | null]>) {
 
 export async function POST(request: Request) {
   const uploadedIds: string[] = [];
+  let fallbackLead: NewLeadPayload | null = null;
+  let leadSaved = false;
   try {
     const isMultipart = request.headers
       .get("content-type")
@@ -142,6 +144,7 @@ export async function POST(request: Request) {
           term: parsed.data.utm_term,
         },
         storedInDirectus: false,
+        notificationKind: "contact",
       });
       if (!recipient) {
         return NextResponse.json(
@@ -181,15 +184,29 @@ export async function POST(request: Request) {
       );
     }
 
+    const requestItems = parsed.data.request_items
+      ? normalizePartsRequestItems(parsed.data.request_items)
+      : undefined;
+    const emailAttachments = await Promise.all([spreadsheet, photo].filter((file): file is File => Boolean(file)).map(async (file) => ({
+      filename: file.name.normalize("NFKC").replace(/[\u0000-\u001f\u007f\\/:*?"<>|]+/gu, "_").replace(/^\.+/u, "file").trim().slice(0, 100) || "attachment",
+      content: Buffer.from(await file.arrayBuffer()), contentType: file.type,
+    })));
+    fallbackLead = {
+      name: parsed.data.name, phone: parsed.data.phone, email: parsed.data.email,
+      message: parsed.data.message, product: parsed.data.product, category: parsed.data.category,
+      pageUrl: parsed.data.page_url, requestItems, emailAttachments,
+      storedInDirectus: false,
+      utm: { source: parsed.data.utm_source, medium: parsed.data.utm_medium, campaign: parsed.data.utm_campaign, content: parsed.data.utm_content, term: parsed.data.utm_term },
+    };
+
     for (const file of [spreadsheet, photo]) {
       if (file) uploadedIds.push(await uploadLeadAttachment(file));
     }
     await createLead(parsed.data, {
       attachments: uploadedIds,
-      requestItems: parsed.data.request_items
-        ? normalizePartsRequestItems(parsed.data.request_items)
-        : undefined,
+      requestItems,
     });
+    leadSaved = true;
     // Best-effort manager notification: a mail outage must never affect the
     // visitor's lead, so the result is ignored here. Notifications are silent
     // when SMTP env vars are not configured (see lib/notifications/env.ts).
@@ -212,6 +229,7 @@ export async function POST(request: Request) {
         ? normalizePartsRequestItems(parsed.data.request_items)
         : undefined,
       attachments: uploadedIds.length ? uploadedIds : undefined,
+      emailAttachments,
     });
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (error) {
@@ -221,14 +239,19 @@ export async function POST(request: Request) {
         { status: 413 },
       );
     }
-    if (uploadedIds.length) {
-      await Promise.allSettled(uploadedIds.map(deleteLeadAttachment));
-    }
-    if (error instanceof LeadValidationError || error instanceof SyntaxError) {
+    if (!leadSaved && uploadedIds.length) await Promise.allSettled(uploadedIds.map(deleteLeadAttachment));
+    if (leadSaved) return NextResponse.json({ ok: true }, { status: 201 });
+    if (error instanceof LeadValidationError || (error instanceof SyntaxError && !fallbackLead)) {
       return NextResponse.json(
         { error: "Проверьте заполнение формы" },
         { status: 400 },
       );
+    }
+    // CMS storage can be unavailable under the public role. A validated request
+    // still reaches the manager by email; preserve original attachment bytes.
+    if (fallbackLead) {
+      const recipient = await Promise.resolve().then(() => notifyNewLead(fallbackLead!)).catch(() => null);
+      if (recipient) return NextResponse.json({ ok: true }, { status: 201 });
     }
     // A Directus outage must be visible in the logs, not just a faceless 503.
     console.error(

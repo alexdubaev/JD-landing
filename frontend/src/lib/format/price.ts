@@ -3,14 +3,13 @@ import type { ProductCardData } from "@/types/catalog";
 /**
  * Format a monetary amount in the project's Russian-locale convention.
  *
- * `maximumFractionDigits` defaults to 0 because the catalog shows whole-ruble
- * prices; callers that need fractional precision (e.g. a snapshot total) can
- * opt in.
+ * Keep whole-ruble prices compact, but retain cents when the amount has them
+ * so catalogue, cart and persisted order amounts agree.
  */
 export function formatPrice(
   amount: number,
   currency = "RUB",
-  maximumFractionDigits = 0,
+  maximumFractionDigits = Number.isInteger(amount) ? 0 : 2,
 ): string {
   return new Intl.NumberFormat("ru-RU", {
     style: "currency",

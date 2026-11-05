@@ -9,6 +9,8 @@ import type { PageSection, SiteSettings } from "@/types/content";
 const hasValue = (value: string | null) => Boolean(value?.trim());
 
 export function HomeCompanyTrust({ section, settings }: { section: PageSection; settings: SiteSettings }) {
+  // Omit the legacy editor instruction accidentally published as customer copy.
+  const publicText = section.text?.trim() === "Реквизиты, документы и контактные данные выводятся только из заполненных полей компании." ? null : section.text;
   const details = [
     settings.legalName,
     settings.inn ? `ИНН ${settings.inn}` : null,
@@ -41,7 +43,7 @@ export function HomeCompanyTrust({ section, settings }: { section: PageSection; 
         <div className="home-company-trust__details">
           {section.subtitle ? <p>{section.subtitle}</p> : null}
           {section.title ? <h2>{section.title}</h2> : null}
-          {section.text ? <p>{section.text}</p> : null}
+          {publicText ? <p>{publicText}</p> : null}
           {details.length ? (
             <dl>
               {details.map((detail) => (

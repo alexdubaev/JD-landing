@@ -121,7 +121,7 @@ export default async function CatalogPage({
         {catalog.items.length ? (
           <ProductGrid products={catalog.items} />
         ) : (
-          <EmptyCatalog />
+          <EmptyCatalog search={query.search} />
         )}
         <Pagination
           currentPage={catalog.page}
