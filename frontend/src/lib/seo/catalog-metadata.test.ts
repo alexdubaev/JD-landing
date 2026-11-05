@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CatalogQuery } from "@/types/catalog";
+import { parseCatalogSearchParams } from "@/lib/catalog/search-params";
 
 import {
   buildCatalogMetadata,
@@ -68,6 +69,59 @@ describe("buildCatalogMetadata", () => {
     });
 
     expect(meta.robots).toEqual({ index: false, follow: true });
+  });
+
+  it.each([
+    { category: "dvigatel" },
+    { part_type: "original" },
+    { part_type: "oem" },
+    { part_type: "analog" },
+  ])("keeps filtered catalog pages out of the index: %j", (params) => {
+    for (const page of ["1", "2"]) {
+      const meta = buildCatalogMetadata({
+        ...baseArgs,
+        query: parseCatalogSearchParams({ ...params, page }),
+      });
+
+      expect(meta.robots).toEqual({ index: false, follow: true });
+      expect(meta.alternates?.canonical).toBe("https://deere-shop.ru/catalog");
+    }
+  });
+
+  it("preserves indexable category routes and their unfiltered pagination", () => {
+    for (const page of [1, 2]) {
+      const meta = buildCatalogMetadata({
+        ...baseArgs,
+        basePath: "/catalog/dvigatel",
+        query: { ...baseQuery, page, categorySlug: "dvigatel" },
+      });
+
+      expect(meta.robots).toBeUndefined();
+      expect(meta.alternates?.canonical).toBe(
+        `https://deere-shop.ru/catalog/dvigatel${page > 1 ? `?page=${page}` : ""}`,
+      );
+    }
+  });
+
+  it("noindexes part-type filters within a category", () => {
+    const meta = buildCatalogMetadata({
+      ...baseArgs,
+      basePath: "/catalog/dvigatel",
+      query: parseCatalogSearchParams({ part_type: "analog", page: "2" }),
+    });
+
+    expect(meta.robots).toEqual({ index: false, follow: true });
+    expect(meta.alternates?.canonical).toBe("https://deere-shop.ru/catalog/dvigatel");
+  });
+
+  it("preserves indexing when invalid filters are discarded by the parser", () => {
+    const meta = buildCatalogMetadata({
+      ...baseArgs,
+      query: parseCatalogSearchParams({ category: "not valid", part_type: "invalid" }),
+    });
+
+    expect(meta.robots).toBeUndefined();
+    expect(meta.alternates?.canonical).toBe("https://deere-shop.ru/catalog");
   });
 
   it("honors an explicit canonical override from the CMS", () => {
