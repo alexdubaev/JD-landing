@@ -46,7 +46,9 @@ export function buildCatalogMetadata({
   const hasSortOrFilter =
     query.sort !== "relevance" ||
     query.availability !== undefined ||
-    query.priceStatus !== undefined;
+    query.priceStatus !== undefined ||
+    query.partType !== undefined ||
+    (basePath === "/catalog" && query.categorySlug !== undefined);
   const isPage1 = query.page <= 1;
   const isNoindex = hasSearch || hasSortOrFilter || !indexable;
 
