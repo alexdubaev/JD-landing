@@ -2916,7 +2916,7 @@ a.product-card__category:hover {
 
 .site-header[data-header-variant="content"] .mobile-navigation__toggle {
   border-color: rgb(30 42 22 / 24%);
-  color: var(--header);
+  color: #ffffff;
 }
 
 .scroll-progress {
