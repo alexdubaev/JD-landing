@@ -1,4 +1,4 @@
-import { Clock3, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Clock3, Mail, MapPin, MessageCircle, Phone } from "./HomeIcons";
 import Link from "next/link";
 
 import { LeadForm } from "@/components/forms/LeadForm";

@@ -4,7 +4,7 @@ import {
   ClipboardList,
   FileSearch,
   Handshake,
-} from "lucide-react";
+} from "./HomeIcons";
 import Link from "next/link";
 
 import { ProcessMotion } from "@/components/motion/ProcessMotion";
