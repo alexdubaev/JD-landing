@@ -36,6 +36,17 @@ const section: PageSection = {
 };
 
 describe("HomeCategories", () => {
+  it("serves the existing 96px CMS thumbnail without generating oversized variants", () => {
+    render(<HomeCategories categories={[{ ...category, imageId: "category-image" }]} section={section} />);
+
+    const image = screen.getByRole("img", { name: "Двигатель" });
+    expect(image.getAttribute("src")).toBe(
+      "/media/category-image?fit=cover&format=webp&height=96&quality=88&width=96",
+    );
+    expect(image).not.toHaveAttribute("srcset");
+    expect(screen.getByRole("link", { name: "Двигатель — перейти в каталог" })).toHaveAttribute("href", "/catalog/engine");
+  });
+
   it("uses a compact text-only treatment when a category has no CMS image", () => {
     render(<HomeCategories categories={[category]} section={section} />);
 

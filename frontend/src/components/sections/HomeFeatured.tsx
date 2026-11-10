@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "./HomeIcons";
 import Link from "next/link";
 
 import { Reveal } from "@/components/motion/Reveal";

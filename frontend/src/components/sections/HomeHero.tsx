@@ -8,7 +8,7 @@ import {
   Truck,
   MessageCircle,
   Phone,
-} from "lucide-react";
+} from "./HomeIcons";
 import Image from "next/image";
 import Link from "next/link";
 

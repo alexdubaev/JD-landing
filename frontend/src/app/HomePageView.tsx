@@ -73,7 +73,15 @@ export function HomePageView({
   const renderSection = (section: (typeof primarySections)[number]) => {
     switch (section.type) {
       case "categories":
-        return <HomeCategories categories={categories} key={section.id} section={section} />;
+        return (
+          <HomeCategories
+            categories={categories.map(({ id, title, slug, imageId, imageAlt, iconId, iconAlt }) => ({
+              id, title, slug, imageId, imageAlt, iconId, iconAlt,
+            }))}
+            key={section.id}
+            section={section}
+          />
+        );
       case "featured_products":
         return <HomeFeatured key={section.id} products={products.slice(0, 5)} section={section} />;
       case "process":
