@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, PackageSearch } from "lucide-react";
+import { ArrowRight, PackageSearch } from "./HomeIcons";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,8 +10,13 @@ import { trackEvent } from "@/lib/analytics";
 import type { Category } from "@/types/catalog";
 import type { PageSection } from "@/types/content";
 
-export const getHomepageCategories = (categories: Category[]) =>
-  categories.reduce<Category[]>((result, category) => {
+export type HomeCategory = Pick<
+  Category,
+  "id" | "title" | "slug" | "imageId" | "imageAlt" | "iconId" | "iconAlt"
+>;
+
+export const getHomepageCategories = (categories: HomeCategory[]) =>
+  categories.reduce<HomeCategory[]>((result, category) => {
     const identity = `${category.title} ${category.slug}`.toLocaleLowerCase("ru");
     const isMisc = /(?:^|\s)(?:прочее|other|misc)(?:\s|$)/iu.test(identity);
     const isDuplicate = result.some(
@@ -26,7 +31,7 @@ export function HomeCategories({
   categories,
   section,
 }: {
-  categories: Category[];
+  categories: HomeCategory[];
   section: PageSection;
 }) {
   const curatedCategories = getHomepageCategories(categories);
@@ -72,8 +77,8 @@ export function HomeCategories({
                       <Image
                         alt={category.imageAlt ?? category.iconAlt ?? category.title}
                         fill
-                        sizes="(max-width: 48rem) 36px, 40px"
                         src={image}
+                        unoptimized
                       />
                     ) : (
                       <PackageSearch aria-hidden="true" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, Phone, Send } from "lucide-react";
+import { MessageCircle, Phone, Send } from "./HomeIcons";
 import type { ReactNode } from "react";
 
 import { trackEvent } from "@/lib/analytics";
