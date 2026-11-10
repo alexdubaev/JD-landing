@@ -76,10 +76,12 @@ export function HomePageView({
         return (
           <HomeCategories
             categories={categories.map(({ id, title, slug, imageId, imageAlt, iconId, iconAlt }) => ({
-              id, title, slug, imageId, imageAlt, iconId, iconAlt,
+              id, title, slug,
+              imageId: imageId ?? iconId ?? null,
+              imageAlt: imageAlt ?? iconAlt ?? null,
             }))}
             key={section.id}
-            section={section}
+            section={{ title: section.title, subtitle: section.subtitle, buttonUrl: section.buttonUrl }}
           />
         );
       case "featured_products":

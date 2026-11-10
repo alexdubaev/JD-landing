@@ -32,7 +32,7 @@ export function HomeCategories({
   section,
 }: {
   categories: HomeCategory[];
-  section: PageSection;
+  section: Pick<PageSection, "title" | "subtitle" | "buttonUrl">;
 }) {
   const curatedCategories = getHomepageCategories(categories);
   if (!curatedCategories.length) return null;
