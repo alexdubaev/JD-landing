@@ -7,6 +7,10 @@ import {
 import { getArticleSitemapEntries } from "@/lib/directus/articles";
 import { siteOrigin } from "@/lib/seo/url";
 
+// Build runs without CMS access. Generate at request time; upstream failures
+// must not replace the full sitemap with a successful seven-URL response.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = siteOrigin();
   const staticPaths = [
@@ -24,40 +28,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: path === "" ? 1 : path === "/catalog" ? 0.9 : 0.6,
   }));
 
-  try {
-    const [categories, products, articles] = await Promise.all([
-      getCategorySitemapEntries(),
-      getProductSitemapEntries(),
-      getArticleSitemapEntries(),
-    ]);
-    result.push(
-      ...categories.map((category) => ({
-        url: `${origin}/catalog/${category.slug}`,
-        lastModified: category.updatedAt
-          ? new Date(category.updatedAt)
-          : undefined,
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      })),
-      ...products.map((product) => ({
-        url: `${origin}/catalog/${product.categorySlug}/${product.productSlug}`,
-        lastModified: product.updatedAt
-          ? new Date(product.updatedAt)
-          : undefined,
-        changeFrequency: "weekly" as const,
-        priority: 0.7,
-      })),
-      ...articles.map((article) => ({
-        url: `${origin}/articles/${article.slug}`,
-        lastModified: article.updated_at
-          ? new Date(article.updated_at)
-          : undefined,
-        changeFrequency: "monthly" as const,
-        priority: 0.6,
-      })),
-    );
-  } catch {
-    // Static routes remain available when the CMS is temporarily offline.
-  }
+  const [categories, products, articles] = await Promise.all([
+    getCategorySitemapEntries(),
+    getProductSitemapEntries(),
+    getArticleSitemapEntries(),
+  ]);
+  result.push(
+    ...categories.map((category) => ({
+      url: `${origin}/catalog/${category.slug}`,
+      lastModified: category.updatedAt
+        ? new Date(category.updatedAt)
+        : undefined,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })),
+    ...products.map((product) => ({
+      url: `${origin}/catalog/${product.categorySlug}/${product.productSlug}`,
+      lastModified: product.updatedAt
+        ? new Date(product.updatedAt)
+        : undefined,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+    ...articles.map((article) => ({
+      url: `${origin}/articles/${article.slug}`,
+      lastModified: article.updated_at
+        ? new Date(article.updated_at)
+        : undefined,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
+  );
   return result;
 }

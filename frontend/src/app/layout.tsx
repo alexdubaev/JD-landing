@@ -49,7 +49,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase,
     title: {
       default: title,
-      template: `%s — ${companyName}`,
+      // Child routes/CMS own complete titles; do not append the brand twice.
+      template: "%s",
     },
     description,
     verification: {

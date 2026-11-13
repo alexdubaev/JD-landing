@@ -73,3 +73,9 @@ describe("formatRuDate", () => {
     );
   });
 });
+
+it("shows fractional prices consistently with stored order amounts", () => {
+  expect(formatPrice(1250.50).replace(/\s/g, " ")).toBe("1 250,50 ₽");
+  expect(formatPrice(1250).replace(/\s/g, " ")).toBe("1 250 ₽");
+  expect(formatPrice(2501).replace(/\s/g, " ")).toBe("2 501 ₽");
+});

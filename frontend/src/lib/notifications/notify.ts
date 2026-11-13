@@ -3,7 +3,8 @@ import "server-only";
 import type { PartsRequestItem } from "@/lib/leads/parts-request";
 
 import { getSmtpEnv, type CompleteSmtpEnv } from "./env";
-import { renderLeadEmail, type LeadEmailModel } from "./render";
+import { renderLeadEmail, renderOrderEmail, type LeadEmailModel } from "./render";
+import type { OrderNotificationSnapshot } from "@/lib/directus/orders";
 
 export type { LeadEmailModel };
 
@@ -29,7 +30,11 @@ export type NewLeadPayload = {
   requestItems?: PartsRequestItem[];
   attachments?: string[];
   storedInDirectus?: boolean;
+  notificationKind?: "contact";
+  emailAttachments?: Array<{ filename: string; content: Buffer; contentType: string }>;
 };
+
+const safeAttachmentName = (name: string) => name.normalize("NFKC").replace(/[\u0000-\u001f\u007f\\/:*?"<>|]+/gu, "_").replace(/^\.+/u, "file").trim().slice(0, 100) || "attachment";
 
 const escapeHtml = (value: string) =>
   value
@@ -73,16 +78,16 @@ async function createTransport(env: CompleteSmtpEnv) {
 export async function notifyNewLead(
   lead: NewLeadPayload,
 ): Promise<string | null> {
-  const env = getSmtpEnv();
-  if (!env) return null;
-
-  const senderName = "DEERE-SHOP";
-  const from = env.SMTP_FROM || env.SMTP_USER;
-  const subject = `${lead.storedInDirectus === false ? "Новое сообщение" : "Новая заявка"} — ${lead.name}`;
-  const text = renderLeadPlainText(lead);
-  const html = renderLeadEmail(toEmailModel(lead));
-
   try {
+    const env = getSmtpEnv();
+    if (!env) return null;
+    const senderName = "DEERE-SHOP";
+    const from = env.SMTP_FROM || env.SMTP_USER;
+    const subject = lead.notificationKind === "contact"
+      ? `Новое сообщение — ${lead.name}`
+      : `${lead.storedInDirectus === false ? "Новая заявка (сохранение в Directus не подтверждено)" : "Новая заявка"} — ${lead.name}`;
+    const text = renderLeadPlainText(lead);
+    const html = renderLeadEmail(toEmailModel(lead));
     const transport = await createTransport(env);
     await transport.sendMail({
       from: `${senderName} <${from}>`,
@@ -90,12 +95,25 @@ export async function notifyNewLead(
       subject,
       text,
       html,
+      attachments: lead.emailAttachments?.map((file) => ({ filename: safeAttachmentName(file.filename), content: file.content, contentType: file.contentType })),
     });
     return env.NOTIFY_EMAIL_TO;
   } catch (error) {
     console.error("[notifications] lead email failed", error);
     return null;
   }
+}
+
+export async function notifyOrder(snapshot: OrderNotificationSnapshot): Promise<string | null> {
+  try {
+    const env = getSmtpEnv();
+    if (!env) return null;
+    const senderName = "DEERE-SHOP";
+    const rendered = renderOrderEmail({ ...snapshot, escape: escapeHtml });
+    const transport = await createTransport(env);
+    await transport.sendMail({ from: `${senderName} <${env.SMTP_FROM || env.SMTP_USER}>`, to: env.NOTIFY_EMAIL_TO, subject: `Заказ ${snapshot.id} — ${snapshot.name}`, ...rendered });
+    return env.NOTIFY_EMAIL_TO;
+  } catch (error) { console.error("[notifications] order email failed", error); return null; }
 }
 
 function toEmailModel(lead: NewLeadPayload): LeadEmailModel {
@@ -109,15 +127,17 @@ function toEmailModel(lead: NewLeadPayload): LeadEmailModel {
     pageUrl: lead.pageUrl,
     utm: lead.utm,
     requestItems: lead.requestItems,
-    attachmentCount: lead.attachments?.length ?? 0,
+    attachmentCount: lead.emailAttachments?.length ?? lead.attachments?.length ?? 0,
     storedInDirectus: lead.storedInDirectus,
+    contactRequest: lead.notificationKind === "contact",
+    emailAttachments: lead.emailAttachments?.map(({ filename }) => ({ filename })),
     escape: escapeHtml,
   };
 }
 
 function renderLeadPlainText(lead: NewLeadPayload): string {
   const lines: string[] = [];
-  lines.push("Поступила новая заявка с сайта DEERE-SHOP.\n");
+  lines.push(lead.notificationKind === "contact" ? "Поступило новое сообщение с сайта DEERE-SHOP.\n" : "Поступила новая заявка с сайта DEERE-SHOP.\n");
   lines.push(textRow("Имя", lead.name));
   lines.push(textRow("Телефон", lead.phone));
   lines.push(textRow("Email", lead.email));
@@ -133,11 +153,12 @@ function renderLeadPlainText(lead: NewLeadPayload): string {
     }
   }
 
-  if (lead.attachments?.length) {
+  const attachmentCount = lead.emailAttachments?.length ?? lead.attachments?.length ?? 0;
+  if (attachmentCount) {
     lines.push(
-      `\nВложения: ${lead.attachments.length} ${
-        lead.attachments.length === 1 ? "файл" : "файлов"
-      } (доступны в админке Directus).`,
+      `\nВложения: ${attachmentCount} ${
+        attachmentCount === 1 ? "файл" : "файлов"
+      }${lead.storedInDirectus === false ? " приложены к письму; сохранение в Directus не подтверждено." : " доступны в Directus."}`,
     );
   }
 

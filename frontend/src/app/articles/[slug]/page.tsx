@@ -28,7 +28,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const article = await getArticleBySlug(slug);
-  if (!article) return {};
+  if (!article) notFound();
   const canonical = `/articles/${article.slug}`;
   const image = directusAssetUrl(article.ogImageId ?? article.coverImageId, {
     width: 1200,
