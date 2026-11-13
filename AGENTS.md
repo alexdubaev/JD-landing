@@ -2,6 +2,14 @@
 
 ## Project
 
+### Articles and editorial work
+
+Before researching, writing, editing or publishing articles, read and follow
+[DEERE-SHOP article rules](docs/editorial/ARTICLE-RULES.md).
+This is the shared editorial policy for every agent. Start with evidence of a real
+customer problem, analyse it, then connect the answer to relevant catalogue parts.
+Use `seo-content`, followed by `humanize-writing`, and verify facts after editing.
+
 ### Production access
 
 Before asking the owner for server access, read the current SSH profile in
